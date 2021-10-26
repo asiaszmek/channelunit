@@ -38,7 +38,7 @@ class NModlChannel(sciunit.Capability):
             h.tstop = t_stop
             h.run(t_stop)
             if chord_conductance:
-                out = current.as_numpy()/(voltage-E_rev)
+                out = current.as_numpy()/(vm - E_rev)
             else:
                 out = abs(current.as_numpy())
             max_current[level] = max(out)
