@@ -20,7 +20,6 @@ setuptools.setup(
     include_package_data=True,
     package_data={'channelunit': ["demo_CA1/ion_channels/*mod"]},
     python_requires=">=3.6",
-    include_package_data=False,
     license='LGPL-2.1-or-later',
     install_requires=['sciunit>=0.2.1']
  )
