@@ -16,7 +16,8 @@ class NModlChannel(sciunit.Capability):
     def get_activation_steady_state(self, soma_obj, clamp_obj,
                                     stimulation_levels: list,
                                     v_init: float, t_stop:float,
-                                    chord_conductance=False, E_rev=0,
+                                    chord_conductance=False,
+                                    E_rev=None,
                                     duration=400):
         """
         channel should be a neuron density mechanism, clamp a SEClamp neuron 
@@ -29,6 +30,11 @@ class NModlChannel(sciunit.Capability):
         time = h.Vector().record(h._ref_t, dt)
         vm = h.Vector().record(soma_obj(0.5)._ref_v, dt)
         delay = 200
+        if chord_conductance and E_rev is None:
+            E_rev = self.get_E_rev(soma_obj)
+            if E_rev is None:
+                raise SystemExit('Unable to calculate chord conductance, if E_rev is unknown.')
+
         for level in stimulation_levels:
             clampobj.dur1 = delay
             clampobj.amp1 = v_init
