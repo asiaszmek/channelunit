@@ -4,6 +4,15 @@ class NModlChannel(sciunit.Capability):
     """
     Th
     """
+
+    def get_E_rev(self, soma):
+        ions = soma.psection()["ions"]
+        if not len(ions):
+            return None
+        if len(ions) > 1:
+            return None
+        return "e%s" % ions[0]
+
     def get_activation_steady_state(self, soma_obj, clamp_obj,
                                     stimulation_levels: list,
                                     v_init: float, t_stop:float,
