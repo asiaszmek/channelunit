@@ -26,17 +26,19 @@ class ModelPatch(sciunit.Model,
          
         return self.soma.psection()["ions"][ions[0]][name]
 
-    def compile_and_add(self):
+    def compile_and_add(self, recompile):
         working_dir = os.getcwd()
         os.chdir(self.mod_path)
-        p = run('nrnivmodl')
+        if recompile:
+            p = run('nrnivmodl')
         neuron.load_mechanisms(self.mod_path)
         os.chdir(working_dir)
 
     def __init__(self, path_to_mods, channel_name,
-                 gbar_name="gbar", temp=22, E_rev=None):
+                 gbar_name="gbar", temp=22, E_rev=None,
+                 recompile=True):
         self.mod_path = path_to_mods
-        self.compile_and_add()
+        self.compile_and_add(recompile)
         self.soma = h.Section(name="soma")
         self.soma.L = 1
         self.soma.diam = 1
