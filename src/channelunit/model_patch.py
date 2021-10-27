@@ -24,7 +24,7 @@ class ModelPatch(sciunit.Model,
         except IndexError:
             return None
          
-        return self.soma.psection()["ions"][ions[0]][name]
+        return self.soma.psection()["ions"][ions[0]][name][0]
 
     def compile_and_add(self, recompile):
         working_dir = os.getcwd()
