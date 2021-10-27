@@ -6,6 +6,7 @@ from channelunit import ModelPatch
 my_loc = os.path.dirname(os.path.abspath(__file__))
 channel_loc = os.path.join(my_loc, "..", "demo_CA1", "ion_channels")
 
+
 class TestModelPatch(unittest.TestCase):
     def test_reading_in_easy(self):
         out = ModelPatch(channel_loc, "na3")
@@ -16,5 +17,8 @@ class TestModelPatch(unittest.TestCase):
                           channel_loc, "na3", gbar_name="gbar1")
 
     def test_reading_in_provide_E_rev(self):
+        out = ModelPatch(channel_loc, "na3", E_rev=40)
+        self.assertEqual(40, out.E_rev)
+        
 if __name__ == "__main__":
     unittest.main()

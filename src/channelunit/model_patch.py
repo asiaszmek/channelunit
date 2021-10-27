@@ -70,6 +70,6 @@ class ModelPatch(sciunit.Model,
         else:
             self.E_rev = E_rev
             if E_rev_name is not None:
-                setattr(soma,  E_rev_name, E_rev)
+                setattr(self.soma,  E_rev_name, E_rev)
             
                 
