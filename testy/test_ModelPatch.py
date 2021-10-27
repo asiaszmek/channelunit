@@ -19,6 +19,14 @@ class TestModelPatch(unittest.TestCase):
     def test_reading_in_provide_E_rev(self):
         out = ModelPatch(channel_loc, "na3", E_rev=40)
         self.assertEqual(40, out.E_rev)
-        
+
+    def test_no_E_rev_name(self):
+        self.assertRaises(SystemExit,  ModelPatch,
+                          channel_loc, "hd")
+
+    def test_no_E_rev_name_provide_E_rev(self):
+        out = ModelPatch(channel_loc, "hd", E_rev=-30)
+        self.assertEqual(-30, out.E_rev)
+
 if __name__ == "__main__":
     unittest.main()
