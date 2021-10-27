@@ -23,7 +23,7 @@ class ModelPatch(sciunit.Model,
             name = "e%s" % ions[0]
         except IndexError:
             return None
-         
+
         return self.soma.psection()["ions"][ions[0]][name][0]
 
     def compile_and_add(self, recompile):

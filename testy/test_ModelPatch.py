@@ -37,7 +37,17 @@ class TestModelPatch(unittest.TestCase):
         out = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
         self.assertEqual(0.001,
                          out.soma.psection()["density_mechs"]["nap"]["gnabar"][0])
+
+    def test_get_E_rev_value(self):
+        out = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
+        val = out.get_E_rev_value()
+        self.assertEqual(50, val)
         
+    
+    def test_get_E_rev_name(self):
+        out = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
+        name = out.get_E_rev_name()
+        self.assertEqual("ena", name)
 
 if __name__ == "__main__":
     unittest.main()
