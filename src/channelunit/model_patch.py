@@ -45,7 +45,11 @@ class ModelPatch(sciunit.Model,
         self.soma.insert("extracellular")
         self.channel = self.soma.insert(channel_name)
         #set up channel conductance/permeability in case it is 0
-        if self.soma.psection()["density_mechs"][channel_name][gbar_name] == 0:
+        chan = self.soma.psection()["density_mechs"][channel_name]
+        if gbar_name not in chan.keys():
+            raise SystemExit('Unable to proceed, unknown %s conductance (gbar)'
+                             % channel_name)
+        if chan[gbar_name] == 0:
             for seg in self.soma:
                 from_mech = getattr(seg, channel_name)
                 gbar_val = 0.001

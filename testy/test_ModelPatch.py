@@ -11,6 +11,10 @@ class TestModelPatch(unittest.TestCase):
         out = ModelPatch(channel_loc, "na3")
         self.assertEqual(50, out.E_rev)
 
+    def test_reading_in_no_gbar(self):
+        self.assertRaises(SystemExit,  ModelPatch,
+                          channel_loc, "na3", gbar_name="gbar1")
 
+    def test_reading_in_provide_E_rev(self):
 if __name__ == "__main__":
     unittest.main()
