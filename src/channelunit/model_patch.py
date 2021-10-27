@@ -49,11 +49,12 @@ class ModelPatch(sciunit.Model,
         if gbar_name not in chan.keys():
             raise SystemExit('Unable to proceed, unknown %s conductance (gbar)'
                              % channel_name)
-        if chan[gbar_name] == 0:
+
+        if chan[gbar_name][0] == 0:
             for seg in self.soma:
                 from_mech = getattr(seg, channel_name)
                 gbar_val = 0.001
-                setattr(from_mech, gbar, gbar_val)
+                setattr(from_mech, gbar_name, gbar_val)
         self.temperature = temp
         self.vclamp = h.SEClamp(self.soma(0.5))
         

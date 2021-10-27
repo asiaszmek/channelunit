@@ -28,5 +28,10 @@ class TestModelPatch(unittest.TestCase):
         out = ModelPatch(channel_loc, "hd", E_rev=-30)
         self.assertEqual(-30, out.E_rev)
 
+    def test_setup_gbar(self):
+        out = ModelPatch(channel_loc, "nax", E_rev=-30)
+        self.assertEqual(0.001,
+                         out.soma.psection()["density_mechs"]["nax"]["gbar"][0])
+
 if __name__ == "__main__":
     unittest.main()

@@ -10,7 +10,7 @@ NEURON {
 }
 
 PARAMETER {
-	gbar = 0.010   	(mho/cm2)	
+	gbar = 0.0   	(mho/cm2)	
 								
 	:tha  =  -30	(mV)		: v 1/2 for act	
        tha  =  -30	(mV)		: v 1/2 for act	
