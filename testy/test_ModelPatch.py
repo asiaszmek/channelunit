@@ -33,5 +33,11 @@ class TestModelPatch(unittest.TestCase):
         self.assertEqual(0.001,
                          out.soma.psection()["density_mechs"]["nax"]["gbar"][0])
 
+    def test_setup_gbar_custom(self):
+        out = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
+        self.assertEqual(0.001,
+                         out.soma.psection()["density_mechs"]["nap"]["gnabar"][0])
+        
+
 if __name__ == "__main__":
     unittest.main()
