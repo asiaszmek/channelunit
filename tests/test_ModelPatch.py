@@ -49,5 +49,48 @@ class TestModelPatch(unittest.TestCase):
         name = out.get_E_rev_name()
         self.assertEqual("ena", name)
 
+class TestCapabilites(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.model = ModelPatch(channel_loc, "nap",
+                                gbar_name="gnabar")
+        cls.stim_levels = [-40, -30]
+        cls.activation_cc = cls.model.get_activation_steady_state(
+            cls.stim_levels, -90, 200, chord_conductance=True)
+        cls.activation = cls.model.get_activation_steady_state(
+            cls.stim_levels, -90, 200, chord_conductance=False)
+        cls.inactivation_cc = cls.model.get_inactivation_steady_state(
+            cls.stim_levels, -5, 20, chord_conductance=True)
+        cls.inactivation = cls.model.get_inactivation_steady_state(
+            cls.stim_levels, -5, 20, chord_conductance=False)
+        
+    def test_keys_activation(self):
+        self.assertEqual(self.stim_levels, list(self.activation.keys()))
+
+    def test_keys_activation_cc(self):
+        self.assertEqual(self.stim_levels, list(self.activation_cc.keys()))
+
+    def test_keys_inactivation(self):
+        self.assertEqual(self.stim_levels, list(self.inactivation.keys()))
+
+    def test_keys_inactivation_cc(self):
+        self.assertEqual(self.stim_levels, list(self.inactivation_cc.keys()))
+
+    def test_different_results_act0(self):
+        self.assertFalse(self.activation[self.stim_levels[0]] ==
+                         self.activation_cc[self.stim_levels[0]])
+
+    def test_different_results_act1(self):
+        self.assertFalse(self.activation[self.stim_levels[1]] ==
+                         self.activation_cc[self.stim_levels[1]])
+
+    def test_different_results_inact0(self):
+        self.assertFalse(self.inactivation[self.stim_levels[0]] ==
+                         self.inactivation_cc[self.stim_levels[0]])
+
+    def test_different_results_inact1(self):
+        self.assertFalse(self.inactivation[self.stim_levels[1]] ==
+                         self.inactivation_cc[self.stim_levels[1]])
+
 if __name__ == "__main__":
     unittest.main()
