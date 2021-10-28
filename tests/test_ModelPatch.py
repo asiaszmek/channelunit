@@ -1,5 +1,4 @@
 import os
-import pkg_resources
 import unittest
 from channelunit import ModelPatch
 
