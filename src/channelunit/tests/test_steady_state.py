@@ -2,13 +2,13 @@ import sciunit
 from sciunit import Test, Score
 
 from channelunit.capabilities import NModlChannel
-
+from channelunit.scores import ZScore_SteadyStateCurves
 
 class SteadyStateTest(Test):
     """
     Common features of the Activation Steady State and Inactivation steady state
     """
-    #score_type = scores.ZScore_SteadyStateCurves
+    score_type = ZScore_SteadyStateCurves
     def extract_stimulation(self, observation_dict):
         stim_list = []
         for key in observation_dict.keys():
