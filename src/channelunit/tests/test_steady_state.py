@@ -8,7 +8,30 @@ class SteadyStateTest(Test):
     """
     Common features of the Activation Steady State and Inactivation steady state
     """
-    score_type = ZScore_SteadyStateCurves
+
+    @classmethod
+    def _get_numerical(self, val):
+        if isinstance(val, str):
+            try:
+                numerical_key = float(val)
+            except ValueError:
+                raise ValueError("observation is not a float")
+            return numerical_key
+        if isinstance(val, int) or isinstance(val, float):
+            return val
+        if isinstance(val, list):
+            if len(val) == 1:
+                if isinstance(val[0], int) or isinstance(val[0], float):
+                    return val[0]
+                if isinstance(val[0], str):
+                    try:
+                        numerical_key = float(val[0])
+                    except ValueError:
+                        raise ValueError("observation is not a float")
+                    return numerical_key
+
+        raise ValueError("observation is not a float")
+
     def extract_stimulation(self, observation_dict):
         stim_list = []
         for key in observation_dict.keys():
