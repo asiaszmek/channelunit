@@ -32,46 +32,29 @@ class SteadyStateTest(Test):
 
         raise ValueError("observation is not a float")
 
+    @classmethod
     def extract_stimulation(self, observation_dict):
         stim_list = []
         for key in observation_dict.keys():
-            if isinstance(key, str):
-                try:
-                    numerical_key = float(key)
-                except ValueError:
-                    print("observation %s is not a float" % key)
-                    continue
-                stim_list.append(float(key))
-            elif isinstance(key, float) or isinstance(key, int):
-                stim_list.append(key)
-        return stim_list
+            stim_list.append(self._get_numerical(key))
+        return sorted(stim_list)
 
+    @classmethod
     def format_data(self, observation_dict):
-        observation_std = {}
         observation = {}
-        for (key, val) in observation_dict:
-            if isinstance(key, str):
-                new_key = float(key)
-            elif isinstance(key, float):
-                new_key = key
-            elif isinstance(key, int):
-                new_key = key
-            else:
-                continue
-            if isinstance(val, str):
-                values = val.split(" ")
-                new_val = float(values[0])
-                if len(values) == 2:
-                    std_val = float(values[1])
-                    observation_std[new_key] = std_val
-            elif isinstance(val, float) or isinstance(val, int):
-                new_val = val
+        for key in observation_dict.keys():
+            new_key = self._get_numerical(key)
+            val = observation_dict[key]
+            if not isinstance(val, list):
+                val = [val]
+            new_val = []
+            for v in val:
+                new_val.append(self._get_numerical(v))
+            if len(new_val) == 1:
+                new_val.append(0.03)
             observation[new_key] = new_val
-            if new_key not in observation_std:
-                observation_std[new_key] = 0.03
-        return observation, observation_std
+        return observation
 
-    
 class ActivationSteadyStateTest(SteadyStateTest):
 
     def __init__(self, observation, name="Activation Steady State Test",
@@ -84,5 +67,4 @@ class ActivationSteadyStateTest(SteadyStateTest):
         self.base_directory = base_directory
         self.show_figures = show_figures
         self.npool = multiprocessing.cpu_count() - 1
-
-       
+        self.score_type = ZScore_SteadyStateCurves
