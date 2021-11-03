@@ -1,7 +1,6 @@
 from collections import OrderedDict
 import sciunit
 from sciunit import Test, Score
-
 from channelunit.capabilities import NModlChannel
 from channelunit.scores import ZScore_SteadyStateCurves
 
@@ -104,6 +103,7 @@ class ActivationSteadyStateTest(SteadyStateTest):
         prediction = self.run_model(model, self.stimulus_list, v_init, t_stop,
                                     chord_conductance)
         return prediction
+
 
 class InactivationSteadyStateTest(SteadyStateTest):
 

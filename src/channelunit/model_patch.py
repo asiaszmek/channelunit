@@ -36,12 +36,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
                  gbar_name="gbar", temp=22, E_rev=None,
                  recompile=True):
         h.load_file("stdrun.hoc")
+        self.dt = 0.01
         self.mod_path = path_to_mods
         self.compile_and_add(recompile)
         self.soma = h.Section(name="soma")
         self.soma.L = 1
         self.soma.diam = 1
-        self.soma.insert("extracellular")
         self.channel = self.soma.insert(channel_name)
         #set up channel conductance/permeability in case it is 0
         chan = self.soma.psection()["density_mechs"][channel_name]
@@ -75,19 +75,21 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def get_activation_steady_state(self, stimulation_levels: list,
                                     v_init: float, t_stop:float,
                                     chord_conductance=False,
-                                    duration=400, sim_dt=0.001):
+                                    duration=1000, sim_dt=0.001):
         """
         channel should be a neuron density mechanism, clamp a SEClamp neuron 
         object
         stimulation dict {amplitude: stim_duration}
         """
-        dt = 0.01
+
         h.celsius = self.temperature
         max_current = {}
-        current = h.Vector().record(self.soma(0.5)._ref_i_membrane, dt)
-        time = h.Vector().record(h._ref_t, dt)
-        vm = h.Vector().record(self.soma(0.5)._ref_v, dt)
+        current = h.Vector()
+        current.record(self.vclamp._ref_i, self.dt)
+        time = h.Vector()
+        time.record(h._ref_t, self.dt)
         delay = 200
+        stim_start = int(delay/self.dt)
         for level in stimulation_levels:
             self.vclamp.dur1 = delay
             self.vclamp.amp1 = v_init
@@ -96,24 +98,29 @@ class ModelPatch(sciunit.Model, NModlChannel):
             h.dt = sim_dt
             h.tstop = t_stop
             h.run(t_stop)
+            I = current.as_numpy()[stim_start:]
             if chord_conductance:
-                out = current.as_numpy()/(vm - self.E_rev)
+                out = I/(self.vclamp.amp2 - self.E_rev)
             else:
-                out = abs(current.as_numpy())
+                out = abs(I)
             max_current[level] = max(out)
+        factor = max(max_current.values())
+        for key in max_current.keys():
+            max_current[key] = max_current[key]/factor
         return max_current
 
     def get_inactivation_steady_state(self, stimulation_levels: list,
                                       v_test: float, t_test:float,
                                       chord_conductance=False, sim_dt=0.001):
         h.celsius = self.temperature
-        dt = 0.01
         delay = 200
+        stim_start = int(delay/self.dt)
         t_stop = delay +  t_test
         max_current = {}
-        current = h.Vector().record(self.soma(0.5)._ref_i_membrane, dt)
-        time = h.Vector().record(h._ref_t, dt)
-        vm = h.Vector().record(self.soma(0.5)._ref_v, dt)
+        current = h.Vector()
+        current.record(self.vclamp._ref_i, self.dt)
+        time = h.Vector()
+        time.record(h._ref_t, self.dt)
         for level in stimulation_levels:
             self.vclamp.dur1 = delay
             self.vclamp.amp1 = level
@@ -122,10 +129,15 @@ class ModelPatch(sciunit.Model, NModlChannel):
             h.dt = sim_dt
             h.tstop = t_stop
             h.run(t_stop)
+            I = current.as_numpy()[stim_start:]
             if chord_conductance:
-                out = current.as_numpy()/(vm - self.E_rev)
+                out = I/(self.vclamp.amp2 - self.E_rev)
             else:
-                out = abs(current.as_numpy())
+                out = abs(I)
             max_current[level] = max(out)
+        
+        factor = max(max_current.values())
+        for key in max_current.keys():
+            max_current[key] = max_current[key]/factor
         return max_current
                 
