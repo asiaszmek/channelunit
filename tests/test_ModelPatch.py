@@ -7,6 +7,14 @@ channel_loc = os.path.join(my_loc, "..", "demo_CA1", "ion_channels")
 
 
 class TestModelPatch(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.modelJ = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
+        cls.modelNJ = ModelPatch(channel_loc, "nap", gbar_name="gnabar",
+                                 liquid_junction_pot=0)
+        cls.modelJ.set_vclamp(10, 10, 100, 100)
+        cls.modelNJ.set_vclamp(10, 10, 100, 100)
+
     def test_reading_in_easy(self):
         out = ModelPatch(channel_loc, "na3")
         self.assertEqual(50, out.E_rev)
@@ -48,6 +56,55 @@ class TestModelPatch(unittest.TestCase):
         name = out.get_E_rev_name()
         self.assertEqual("ena", name)
 
+    def test_set_vclamp_junction_amp1(self):
+        self.assertEqual(self.modelJ.vclamp.amp1,
+                         10-self.modelJ.junction)
+
+    def test_set_vclamp_junction_amp2(self):
+        self.assertEqual(self.modelJ.vclamp.amp2,
+                         100-self.modelJ.junction)
+
+    def test_set_vclamp_nojunction_amp1(self):
+        self.assertEqual(self.modelNJ.vclamp.amp1,
+                         10)
+
+    def test_set_vclamp_nojunction_amp2(self):
+        self.assertEqual(self.modelNJ.vclamp.amp2,
+                         100)
+
+    def test_set_vclamp_junction_dur1(self):
+        self.assertEqual(self.modelJ.vclamp.dur1,
+                         10)
+
+    def test_set_vclamp_junction_dur2(self):
+        self.assertEqual(self.modelJ.vclamp.dur2,
+                         100)
+
+    def test_set_vclamp_nojunction_dur1(self):
+        self.assertEqual(self.modelNJ.vclamp.dur1,
+                         10)
+
+    def test_set_vclamp_nojunction_dur2(self):
+        self.assertEqual(self.modelNJ.vclamp.dur2,
+                         100)
+
+    def test_extract_current(self):
+        I = 2
+        out = self.modelJ.extract_current(I, True)
+        expected = I/(self.modelJ.vclamp.amp2 - self.modelJ.E_rev)
+        self.assertEqual(out, expected)
+
+    def test_extract_current(self):
+        I = -22
+        out = self.modelJ.extract_current(I, False)
+        self.assertEqual(out, 22)
+
+    def test_normalize_to_one(self):
+        dic = {1:1, 2:2}
+        out = self.modelJ.normalize_to_one(dic)
+        self.assertEqual({1:0.5, 2:1.}, out)
+
+        
 class TestCapabilites(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
