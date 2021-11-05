@@ -1,6 +1,9 @@
+import os
 from collections import OrderedDict
-import sciunit
+import matplotlib.pyplot as plt
 from sciunit import Test, Score
+
+
 from channelunit.capabilities import NModlChannel
 from channelunit.scores import ZScore_SteadyStateCurves
 
@@ -56,36 +59,70 @@ class SteadyStateTest(Test):
         return observation
 
     def __init__(self, observation, experimental_conditions, name,
-                 base_directory, show_figures):
+                 base_directory, save_figures):
 
-        self.observation = self.format_data(observation)
+        observation = self.format_data(observation)
         Test.__init__(self, observation, name)
-        self.required_capabilities += (NModlChannel)
+        self.required_capabilities += (NModlChannel,)
         self.base_directory = base_directory
-        self.show_figures = show_figures
+        self.save_figures = save_figures
         self.score_type = ZScore_SteadyStateCurves
-        self.experimental_conditions = experimental_conditions
+        self.dpi = 200
 
     def compute_score(self, observation, prediction, verbose=False):
-        score_avg, errors = ZScore_SteadyStateCurves(observation,
-                                                     prediction)
-        return score_avg
-        
+        score_avg, errors = ZScore_SteadyStateCurves.compute(observation,
+                                                             prediction)
+        score = ZScore_SteadyStateCurves(score_avg)
+        return score
 
+    def generate_figures(self, model, observations, predictions, name):
+        v_values = list(observations.keys())
+        pred_val = [predictions[v] for v in v_values]
+        obs_val = [observations[v][0] for v in v_values]
+        obs_std = [observations[v][1] for v in v_values]
+        if self.base_directory:
+            path = os.path.join(self.base_directory, "figs",
+                                model.channel_name)
+        else:
+            path = os.path.join(model.base_directory, "figs",
+                                model.channel_name)
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        fig, ax = plt.subplots(1, 1)
+        ax.plot(v_values, pred_val, "d", label=model.channel_name)
+        ax.errorbar(v_values, obs_val, yerr=obs_std, marker="d", linewidth=0,
+                    label="experimental data")
+        ax.set_ylabel("Voltage (mV)")
+        ax.set_xlabel("Normalized current")
+        savefig_path = os.path.join(path, "%s_%s.png" % (model.channel_name,
+                                                         name))
+        fig.savefig(savefig_path, dpi=self.dpi,
+                    bbox_inches='tight')
+
+        
 class ActivationSteadyStateTest(SteadyStateTest):
 
     def __init__(self, observation, experimental_conditions,
                  name="Activation Steady State Test",
-                 base_directory="", show_figures=True):
+                 base_directory="", save_figures=True):
 
-        SteadyStateTest._init__(self, observation, experimental_conditions,
-                                name, base_directory, show_figures)
-        if "v_init" not in self.experimental_conditions:
+        SteadyStateTest.__init__(self, observation, experimental_conditions,
+                                name, base_directory, save_figures)
+        try:
+            self.v_init = experimental_conditions["v_init"]
+        except KeyError:
             raise SystemExit("Please provide v_init in experimental_conditions")
-        if "t_stop" not in self.experimental_conditions:
+        try:
+            self.t_stop = experimental_conditions["t_stop"]
+        except:
             raise SystemExit("Please provide stim length (t_stop (ms)) in experimental_conditions")
-        if chord_conductance not in self.experimental_conditions:
+        try:
+            self.chord_conductance = experimental_conditions["chord_conductance"]
+        except:
             raise SystemExit("chord_conductance not specified in experimental conditions")    
+        self.observation = OrderedDict(sorted(self.observation.items()))
+        self.stimulus_list = self.extract_stimulation(self.observation)
 
     def run_model(self, model, stim_list, v_init, t_stop, chord_conductance):
         return model.get_activation_steady_state(stim_list,
@@ -95,13 +132,12 @@ class ActivationSteadyStateTest(SteadyStateTest):
 
     def generate_prediction(self, model, verbose=False):
         
-        self.observation = OrderedDict(sorted(self.observation.items()))
-        self.stimulus_list = self.extract_stimulation(self.observation)
-        v_init = self.experimental_conditions["v_init"]
-        t_stop = self.experimental_conditions["t_stop"]
-        chord_conductance = self.expermental_conditions["chord_conductance"]
-        prediction = self.run_model(model, self.stimulus_list, v_init, t_stop,
-                                    chord_conductance)
+        prediction = self.run_model(model, self.stimulus_list, self.v_init,
+                                    self.t_stop, self.chord_conductance)
+        if self.save_figures:
+            name = self.name.replace(" ", "_")
+            self.generate_figures(model, self.observation, prediction,
+                                  name)
         return prediction
 
 
@@ -109,16 +145,24 @@ class InactivationSteadyStateTest(SteadyStateTest):
 
     def __init__(self, observation, experimental_conditions,
                  name="Inctivation Steady State Test",
-                 base_directory="", show_figures=True):
+                 base_directory="", save_figures=True):
 
-        SteadyStateTest._init__(self, observation, experimental_conditions,
-                                name, base_directory, show_figures)
-        if "v_test" not in self.experimental_conditions:
+        SteadyStateTest.__init__(self, observation, experimental_conditions,
+                                name, base_directory, save_figures)
+        try:
+            self.v_test = experimental_conditions["v_test"]
+        except KeyError:
             raise SystemExit("Please provide v_test in experimental_conditions")
-        if "t_test" not in self.experimental_conditions:
+        try:
+            self.t_test = experimental_conditions["t_test"]
+        except KeyError:
             raise SystemExit("Please provide stim length (t_test (ms)) in experimental_conditions")
-        if chord_conductance not in self.experimental_conditions:
+        try:
+            self.chord_conductance = experimental_conditions["chord_conductance"]
+        except KeyError:
             raise SystemExit("chord_conductance not specified in experimental conditions")    
+        self.observation = OrderedDict(sorted(self.observation.items()))
+        self.stimulus_list = self.extract_stimulation(self.observation)
 
     def run_model(self, model, stim_list, v_test, t_test, chord_conductance):
         return model.get_inactivation_steady_state(stim_list,
@@ -128,12 +172,12 @@ class InactivationSteadyStateTest(SteadyStateTest):
 
     def generate_prediction(self, model, verbose=False):
         
-        self.observation = OrderedDict(sorted(self.observation.items()))
-        self.stimulus_list = self.extract_stimulation(self.observation)
-        v_test = self.experimental_conditions["v_test"]
-        t_test = self.experimental_conditions["t_test"]
-        chord_conductance = self.expermental_conditions["chord_conductance"]
-        prediction = self.run_model(model, self.stimulus_list, v_test,
-                                    t_test, chord_conductance)
+        prediction = self.run_model(model, self.stimulus_list, self.v_test,
+                                    self.t_test, self.chord_conductance)
+        if self.save_figures:
+            name = self.name.replace(" ", "_")
+            self.generate_figures(model, self.observation, prediction,
+                                  name)
+
         return prediction
 

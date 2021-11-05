@@ -1,5 +1,21 @@
+import os
 import unittest
+
+import numpy as np
+
 from channelunit.tests import SteadyStateTest
+from channelunit.tests import InactivationSteadyStateTest
+from channelunit.tests import ActivationSteadyStateTest
+from channelunit import ModelPatch
+
+
+my_loc = os.path.dirname(os.path.abspath(__file__))
+channel_loc = os.path.join(my_loc, "..", "demo_CA1", "ion_channels")
+activation_loc = os.path.join(my_loc, "..", "demo_CA1", "data",
+                              "I_Na_activation.csv")
+inactivation_loc = os.path.join(my_loc, "..", "demo_CA1", "data",
+                                "I_Na_inactivation.csv")
+
 
 class TestSteadyState(unittest.TestCase):
     def test_make_numeric_1(self):
@@ -47,6 +63,59 @@ class TestSteadyState(unittest.TestCase):
         out = SteadyStateTest.format_data(obs)
         self.assertEqual(out, {-10:[3, 0.03], -20:[2, 0.5]})
 
-    
+
+class TestActivationSteadyState(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        E_rev = 8.314*(273.15+22)/96485*np.log(110/15)
+        cls.model = ModelPatch(channel_loc, "na3", E_rev=E_rev, temp=22)
+        activation_data = np.loadtxt(activation_loc, skiprows=1,
+                                     delimiter=",")
+        cls.activation_data = dict(val.tolist() for val in activation_data)
+        cls.test = ActivationSteadyStateTest(cls.activation_data,
+                                             {"v_init": -90, "t_stop": 400,
+                                              "chord_conductance":True},
+                                             "ActvationSSTest",
+                                             save_figures=True)
+
+
+
+    def test_summarize(self):
+        self.score = self.test.judge(self.model)
+        self.score.summarize()
+        
+    def test_run_model(self):
+        out = self.test.run_model(self.model, self.test.stimulus_list,
+                                  self.test.v_init, self.test.t_stop,
+                                  self.test.chord_conductance)
+        self.assertEqual(list(out.keys()), self.test.stimulus_list)
+
+
+class TestInactivationSteadyState(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        E_rev = 8.314*(273.15+22)/96485*np.log(110/15)
+        cls.model = ModelPatch(channel_loc, "na3", E_rev=E_rev, temp=22)
+        inactivation_data = np.loadtxt(inactivation_loc, skiprows=1,
+                                     delimiter=",")
+        cls.inactivation_data = dict(val.tolist() for val in inactivation_data)
+        cls.test = InactivationSteadyStateTest(cls.inactivation_data,
+                                               {"v_test": -5, "t_test": 100,
+                                                "chord_conductance":True},
+                                               "InactvationSSTest",
+                                               save_figures=True)
+
+
+
+    def test_summarize(self):
+        self.score = self.test.judge(self.model)
+        self.score.summarize()
+        
+    def test_run_model(self):
+        out = self.test.run_model(self.model, self.test.stimulus_list,
+                                  self.test.v_test, self.test.t_test,
+                                  self.test.chord_conductance)
+        self.assertEqual(list(out.keys()), self.test.stimulus_list)
+
 if __name__ == "__main__":
     unittest.main()

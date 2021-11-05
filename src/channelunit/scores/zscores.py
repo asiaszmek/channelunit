@@ -1,5 +1,6 @@
 import numpy
 from sciunit import Score
+from sciunit.errors import InvalidScoreError
 
 class ZScore_SteadyStateCurves(Score):
     """
@@ -9,7 +10,7 @@ class ZScore_SteadyStateCurves(Score):
         if not isinstance(score, Exception) and not isinstance(score, float):
             raise InvalidScoreError("Score must be a float.")
         else:
-            super(ZScore_SteadyStateCurves,self).__init__(score,
+            super(ZScore_SteadyStateCurves, self).__init__(score,
                                                           related_data=related_data)
 
     @classmethod

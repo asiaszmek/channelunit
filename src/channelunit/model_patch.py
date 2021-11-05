@@ -40,13 +40,15 @@ class ModelPatch(sciunit.Model, NModlChannel):
         """
         h.load_file("stdrun.hoc")
         self.dt = 0.01
+        self.channel_name = channel_name
         self.mod_path = path_to_mods
         self.compile_and_add(recompile)
         self.soma = h.Section(name="soma")
         self.soma.L = 1
         self.soma.diam = 1
-        self.channel = self.soma.insert(channel_name)
+        self.channel = self.soma.insert(self.channel_name)
         self.junction = liquid_junction_pot
+        self.base_directory = "validation_results"
         #set up channel conductance/permeability in case it is 0
         chan = self.soma.psection()["density_mechs"][channel_name]
         if gbar_name not in chan.keys():
