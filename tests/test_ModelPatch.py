@@ -1,5 +1,8 @@
 import os
 import unittest
+
+import numpy as np
+
 from channelunit import ModelPatch
 
 my_loc = os.path.dirname(os.path.abspath(__file__))
@@ -103,40 +106,68 @@ class TestModelPatch(unittest.TestCase):
         dic = {1:1, 2:2}
         out = self.modelJ.normalize_to_one(dic)
         self.assertEqual({1:0.5, 2:1.}, out)
-
         
 class TestCapabilites(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.model = ModelPatch(channel_loc, "na3",
-                                gbar_name="gbar", E_rev=40)
+        cls.modelY = ModelPatch(channel_loc, "na3",
+                                gbar_name="gbar", E_rev=40, cvode=True)
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
-        cls.activation_cc = cls.model.get_activation_steady_state(
+        cls.activationY_cc = cls.modelY.get_activation_steady_state(
             cls.stim_levels_act, -90, 800, chord_conductance=True)
-        cls.activation = cls.model.get_activation_steady_state(
+        cls.activationY = cls.modelY.get_activation_steady_state(
             cls.stim_levels_act, -90, 800, chord_conductance=False)
-        cls.inactivation_cc = cls.model.get_inactivation_steady_state(
+        cls.inactivationY_cc = cls.modelY.get_inactivation_steady_state(
             cls.stim_levels_inact, -5, 20, chord_conductance=True)
-        cls.inactivation = cls.model.get_inactivation_steady_state(
+        cls.inactivationY = cls.modelY.get_inactivation_steady_state(
             cls.stim_levels_inact, -5, 20, chord_conductance=False)
+
+        cls.modelN = ModelPatch(channel_loc, "na3",
+                                gbar_name="gbar", E_rev=40, cvode=False)
+        cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
+        cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
+        cls.activationN_cc = cls.modelN.get_activation_steady_state(
+            cls.stim_levels_act, -90, 800, chord_conductance=True)
+        cls.activationN = cls.modelN.get_activation_steady_state(
+            cls.stim_levels_act, -90, 800, chord_conductance=False)
+        cls.inactivationN_cc = cls.modelN.get_inactivation_steady_state(
+            cls.stim_levels_inact, -5, 20, chord_conductance=True)
+        cls.inactivationN = cls.modelN.get_inactivation_steady_state(
+            cls.stim_levels_inact, -5, 20, chord_conductance=False)
+
+    def test_keys_activationY(self):
+        self.assertEqual(self.stim_levels_act,
+                         list(self.activationY.keys()))
+
+    def test_keys_activationY_cc(self):
+        self.assertEqual(self.stim_levels_act,
+                         list(self.activationY_cc.keys()))
+
+    def test_keys_inactivationY(self):
+        self.assertEqual(self.stim_levels_inact,
+                         list(self.inactivationY.keys()))
+
+    def test_keys_inactivationY_cc(self):
+        self.assertEqual(self.stim_levels_inact,
+                         list(self.inactivationY_cc.keys()))
+
+    def test_keys_activationN(self):
+        self.assertEqual(self.stim_levels_act,
+                         list(self.activationN.keys()))
+
+    def test_keys_activationN_cc(self):
+        self.assertEqual(self.stim_levels_act,
+                         list(self.activationN_cc.keys()))
+
+    def test_keys_inactivationN(self):
+        self.assertEqual(self.stim_levels_inact,
+                         list(self.inactivationN.keys()))
+
+    def test_keys_inactivationN_cc(self):
+        self.assertEqual(self.stim_levels_inact,
+                         list(self.inactivationN_cc.keys()))
         
-    def test_keys_activation(self):
-        self.assertEqual(self.stim_levels_act,
-                         list(self.activation.keys()))
-
-    def test_keys_activation_cc(self):
-        self.assertEqual(self.stim_levels_act,
-                         list(self.activation_cc.keys()))
-
-    def test_keys_inactivation(self):
-        self.assertEqual(self.stim_levels_inact,
-                         list(self.inactivation.keys()))
-
-    def test_keys_inactivation_cc(self):
-        self.assertEqual(self.stim_levels_inact,
-                         list(self.inactivation_cc.keys()))
-
 
 if __name__ == "__main__":
     unittest.main()

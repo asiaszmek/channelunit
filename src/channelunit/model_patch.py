@@ -33,8 +33,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
         os.chdir(working_dir)
 
     def __init__(self, path_to_mods, channel_name,
-                 gbar_name="gbar", temp=22, E_rev=None,
-                 recompile=True, liquid_junction_pot=10):
+                 gbar_name="gbar", temp=22, E_rev=None, recompile=True,
+                 liquid_junction_pot=10, cvode=True):
         """
         Liquid junction potential set to 10 unless otherwise specified
         """
@@ -78,6 +78,9 @@ class ModelPatch(sciunit.Model, NModlChannel):
             if E_rev_name is not None:
                 setattr(self.soma,  E_rev_name, E_rev)
 
+            self.cvode = cvode
+            
+
     def set_vclamp(self, dur1, v1, dur2, v2):
         self.vclamp.dur1 = dur1
         self.vclamp.amp1 = v1 - self.junction
@@ -93,7 +96,11 @@ class ModelPatch(sciunit.Model, NModlChannel):
         object
         stimulation dict {amplitude: stim_duration}
         """
-
+        if self.cvode:
+            h.cvode_active(1)
+        else:
+            h.cvode_active(0)
+            h.dt = sim_dt
         h.celsius = self.temperature
         max_current = {}
         current = h.Vector()
@@ -104,9 +111,9 @@ class ModelPatch(sciunit.Model, NModlChannel):
         stim_start = int(delay/self.dt)
         for level in stimulation_levels:
             self.set_vclamp(delay, v_init, duration, level)
-            h.dt = sim_dt
+            h.init()
             h.tstop = t_stop
-            h.run(t_stop)
+            h.run()
             I = current.as_numpy()[stim_start:]
             out = self.extract_current(I, chord_conductance)
             max_current[level] = max(out)
@@ -115,6 +122,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def get_inactivation_steady_state(self, stimulation_levels: list,
                                       v_test: float, t_test:float,
                                       chord_conductance=False, sim_dt=0.001):
+        if self.cvode:
+            h.cvode_active(1)
+        else:
+            h.cvode_active(0)
+            h.dt = sim_dt
+
         h.celsius = self.temperature
         delay = 200
         stim_start = int(delay/self.dt)
@@ -126,9 +139,9 @@ class ModelPatch(sciunit.Model, NModlChannel):
         time.record(h._ref_t, self.dt)
         for level in stimulation_levels:
             self.set_vclamp(delay, level, t_test, v_test)
-            h.dt = sim_dt
+            h.init()
             h.tstop = t_stop
-            h.run(t_stop)
+            h.run()
             I = current.as_numpy()[stim_start:]
             out = self.extract_current(I, chord_conductance)
             max_current[level] = max(out)

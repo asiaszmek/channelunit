@@ -68,7 +68,8 @@ class TestActivationSteadyState(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         E_rev = 8.314*(273.15+22)/96485*np.log(110/15)
-        cls.model = ModelPatch(channel_loc, "na3", E_rev=E_rev, temp=22)
+        cls.model = ModelPatch(channel_loc, "na3", E_rev=E_rev, temp=22,
+                               liquid_junction_pot=0)
         activation_data = np.loadtxt(activation_loc, skiprows=1,
                                      delimiter=",")
         cls.activation_data = dict(val.tolist() for val in activation_data)
@@ -95,7 +96,8 @@ class TestInactivationSteadyState(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         E_rev = 8.314*(273.15+22)/96485*np.log(110/15)
-        cls.model = ModelPatch(channel_loc, "na3", E_rev=E_rev, temp=22)
+        cls.model = ModelPatch(channel_loc, "na3", E_rev=E_rev, temp=22,
+                               liquid_junction_pot=0)
         inactivation_data = np.loadtxt(inactivation_loc, skiprows=1,
                                      delimiter=",")
         cls.inactivation_data = dict(val.tolist() for val in inactivation_data)

@@ -95,6 +95,7 @@ class SteadyStateTest(Test):
                     label="experimental data")
         ax.set_ylabel("Voltage (mV)")
         ax.set_xlabel("Normalized current")
+        ax.legend()
         savefig_path = os.path.join(path, "%s_%s.png" % (model.channel_name,
                                                          name))
         fig.savefig(savefig_path, dpi=self.dpi,
