@@ -88,7 +88,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.vclamp.amp2 = v2 - self.junction
 
     def get_activation_steady_state(self, stimulation_levels: list,
-                                    v_init: float, t_stop:float,
+                                    v_hold: float, t_stop:float,
                                     chord_conductance=False,
                                     duration=1000, sim_dt=0.001):
         """
@@ -110,7 +110,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         delay = 200
         stim_start = int(delay/self.dt)
         for level in stimulation_levels:
-            self.set_vclamp(delay, v_init, duration, level)
+            self.set_vclamp(delay, v_hold, duration, level)
             h.init()
             h.tstop = t_stop
             h.run()
@@ -137,14 +137,14 @@ class ModelPatch(sciunit.Model, NModlChannel):
         current.record(self.vclamp._ref_i, self.dt)
         time = h.Vector()
         time.record(h._ref_t, self.dt)
-        for level in stimulation_levels:
-            self.set_vclamp(delay, level, t_test, v_test)
+        for v_hold in stimulation_levels:
+            self.set_vclamp(delay, v_hold, t_test, v_test)
             h.init()
             h.tstop = t_stop
             h.run()
             I = current.as_numpy()[stim_start:]
             out = self.extract_current(I, chord_conductance)
-            max_current[level] = max(out)
+            max_current[v_hold] = max(out)
         return self.normalize_to_one(max_current)
                 
     def extract_current(self, I, chord_conductance):
