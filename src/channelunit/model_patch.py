@@ -34,7 +34,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     def __init__(self, path_to_mods, channel_name,
                  gbar_name="gbar", temp=22, E_rev=None, recompile=True,
-                 liquid_junction_pot=10, cvode=True):
+                 liquid_junction_pot=10, cvode=True, v_rest=-65):
         """
         Liquid junction potential set to 10 unless otherwise specified
         """
@@ -44,8 +44,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.mod_path = path_to_mods
         self.compile_and_add(recompile)
         self.soma = h.Section(name="soma")
-        self.soma.L = 1
-        self.soma.diam = 1
+        self.soma.L = 10
+        self.soma.Ra = 100
+        self.soma.diam = 10
+        self.soma.insert("pas")
+        self.soma.e_pas = v_rest
+        self.soma.g_pas = 1/60000
         self.channel = self.soma.insert(self.channel_name)
         self.junction = liquid_junction_pot
         self.base_directory = "validation_results"
