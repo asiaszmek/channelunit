@@ -34,7 +34,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     def __init__(self, path_to_mods, channel_name,
                  gbar_name="gbar", temp=22, E_rev=None, recompile=True,
-                 liquid_junction_pot=10, cvode=True, v_rest=-65):
+                 liquid_junction_pot=0, cvode=True, v_rest=-65):
         """
         Liquid junction potential set to 10 unless otherwise specified
         """
