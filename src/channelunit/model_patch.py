@@ -9,7 +9,7 @@ from channelunit.capabilities import NModlChannel
 class ModelPatch(sciunit.Model, NModlChannel):
 
     def get_E_rev_name(self):
-        ions = list(self.soma.psection()["ions"].keys())
+        ions = list(self.patch.psection()["ions"].keys())
         if not len(ions):
             return None
         if len(ions) > 1:
@@ -17,12 +17,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
         return "e%s" % ions[0]
 
     def get_E_rev_value(self):
-        ions = list(self.soma.psection()["ions"].keys())
+        ions = list(self.patch.psection()["ions"].keys())
         try:
             name = "e%s" % ions[0]
         except IndexError:
             return None
-        return self.soma.psection()["ions"][ions[0]][name][0]
+        return self.patch.psection()["ions"][ions[0]][name][0]
 
     def compile_and_add(self, recompile):
         working_dir = os.getcwd()
@@ -43,29 +43,29 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.channel_name = channel_name
         self.mod_path = path_to_mods
         self.compile_and_add(recompile)
-        self.soma = h.Section(name="soma")
-        self.soma.L = 10
-        self.soma.Ra = 100
-        self.soma.diam = 10
-        self.soma.insert("pas")
-        self.soma.e_pas = v_rest
-        self.soma.g_pas = 1/60000
-        self.channel = self.soma.insert(self.channel_name)
+        self.patch = h.Section(name="patch")
+        self.patch.L = 10
+        self.patch.Ra = 100
+        self.patch.diam = 10
+        self.patch.insert("pas")
+        self.patch.e_pas = v_rest
+        self.patch.g_pas = 1/60000
+        self.channel = self.patch.insert(self.channel_name)
         self.junction = liquid_junction_pot
         self.base_directory = "validation_results"
         #set up channel conductance/permeability in case it is 0
-        chan = self.soma.psection()["density_mechs"][channel_name]
+        chan = self.patch.psection()["density_mechs"][channel_name]
         if gbar_name not in chan.keys():
             raise SystemExit('Unable to proceed, unknown %s conductance (gbar)'
                              % channel_name)
 
         if chan[gbar_name][0] == 0:
-            for seg in self.soma:
+            for seg in self.patch:
                 from_mech = getattr(seg, channel_name)
                 gbar_val = 0.001
                 setattr(from_mech, gbar_name, gbar_val)
         self.temperature = temp
-        self.vclamp = h.SEClamp(self.soma(0.5))
+        self.vclamp = h.SEClamp(self.patch(0.5))
         
         E_rev_name = self.get_E_rev_name()        
         if E_rev is None:
@@ -80,7 +80,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         else:
             self.E_rev = E_rev
             if E_rev_name is not None:
-                setattr(self.soma,  E_rev_name, E_rev)
+                setattr(self.patch,  E_rev_name, E_rev)
 
             self.cvode = cvode
             

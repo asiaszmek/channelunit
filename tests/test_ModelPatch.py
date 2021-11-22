@@ -41,12 +41,12 @@ class TestModelPatch(unittest.TestCase):
     def test_setup_gbar(self):
         out = ModelPatch(channel_loc, "nax", E_rev=-30)
         self.assertEqual(0.001,
-                         out.soma.psection()["density_mechs"]["nax"]["gbar"][0])
+                         out.patch.psection()["density_mechs"]["nax"]["gbar"][0])
 
     def test_setup_gbar_custom(self):
         out = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
         self.assertEqual(0.001,
-                         out.soma.psection()["density_mechs"]["nap"]["gnabar"][0])
+                         out.patch.psection()["density_mechs"]["nap"]["gnabar"][0])
 
     def test_get_E_rev_value(self):
         out = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
