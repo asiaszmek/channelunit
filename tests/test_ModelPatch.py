@@ -115,26 +115,26 @@ class TestCapabilites(unittest.TestCase):
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
         cls.activationY_cc = cls.modelY.get_activation_steady_state(
-            cls.stim_levels_act, -90, 800, chord_conductance=True)
+            cls.stim_levels_act, -90, 800, 1, chord_conductance=True)
         cls.activationY = cls.modelY.get_activation_steady_state(
-            cls.stim_levels_act, -90, 800, chord_conductance=False)
+            cls.stim_levels_act, -90, 800, 1, chord_conductance=False)
         cls.inactivationY_cc = cls.modelY.get_inactivation_steady_state(
-            cls.stim_levels_inact, -5, 20, chord_conductance=True)
+            cls.stim_levels_inact, -5, 20, 1, chord_conductance=True)
         cls.inactivationY = cls.modelY.get_inactivation_steady_state(
-            cls.stim_levels_inact, -5, 20, chord_conductance=False)
+            cls.stim_levels_inact, -5, 20, 1, chord_conductance=False)
 
         cls.modelN = ModelPatch(channel_loc, "na3", "na",
                                 gbar_name="gbar", E_rev=40, cvode=False)
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
         cls.activationN_cc = cls.modelN.get_activation_steady_state(
-            cls.stim_levels_act, -90, 800, chord_conductance=True)
+            cls.stim_levels_act, -90, 800, 1, chord_conductance=True)
         cls.activationN = cls.modelN.get_activation_steady_state(
-            cls.stim_levels_act, -90, 800, chord_conductance=False)
+            cls.stim_levels_act, -90, 800, 1, chord_conductance=False)
         cls.inactivationN_cc = cls.modelN.get_inactivation_steady_state(
-            cls.stim_levels_inact, -5, 20, chord_conductance=True)
+            cls.stim_levels_inact, -5, 20, 1, chord_conductance=True)
         cls.inactivationN = cls.modelN.get_inactivation_steady_state(
-            cls.stim_levels_inact, -5, 20, chord_conductance=False)
+            cls.stim_levels_inact, -5, 20, 1, chord_conductance=False)
 
     def test_keys_activationY(self):
         self.assertEqual(self.stim_levels_act,

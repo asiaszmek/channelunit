@@ -72,10 +72,11 @@ class TestActivationSteadyState(unittest.TestCase):
                                liquid_junction_pot=0)
         activation_data = np.loadtxt(activation_loc, skiprows=1,
                                      delimiter=",")
+        cls.power = 2
         cls.activation_data = dict(val.tolist() for val in activation_data)
         cls.test = ActivationSteadyStateTest(cls.activation_data,
                                              {"v_init": -90, "t_stop": 400,
-                                              "chord_conductance":True},
+                                              "chord_conductance":True}, 2,
                                              "ActvationSSTest",
                                              save_figures=True)
 
@@ -88,6 +89,7 @@ class TestActivationSteadyState(unittest.TestCase):
     def test_run_model(self):
         out = self.test.run_model(self.model, self.test.stimulus_list,
                                   self.test.v_init, self.test.t_stop,
+                                  self.power,
                                   self.test.chord_conductance)
         self.assertEqual(list(out.keys()), self.test.stimulus_list)
 
@@ -102,9 +104,10 @@ class TestInactivationSteadyState(unittest.TestCase):
         inactivation_data = np.loadtxt(inactivation_loc, skiprows=1,
                                      delimiter=",")
         cls.inactivation_data = dict(val.tolist() for val in inactivation_data)
+        cls.power = 1
         cls.test = InactivationSteadyStateTest(cls.inactivation_data,
                                                {"v_test": -5, "t_test": 100,
-                                                "chord_conductance":True},
+                                                "chord_conductance":True}, 1,
                                                "InactvationSSTest",
                                                save_figures=True)
 
@@ -116,7 +119,7 @@ class TestInactivationSteadyState(unittest.TestCase):
         
     def test_run_model(self):
         out = self.test.run_model(self.model, self.test.stimulus_list,
-                                  self.test.v_test, self.test.t_test,
+                                  self.test.v_test, self.test.t_test, self.power,
                                   self.test.chord_conductance)
         self.assertEqual(list(out.keys()), self.test.stimulus_list)
 

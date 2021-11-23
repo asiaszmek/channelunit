@@ -104,7 +104,7 @@ class SteadyStateTest(Test):
         
 class ActivationSteadyStateTest(SteadyStateTest):
 
-    def __init__(self, observation, experimental_conditions,
+    def __init__(self, observation, experimental_conditions, power: int,
                  name="Activation Steady State Test",
                  base_directory="", save_figures=True):
 
@@ -121,20 +121,21 @@ class ActivationSteadyStateTest(SteadyStateTest):
         try:
             self.chord_conductance = experimental_conditions["chord_conductance"]
         except:
-            raise SystemExit("chord_conductance not specified in experimental conditions")    
+            raise SystemExit("chord_conductance not specified in experimental conditions")
+        self.power = power
         self.observation = OrderedDict(sorted(self.observation.items()))
         self.stimulus_list = self.extract_stimulation(self.observation)
 
-    def run_model(self, model, stim_list, v_init, t_stop, chord_conductance):
+    def run_model(self, model, stim_list, v_init, t_stop, power, chord_conductance):
         return model.get_activation_steady_state(stim_list,
-                                                 v_init, t_stop,
+                                                 v_init, t_stop, power,
                                                  chord_conductance)
     
 
     def generate_prediction(self, model, verbose=False):
         
         prediction = self.run_model(model, self.stimulus_list, self.v_init,
-                                    self.t_stop, self.chord_conductance)
+                                    self.t_stop, self.power, self.chord_conductance)
         if self.save_figures:
             name = self.name.replace(" ", "_")
             self.generate_figures(model, self.observation, prediction,
@@ -144,7 +145,7 @@ class ActivationSteadyStateTest(SteadyStateTest):
 
 class InactivationSteadyStateTest(SteadyStateTest):
 
-    def __init__(self, observation, experimental_conditions,
+    def __init__(self, observation, experimental_conditions, power,
                  name="Inctivation Steady State Test",
                  base_directory="", save_figures=True):
 
@@ -161,20 +162,21 @@ class InactivationSteadyStateTest(SteadyStateTest):
         try:
             self.chord_conductance = experimental_conditions["chord_conductance"]
         except KeyError:
-            raise SystemExit("chord_conductance not specified in experimental conditions")    
+            raise SystemExit("chord_conductance not specified in experimental conditions")
+        self.power = power
         self.observation = OrderedDict(sorted(self.observation.items()))
         self.stimulus_list = self.extract_stimulation(self.observation)
 
-    def run_model(self, model, stim_list, v_test, t_test, chord_conductance):
+    def run_model(self, model, stim_list, v_test, t_test, power, chord_conductance):
         return model.get_inactivation_steady_state(stim_list,
-                                                   v_test, t_test,
+                                                   v_test, t_test, power,
                                                    chord_conductance)
     
 
     def generate_prediction(self, model, verbose=False):
         
         prediction = self.run_model(model, self.stimulus_list, self.v_test,
-                                    self.t_test, self.chord_conductance)
+                                    self.t_test, self.power, self.chord_conductance)
         if self.save_figures:
             name = self.name.replace(" ", "_")
             self.generate_figures(model, self.observation, prediction,

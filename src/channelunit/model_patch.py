@@ -124,12 +124,40 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     def get_activation_steady_state(self, stimulation_levels: list,
                                     v_hold: float, t_stop:float,
+                                    power: int,
                                     chord_conductance=False,
                                     duration=1000, sim_dt=0.001):
         """
-        channel should be a neuron density mechanism, clamp a SEClamp neuron 
-        object
-        stimulation dict {amplitude: stim_duration}
+        Function for running step experiments to determine steady-state
+        activation curves.
+
+
+        Experiment timeline
+             _________________________ stimulation_levels
+             |________________________
+             |________________________
+             |________________________
+             |________________________
+             |________________________
+        _____| <- v_hold
+
+        simulation_levels: list
+           list of voltages to test
+        v_hold: float
+          initial holding potential
+        t_stop:
+          stimulation duration
+        power: int
+          power coefficient of the activation gate.
+          If experimental curves take into account the power of the activation gate, 
+          then power is not 1
+        chord_conductance: boolean
+          in many experiments current is normalized by membrane voltage minus the ion's 
+          reversal potential.
+        duration: float
+          duration of the simulation
+        sim_dt: float
+          for channels that can not be simulated using cvode. This value should be small.
         """
         if self.cvode:
             h.cvode_active(1)
@@ -152,11 +180,46 @@ class ModelPatch(sciunit.Model, NModlChannel):
             I = current.as_numpy()[stim_start:]
             out = self.extract_current(I, chord_conductance)
             max_current[level] = max(out)
-        return self.normalize_to_one(max_current)
+        result = self.normalize_to_one(max_current)
+        if power != 1:
+            for key in result.keys():
+                result[key] = result[key]**(1/power)
+        return result
 
     def get_inactivation_steady_state(self, stimulation_levels: list,
                                       v_test: float, t_test:float,
+                                      power: int,
                                       chord_conductance=False, sim_dt=0.001):
+        """
+        Function for running step experiments to determine steady-state
+        inactivation curves.
+
+
+        Experiment timeline
+             ____ v_test
+             |   |
+             |   |
+        _____|   |
+        _____|
+        _____|
+        _____| <- stimulation_levels
+
+        simulation_levels: list
+           list of voltages to test
+        v_test: float
+          voltage level to test inactivated 
+        t_test: float
+          duration of test pulse
+        power: int
+          power coefficient of the inactivation gate.
+          If experimental curves take into account the power of the inactivation gate, 
+          then power is not 1
+        chord_conductance: boolean
+          in many experiments current is normalized by membrane voltage minus the ion's 
+          reversal potential.
+        sim_dt: float
+          for channels that can not be simulated using cvode. This value should be small.
+        """
         if self.cvode:
             h.cvode_active(1)
         else:
@@ -180,7 +243,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
             I = current.as_numpy()[stim_start:]
             out = self.extract_current(I, chord_conductance)
             max_current[v_hold] = max(out)
-        return self.normalize_to_one(max_current)
+        result = self.normalize_to_one(max_current)
+        if power != 1:
+            for key in result.keys():
+                result[key] = result[key]**(1/power)
+        return result
+
                 
     def extract_current(self, I, chord_conductance):
         if chord_conductance:
