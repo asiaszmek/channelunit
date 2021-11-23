@@ -1,28 +1,58 @@
 import os
 from subprocess import run
 
+import numpy as np
+
 import sciunit
 from neuron import h
 import neuron
 from channelunit.capabilities import NModlChannel
 
+
+F = 96485.33212  # C mol^-1
+R = 8.314462618  # J mol^-1 K^-1
+
+
 class ModelPatch(sciunit.Model, NModlChannel):
+    nai = 10  # mM
+    ki = 140  # mM
+    cai = 100e-6  # mM
 
     def get_E_rev_name(self):
         ions = list(self.patch.psection()["ions"].keys())
-        if not len(ions):
-            return None
-        if len(ions) > 1:
-            return None
-        return "e%s" % ions[0]
+        if self.ion_name not in ions:
+            raise SystemError("Could not find %s in patch. I have only" % (ion_name)
+                              + str(ions))
+        return "e%s" % self.ion_name
 
-    def get_E_rev_value(self):
-        ions = list(self.patch.psection()["ions"].keys())
-        try:
-            name = "e%s" % ions[0]
-        except IndexError:
-            return None
-        return self.patch.psection()["ions"][ions[0]][name][0]
+    def get_E_rev_value(self, E_rev=None):
+        if self.ion_name.lower() == "k":
+            internal = self.ki
+            valence = 1
+        elif self.ion_name.lower() == "na":
+            internal = self.nai
+            valence = 1
+        elif self.ion_name.lower() == "ca":
+            internal = self.cai
+            valence = 2
+        external = self.external_conc
+        if external is None:
+            if E_rev is None:
+                name = "e%s" % self.ion_name
+                return self.patch.psection()["ions"][self.ion_name][name][0]
+            else:
+                return E_rev
+        elif not isinstance(external, int) and not isinstance(external, float):
+            if E_rev is None:
+                name = "e%s" % self.ion_name
+                return self.patch.psection()["ions"][self.ion_name][name][0]
+            else:
+                return E_rev
+        assert internal > 0
+        # convert to mV
+        conc_fact = np.log(self.external_conc/internal)
+        E_rev = 1e3*R*(273.15+self.temperature)/(valence*F)*conc_fact
+        return E_rev
 
     def compile_and_add(self, recompile):
         working_dir = os.getcwd()
@@ -32,11 +62,16 @@ class ModelPatch(sciunit.Model, NModlChannel):
         neuron.load_mechanisms(self.mod_path)
         os.chdir(working_dir)
 
-    def __init__(self, path_to_mods, channel_name,
-                 gbar_name="gbar", temp=22, E_rev=None, recompile=True,
-                 liquid_junction_pot=0, cvode=True, v_rest=-65):
+    def __init__(self, path_to_mods, channel_name, ion_name,
+                 external_conc=None, gbar_name="gbar", temp=22, recompile=True,
+                 liquid_junction_pot=0, cvode=True, v_rest=-65, E_rev=None):
         """
-        Liquid junction potential set to 10 unless otherwise specified
+        ion_name: str
+            most common ions are: na (sodium), k, ca (sometimes Ca, if your model has different Ca pools). 
+            if you specify nonspecific, you need to provide a value of E_rev
+            It is important to pay attention whether the ion variable is specified with a lowercase
+            or an uppercase letter, because the name of the reversal potential variable is constructed
+            based on the ion name (na -> ena, k -> ek, ca -> eca, Ca -> eCa).
         """
         h.load_file("stdrun.hoc")
         self.dt = 0.01
@@ -66,23 +101,19 @@ class ModelPatch(sciunit.Model, NModlChannel):
                 setattr(from_mech, gbar_name, gbar_val)
         self.temperature = temp
         self.vclamp = h.SEClamp(self.patch(0.5))
-        
-        E_rev_name = self.get_E_rev_name()        
-        if E_rev is None:
-            if E_rev_name is None:
-                raise SystemExit('Unable to proceed, if E_rev is unknown.')
+        self.ion_name = ion_name
+        self.external_conc = external_conc
+        if ion_name.lower() == "nonspecific":
+            if isinstance(E_rev, int) or isinstance(E_rev, float):
+                self.E_rev = E_rev
             else:
-                val_E_rev = self.get_E_rev_value()
-                if val_E_rev is not None:
-                    self.E_rev = val_E_rev
-                else:
-                    raise SystemExit('Unable to proceed, if E_rev is unknown.')
+                raise SystemExit('Unable to proceed, if E_rev is unknown.')
         else:
-            self.E_rev = E_rev
-            if E_rev_name is not None:
-                setattr(self.patch,  E_rev_name, E_rev)
+            E_rev_name = self.get_E_rev_name()        
+            self.E_rev = self.get_E_rev_value(E_rev)
+            setattr(self.patch,  E_rev_name, self.E_rev)
 
-            self.cvode = cvode
+        self.cvode = cvode
             
 
     def set_vclamp(self, dur1, v1, dur2, v2):

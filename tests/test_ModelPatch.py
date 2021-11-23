@@ -12,50 +12,50 @@ channel_loc = os.path.join(my_loc, "..", "demo_CA1", "ion_channels")
 class TestModelPatch(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelJ = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
-        cls.modelNJ = ModelPatch(channel_loc, "nap", gbar_name="gnabar",
+        cls.modelJ = ModelPatch(channel_loc, "nap", "na", 110, gbar_name="gnabar")
+        cls.modelNJ = ModelPatch(channel_loc, "nap", "na", 110, gbar_name="gnabar",
                                  liquid_junction_pot=0)
         cls.modelJ.set_vclamp(10, 10, 100, 100)
         cls.modelNJ.set_vclamp(10, 10, 100, 100)
 
     def test_reading_in_easy(self):
-        out = ModelPatch(channel_loc, "na3")
-        self.assertEqual(50, out.E_rev)
+        out = ModelPatch(channel_loc, "na3", "na", 140)
+        self.assertTrue(np.isclose(67.12194015207108, out.E_rev))
 
     def test_reading_in_no_gbar(self):
         self.assertRaises(SystemExit,  ModelPatch,
-                          channel_loc, "na3", gbar_name="gbar1")
+                          channel_loc, "na3", "na", gbar_name="gbar1")
 
     def test_reading_in_provide_E_rev(self):
-        out = ModelPatch(channel_loc, "na3", E_rev=40)
+        out = ModelPatch(channel_loc, "na3", "na", E_rev=40)
         self.assertEqual(40, out.E_rev)
 
     def test_no_E_rev_name(self):
         self.assertRaises(SystemExit,  ModelPatch,
-                          channel_loc, "hd")
+                          channel_loc, "hd", "nonspecific")
 
     def test_no_E_rev_name_provide_E_rev(self):
-        out = ModelPatch(channel_loc, "hd", E_rev=-30)
+        out = ModelPatch(channel_loc, "hd", "nonspecific", E_rev=-30)
         self.assertEqual(-30, out.E_rev)
 
     def test_setup_gbar(self):
-        out = ModelPatch(channel_loc, "nax", E_rev=-30)
+        out = ModelPatch(channel_loc, "nax", "na", E_rev=-30)
         self.assertEqual(0.001,
                          out.patch.psection()["density_mechs"]["nax"]["gbar"][0])
 
     def test_setup_gbar_custom(self):
-        out = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
+        out = ModelPatch(channel_loc, "nap", "na", gbar_name="gnabar")
         self.assertEqual(0.001,
                          out.patch.psection()["density_mechs"]["nap"]["gnabar"][0])
 
     def test_get_E_rev_value(self):
-        out = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
+        out = ModelPatch(channel_loc, "nap", "na", gbar_name="gnabar")
         val = out.get_E_rev_value()
         self.assertEqual(50, val)
         
     
     def test_get_E_rev_name(self):
-        out = ModelPatch(channel_loc, "nap", gbar_name="gnabar")
+        out = ModelPatch(channel_loc, "nap", "na", gbar_name="gnabar")
         name = out.get_E_rev_name()
         self.assertEqual("ena", name)
 
@@ -110,7 +110,7 @@ class TestModelPatch(unittest.TestCase):
 class TestCapabilites(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelY = ModelPatch(channel_loc, "na3",
+        cls.modelY = ModelPatch(channel_loc, "na3", "na",
                                 gbar_name="gbar", E_rev=40, cvode=True)
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
@@ -123,7 +123,7 @@ class TestCapabilites(unittest.TestCase):
         cls.inactivationY = cls.modelY.get_inactivation_steady_state(
             cls.stim_levels_inact, -5, 20, chord_conductance=False)
 
-        cls.modelN = ModelPatch(channel_loc, "na3",
+        cls.modelN = ModelPatch(channel_loc, "na3", "na",
                                 gbar_name="gbar", E_rev=40, cvode=False)
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
