@@ -9,7 +9,8 @@ from channelunit.scores import ZScore_SteadyStateCurves
 
 class SteadyStateTest(Test):
     """
-    Common features of the Activation Steady State and Inactivation steady state
+    Common features of the Activation Steady State and Inactivation 
+    steady state
     """
 
     @classmethod
@@ -167,7 +168,8 @@ class InactivationSteadyStateTest(SteadyStateTest):
         self.observation = OrderedDict(sorted(self.observation.items()))
         self.stimulus_list = self.extract_stimulation(self.observation)
 
-    def run_model(self, model, stim_list, v_test, t_test, power, chord_conductance):
+    def run_model(self, model, stim_list, v_test, t_test, power,
+                  chord_conductance):
         return model.get_inactivation_steady_state(stim_list,
                                                    v_test, t_test, power,
                                                    chord_conductance)
@@ -176,7 +178,8 @@ class InactivationSteadyStateTest(SteadyStateTest):
     def generate_prediction(self, model, verbose=False):
         
         prediction = self.run_model(model, self.stimulus_list, self.v_test,
-                                    self.t_test, self.power, self.chord_conductance)
+                                    self.t_test, self.power,
+                                    self.chord_conductance)
         if self.save_figures:
             name = self.name.replace(" ", "_")
             self.generate_figures(model, self.observation, prediction,

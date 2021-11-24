@@ -21,8 +21,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def get_E_rev_name(self):
         ions = list(self.patch.psection()["ions"].keys())
         if self.ion_name not in ions:
-            raise SystemError("Could not find %s in patch. I have only" % (ion_name)
-                              + str(ions))
+            raise SystemError("Could not find %s in patch. I have only" %
+                              (ion_name) + str(ions))
         return "e%s" % self.ion_name
 
     def get_E_rev_value(self, E_rev=None):
@@ -67,10 +67,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
                  liquid_junction_pot=0, cvode=True, v_rest=-65, E_rev=None):
         """
         ion_name: str
-            most common ions are: na (sodium), k, ca (sometimes Ca, if your model has different Ca pools). 
+            most common ions are: na (sodium), k, ca (sometimes Ca, if 
+            your model has different Ca pools). 
             if you specify nonspecific, you need to provide a value of E_rev
-            It is important to pay attention whether the ion variable is specified with a lowercase
-            or an uppercase letter, because the name of the reversal potential variable is constructed
+            It is important to pay attention whether the ion variable is 
+            specified with a lowercase or an uppercase letter, because 
+            the name of the reversal potential variable is constructed
             based on the ion name (na -> ena, k -> ek, ca -> eca, Ca -> eCa).
         """
         h.load_file("stdrun.hoc")
@@ -132,8 +134,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
         activation curves.
 
 
-        Experiment timeline
-             _________________________ stimulation_levels
+        Diagram of the experiment:
+              ________________________ stimulation_levels
              |________________________
              |________________________
              |________________________
@@ -149,15 +151,16 @@ class ModelPatch(sciunit.Model, NModlChannel):
           stimulation duration
         power: int
           power coefficient of the activation gate.
-          If experimental curves take into account the power of the activation gate, 
-          then power is not 1
+          If experimental curves take into account the power of 
+          the activation gate, then power is not 1
         chord_conductance: boolean
-          in many experiments current is normalized by membrane voltage minus the ion's 
-          reversal potential.
+          in many experiments current is normalized by membrane voltage 
+          minus the ion's reversal potential.
         duration: float
           duration of the simulation
         sim_dt: float
-          for channels that can not be simulated using cvode. This value should be small.
+          for channels that can not be simulated using cvode. This value 
+          should be small.
         """
         if self.cvode:
             h.cvode_active(1)
@@ -195,13 +198,13 @@ class ModelPatch(sciunit.Model, NModlChannel):
         inactivation curves.
 
 
-        Experiment timeline
-             ____ v_test
+        Diagram of the experiment
+              ___ v_test
              |   |
              |   |
         _____|   |
-        _____|
-        _____|
+        _____|   |
+        _____|   |
         _____| <- stimulation_levels
 
         simulation_levels: list
@@ -212,13 +215,14 @@ class ModelPatch(sciunit.Model, NModlChannel):
           duration of test pulse
         power: int
           power coefficient of the inactivation gate.
-          If experimental curves take into account the power of the inactivation gate, 
-          then power is not 1
+          If experimental curves take into account the power 
+          of the inactivation gate, then power is not 1
         chord_conductance: boolean
-          in many experiments current is normalized by membrane voltage minus the ion's 
-          reversal potential.
+          in many experiments current is normalized by membrane voltage
+          minus the ion's reversal potential.
         sim_dt: float
-          for channels that can not be simulated using cvode. This value should be small.
+          for channels that can not be simulated using cvode. T
+          his value should be small.
         """
         if self.cvode:
             h.cvode_active(1)
