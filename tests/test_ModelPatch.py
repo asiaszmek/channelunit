@@ -8,12 +8,17 @@ from channelunit import ModelPatch
 my_loc = os.path.dirname(os.path.abspath(__file__))
 channel_loc = os.path.join(my_loc, "..", "demo_CA1", "ion_channels")
 
+F = 96485.33212  # C mol^-1
+R = 8.314462618  # J mol^-1 K^-1
+
 
 class TestModelPatch(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelJ = ModelPatch(channel_loc, "nap", "na", 110, gbar_name="gnabar")
-        cls.modelNJ = ModelPatch(channel_loc, "nap", "na", 110, gbar_name="gnabar",
+        cls.modelJ = ModelPatch(channel_loc, "nap", "na", 110,
+                                gbar_name="gnabar")
+        cls.modelNJ = ModelPatch(channel_loc, "nap", "na", 110,
+                                 gbar_name="gnabar",
                                  liquid_junction_pot=0)
         cls.modelJ.set_vclamp(10, 10, 100, 100)
         cls.modelNJ.set_vclamp(10, 10, 100, 100)
@@ -48,15 +53,15 @@ class TestModelPatch(unittest.TestCase):
         self.assertEqual(0.001,
                          out.patch.psection()["density_mechs"]["nap"]["gnabar"][0])
 
-    def test_get_E_rev_value(self):
+    def test__find_E_rev_value(self):
         out = ModelPatch(channel_loc, "nap", "na", gbar_name="gnabar")
-        val = out.get_E_rev_value()
+        val = out._find_E_rev_value()
         self.assertEqual(50, val)
         
     
-    def test_get_E_rev_name(self):
+    def test__find_E_rev_name(self):
         out = ModelPatch(channel_loc, "nap", "na", gbar_name="gnabar")
-        name = out.get_E_rev_name()
+        name = out._find_E_rev_name()
         self.assertEqual("ena", name)
 
     def test_set_vclamp_junction_amp1(self):
@@ -106,6 +111,15 @@ class TestModelPatch(unittest.TestCase):
         dic = {1:1, 2:2}
         out = self.modelJ.normalize_to_one(dic)
         self.assertEqual({1:0.5, 2:1.}, out)
+
+    def test_change_nai(self):
+        self.modelJ.nai = 5
+
+        conc_fact = np.log(self.modelJ.external_conc/self.modelJ.nai)
+        new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
+        self.assertEqual(self.modelJ.E_rev, new_E_rev)
+
+        
         
 class TestCapabilites(unittest.TestCase):
     @classmethod

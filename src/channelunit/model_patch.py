@@ -14,26 +14,26 @@ R = 8.314462618  # J mol^-1 K^-1
 
 
 class ModelPatch(sciunit.Model, NModlChannel):
-    nai = 10  # mM
-    ki = 140  # mM
-    cai = 100e-6  # mM
+    _nai = 10  # mM
+    _ki = 140  # mM
+    _cai = 100e-6  # mM
 
-    def get_E_rev_name(self):
+    def _find_E_rev_name(self):
         ions = list(self.patch.psection()["ions"].keys())
         if self.ion_name not in ions:
             raise SystemError("Could not find %s in patch. I have only" %
                               (ion_name) + str(ions))
         return "e%s" % self.ion_name
 
-    def get_E_rev_value(self, E_rev=None):
+    def _find_E_rev_value(self, E_rev=None):
         if self.ion_name.lower() == "k":
-            internal = self.ki
+            internal = self._ki
             valence = 1
         elif self.ion_name.lower() == "na":
-            internal = self.nai
+            internal = self._nai
             valence = 1
         elif self.ion_name.lower() == "ca":
-            internal = self.cai
+            internal = self._cai
             valence = 2
         external = self.external_conc
         if external is None:
@@ -53,6 +53,48 @@ class ModelPatch(sciunit.Model, NModlChannel):
         conc_fact = np.log(self.external_conc/internal)
         E_rev = 1e3*R*(273.15+self.temperature)/(valence*F)*conc_fact
         return E_rev
+
+    @property
+    def ki(self):
+        return self._ki
+
+    @ki.setter
+    def ki(self, value):
+        self._ki = value
+        if self.ion_name == "k" and self.external_conc is not None:
+            self.E_rev = self._find_E_rev_value()
+
+    @property
+    def nai(self):
+        return self._nai
+
+    @nai.setter
+    def nai(self, value):
+        self._nai = value
+        if self.ion_name == "na" and self.external_conc is not None:
+            self.E_rev = self._find_E_rev_value()
+
+    @property
+    def cai(self):
+        return self._cai
+
+    @cai.setter
+    def cai(self, value):
+        self._nai = value
+        if self.ion_name.lower() == "ca" and self.external_conc is not None:
+            self.E_rev = self._find_E_rev_value()
+
+    @property
+    def Cai(self):
+        return self._cai
+
+    @cai.setter
+    def Cai(self, value):
+        self._nai = value
+        if self.ion_name.lower() == "ca" and self.external_conc is not None:
+            self.E_rev = self._find_E_rev_value()
+
+        
 
     def compile_and_add(self, recompile):
         working_dir = os.getcwd()
@@ -111,8 +153,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
             else:
                 raise SystemExit('Unable to proceed, if E_rev is unknown.')
         else:
-            E_rev_name = self.get_E_rev_name()        
-            self.E_rev = self.get_E_rev_value(E_rev)
+            E_rev_name = self._find_E_rev_name()
+            self.E_rev = self._find_E_rev_value(E_rev)
             setattr(self.patch,  E_rev_name, self.E_rev)
 
         self.cvode = cvode
