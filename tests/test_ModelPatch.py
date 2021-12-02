@@ -119,7 +119,11 @@ class TestModelPatch(unittest.TestCase):
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         self.assertEqual(self.modelJ.E_rev, new_E_rev)
 
-        
+    def test_change_external_conc(self):
+        self.modelNJ.external_conc = 140
+        conc_fact = np.log(self.modelNJ.external_conc/self.modelNJ.nai)
+        new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
+        self.assertEqual(self.modelNJ.E_rev, new_E_rev)
         
 class TestCapabilites(unittest.TestCase):
     @classmethod

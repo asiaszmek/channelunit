@@ -35,7 +35,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         elif self.ion_name.lower() == "ca":
             internal = self._cai
             valence = 2
-        external = self.external_conc
+        external = self._external_conc
         if external is None:
             if E_rev is None:
                 name = "e%s" % self.ion_name
@@ -50,7 +50,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                 return E_rev
         assert internal > 0
         # convert to mV
-        conc_fact = np.log(self.external_conc/internal)
+        conc_fact = np.log(self._external_conc/internal)
         E_rev = 1e3*R*(273.15+self.temperature)/(valence*F)*conc_fact
         return E_rev
 
@@ -61,7 +61,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
     @ki.setter
     def ki(self, value):
         self._ki = value
-        if self.ion_name == "k" and self.external_conc is not None:
+        if self.ion_name == "k" and self._external_conc is not None:
             self.E_rev = self._find_E_rev_value()
 
     @property
@@ -71,7 +71,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
     @nai.setter
     def nai(self, value):
         self._nai = value
-        if self.ion_name == "na" and self.external_conc is not None:
+        if self.ion_name == "na" and self._external_conc is not None:
             self.E_rev = self._find_E_rev_value()
 
     @property
@@ -81,7 +81,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
     @cai.setter
     def cai(self, value):
         self._nai = value
-        if self.ion_name.lower() == "ca" and self.external_conc is not None:
+        if self.ion_name.lower() == "ca" and self._external_conc is not None:
             self.E_rev = self._find_E_rev_value()
 
     @property
@@ -91,11 +91,18 @@ class ModelPatch(sciunit.Model, NModlChannel):
     @cai.setter
     def Cai(self, value):
         self._nai = value
-        if self.ion_name.lower() == "ca" and self.external_conc is not None:
+        if self.ion_name.lower() == "ca" and self._external_conc is not None:
             self.E_rev = self._find_E_rev_value()
 
-        
+    @property
+    def external_conc(self):
+        return self._external_conc
 
+    @external_conc.setter
+    def external_conc(self, value):
+        self._external_conc = value
+        self.E_rev = self._find_E_rev_value()
+        
     def compile_and_add(self, recompile):
         working_dir = os.getcwd()
         os.chdir(self.mod_path)
@@ -146,7 +153,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.temperature = temp
         self.vclamp = h.SEClamp(self.patch(0.5))
         self.ion_name = ion_name
-        self.external_conc = external_conc
+        self._external_conc = external_conc
         if ion_name.lower() == "nonspecific":
             if isinstance(E_rev, int) or isinstance(E_rev, float):
                 self.E_rev = E_rev
