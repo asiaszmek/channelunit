@@ -9,6 +9,10 @@ import neuron
 from channelunit.capabilities import NModlChannel
 
 
+loc = os.path.dirname(os.path.abspath(__file__))
+mechanisms_path = os.path.join(loc, 'mechanisms')
+
+
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
 
@@ -103,12 +107,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self._external_conc = value
         self.E_rev = self._find_E_rev_value()
         
-    def compile_and_add(self, recompile):
+    def compile_and_add(self, path, recompile):
         working_dir = os.getcwd()
-        os.chdir(self.mod_path)
+        os.chdir(path)
         if recompile:
             p = run('nrnivmodl')
-        neuron.load_mechanisms(self.mod_path)
+        neuron.load_mechanisms(path)
         os.chdir(working_dir)
 
     def __init__(self, path_to_mods, channel_name, ion_name,
@@ -128,7 +132,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.dt = 0.01
         self.channel_name = channel_name
         self.mod_path = path_to_mods
-        self.compile_and_add(recompile)
+        self.compile_and_add(self.mod_path, recompile)
         self.patch = h.Section(name="patch")
         self.patch.L = 1
         self.patch.Ra = 100
