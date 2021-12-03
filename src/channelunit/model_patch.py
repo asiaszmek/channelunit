@@ -84,7 +84,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     @cai.setter
     def cai(self, value):
-        self._nai = value
+        self._cai = value
         if self.ion_name.lower() == "ca" and self._external_conc is not None:
             self.E_rev = self._find_E_rev_value()
 
@@ -94,7 +94,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     @cai.setter
     def Cai(self, value):
-        self._nai = value
+        self._cai = value
         if self.ion_name.lower() == "ca" and self._external_conc is not None:
             self.E_rev = self._find_E_rev_value()
 
