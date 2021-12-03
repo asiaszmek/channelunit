@@ -10,7 +10,7 @@ NEURON{
 	SUFFIX Cad
 	USEION Ca READ iCa, Cai WRITE Cai VALENCE 2
 	RANGE iCa, channel_flow, depth, B
-	GLOBAL Cai, tau, Cainf
+	RANGE Cai, tau, Cainf
 }
 
 UNITS {

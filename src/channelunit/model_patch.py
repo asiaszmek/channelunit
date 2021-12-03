@@ -9,6 +9,10 @@ import neuron
 from channelunit.capabilities import NModlChannel
 
 
+loc = os.path.dirname(os.path.abspath(__file__))
+mechanisms_path = os.path.join(loc, 'mechanisms')
+
+
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
 
@@ -80,7 +84,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     @cai.setter
     def cai(self, value):
-        self._nai = value
+        self._cai = value
         if self.ion_name.lower() == "ca" and self._external_conc is not None:
             self.E_rev = self._find_E_rev_value()
 
@@ -90,7 +94,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     @cai.setter
     def Cai(self, value):
-        self._nai = value
+        self._cai = value
         if self.ion_name.lower() == "ca" and self._external_conc is not None:
             self.E_rev = self._find_E_rev_value()
 
@@ -103,12 +107,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self._external_conc = value
         self.E_rev = self._find_E_rev_value()
         
-    def compile_and_add(self, recompile):
+    def compile_and_add(self, path, recompile):
         working_dir = os.getcwd()
-        os.chdir(self.mod_path)
+        os.chdir(path)
         if recompile:
             p = run('nrnivmodl')
-        neuron.load_mechanisms(self.mod_path)
+        neuron.load_mechanisms(path)
         os.chdir(working_dir)
 
     def __init__(self, path_to_mods, channel_name, ion_name,
@@ -128,11 +132,11 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.dt = 0.01
         self.channel_name = channel_name
         self.mod_path = path_to_mods
-        self.compile_and_add(recompile)
+        self.compile_and_add(self.mod_path, recompile)
         self.patch = h.Section(name="patch")
-        self.patch.L = 10
+        self.patch.L = 1
         self.patch.Ra = 100
-        self.patch.diam = 10
+        self.patch.diam = 1
         self.patch.insert("pas")
         self.patch.e_pas = v_rest
         self.patch.g_pas = 1/60000
@@ -163,7 +167,6 @@ class ModelPatch(sciunit.Model, NModlChannel):
             E_rev_name = self._find_E_rev_name()
             self.E_rev = self._find_E_rev_value(E_rev)
             setattr(self.patch,  E_rev_name, self.E_rev)
-
         self.cvode = cvode
             
 
@@ -315,3 +318,49 @@ class ModelPatch(sciunit.Model, NModlChannel):
         for key in current.keys():
             new_current[key] = current[key]/factor
         return new_current
+class ModelCellAttachedPatch(ModelPatch):
+    def __init__(self, path_to_mods, channel_name, ion_name,
+                 external_conc=None, gbar_name="gbar", temp=22, recompile=True,
+                 liquid_junction_pot=0, cvode=True, v_rest=-65, E_rev=None):
+        super(ModelDendriteAttachedPatch, self).__init__(path_to_mods, channel_name,
+                                                         ion_name, external_conc,
+                                                         gbar_name, temp, recompile,
+                                                         liquid_junction_pot, cvode,
+                                                         v_rest, E_rev)
+
+
+
+class ModelWholeCellPatch(ModelPatch):
+    def __init__(self, path_to_mods, channel_name, ion_name,
+                 external_conc=None, gbar_name="gbar", temp=22, recompile=True,
+                 liquid_junction_pot=0, cvode=True, v_rest=-65, E_rev=None):
+
+        super(ModelWholeCellPatch, self).__init__(path_to_mods, channel_name,
+                                                  ion_name, external_conc, gbar_name,
+                                                  temp, recompile, liquid_junction_pot,
+                                                  cvode, v_rest, E_rev)
+        self._L = 10
+        self._diam = 10
+        self.patch.L = self._L
+        self.patch.Ra = 100
+        self.patch.diam = self._diam
+
+    @property
+    def L(self):
+        return self.patch.L
+
+    @L.setter
+    def L(self, value):
+        self._L = value
+        self.patch.L = self._L
+
+    @property
+    def diam(self):
+        return self.patch.diam
+
+    @diam.setter
+    def diam(self, value):
+        self._diam = value
+        self.patch.diam = self._diam
+
+    

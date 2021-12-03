@@ -4,6 +4,7 @@ import unittest
 import numpy as np
 
 from channelunit import ModelPatch
+from channelunit import ModelWholeCellPatch
 
 my_loc = os.path.dirname(os.path.abspath(__file__))
 channel_loc = os.path.join(my_loc, "..", "demo_CA1", "ion_channels")
@@ -47,6 +48,14 @@ class TestModelPatch(unittest.TestCase):
         out = ModelPatch(channel_loc, "nax", "na", E_rev=-30)
         self.assertEqual(0.001,
                          out.patch.psection()["density_mechs"]["nax"]["gbar"][0])
+
+    def test_setup_ext_conc_e_rev(self):
+        out = ModelPatch(channel_loc, "nax", "na", external_conc=140, E_rev=-30)
+        conc_fact = np.log(out.external_conc/out.nai)
+        new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
+        self.assertEqual(out.E_rev, new_E_rev)
+
+
 
     def test_setup_gbar_custom(self):
         out = ModelPatch(channel_loc, "nap", "na", gbar_name="gnabar")
@@ -119,7 +128,11 @@ class TestModelPatch(unittest.TestCase):
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         self.assertEqual(self.modelJ.E_rev, new_E_rev)
 
-        
+    def test_change_external_conc(self):
+        self.modelNJ.external_conc = 140
+        conc_fact = np.log(self.modelNJ.external_conc/self.modelNJ.nai)
+        new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
+        self.assertEqual(self.modelNJ.E_rev, new_E_rev)
         
 class TestCapabilites(unittest.TestCase):
     @classmethod
@@ -182,6 +195,49 @@ class TestCapabilites(unittest.TestCase):
         self.assertEqual(self.stim_levels_inact,
                          list(self.inactivationN_cc.keys()))
         
+
+class TestWholeCellPatch(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.model = ModelWholeCellPatch(channel_loc, "nap", "na", 110,
+                                        gbar_name="gnabar")
+        cls.model_init = ModelWholeCellPatch(channel_loc, "nap", "na",
+                                             external_conc=110,
+                                             gbar_name="gnabar",
+                                             temp=35, recompile=False,
+                                             liquid_junction_pot=4,
+                                             cvode=False,
+                                             v_rest=-90,
+                                             E_rev=15)
+    def test_get_L(self):
+        L = self.model.L
+        self.assertEqual(L, self.model.patch.L)
+
+    def test_set_L(self):
+        self.model.L = 100
+        self.assertEqual(100, self.model.patch.L)
+
+    def test_init_ext_conc(self):
+        self.assertEqual(self.model_init.external_conc, 110)
+
+    def test_init_temp(self):
+        self.assertEqual(self.model_init.temperature, 35)
+
+    def test_E_rev(self):
+        conc_fact = np.log(self.model_init.external_conc/self.model_init.nai)
+        new_E_rev = 1e3*R*(273.15+self.model_init.temperature)/(1*F)*conc_fact
+        self.assertEqual(new_E_rev, self.model_init.E_rev)
+
+    def test_init_ljp(self):
+        self.assertEqual(self.model_init.junction, 4)
+
+    def test_init_cvode(self):
+        self.assertEqual(self.model_init.cvode, False)
+
+    def test_init_v_rest(self):
+        self.assertEqual(self.model_init.patch.e_pas, -90)
+
+
 
 if __name__ == "__main__":
     unittest.main()
