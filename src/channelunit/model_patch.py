@@ -314,6 +314,18 @@ class ModelPatch(sciunit.Model, NModlChannel):
         for key in current.keys():
             new_current[key] = current[key]/factor
         return new_current
+class ModelCellAttachedPatch(ModelPatch):
+    def __init__(self, path_to_mods, channel_name, ion_name,
+                 external_conc=None, gbar_name="gbar", temp=22, recompile=True,
+                 liquid_junction_pot=0, cvode=True, v_rest=-65, E_rev=None):
+        super(ModelDendriteAttachedPatch, self).__init__(path_to_mods, channel_name,
+                                                         ion_name, external_conc,
+                                                         gbar_name, temp, recompile,
+                                                         liquid_junction_pot, cvode,
+                                                         v_rest, E_rev)
+
+
+
 class ModelWholeCellPatch(ModelPatch):
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
