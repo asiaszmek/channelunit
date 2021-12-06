@@ -326,7 +326,7 @@ class ModelPatchWithCa(ModelPatch):
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
                  liquid_junction_pot=0, cvode=True, v_rest=-65):
         self.compile_and_add(mechanisms_path, True)
-        super(ModelDendriteAttachedPatch, self).__init__(path_to_mods, channel_name,
+        super(ModelPatchWithCa, self).__init__(path_to_mods, channel_name,
                                                          ion_name, external_conc,
                                                          gbar_name, temp, recompile,
                                                          liquid_junction_pot, cvode,

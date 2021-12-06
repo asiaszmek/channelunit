@@ -5,6 +5,8 @@ import numpy as np
 
 from channelunit import ModelPatch
 from channelunit import ModelWholeCellPatch
+from channelunit import ModelPatchWithCa
+
 
 my_loc = os.path.dirname(os.path.abspath(__file__))
 channel_loc = os.path.join(my_loc, "..", "demo_CA1", "ion_channels")
@@ -238,6 +240,22 @@ class TestWholeCellPatch(unittest.TestCase):
         self.assertEqual(self.model_init.patch.e_pas, -90)
 
 
+class TestPatchWithCa(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.modelcaghk = ModelPatchWithCa(channel_loc, "calHGHK","ca",
+                                             external_conc=1.5)
+        cls.modelCaghk = ModelPatchWithCa(channel_loc, "CalHGHK","Ca",
+                                             external_conc=1.5)
+        cls.modelca_eca = ModelPatchWithCa(channel_loc, "calH_eca","ca",
+                                              external_conc=1.5)
+        cls.modelCa_eCa = ModelPatchWithCa(channel_loc, "CalH_eCa","Ca",
+                                              external_conc=1.5)
 
+    def test_raises(self):
+        self.assertRaises(SystemExit, ModelPatchWithCa, channel_loc, "callHGHK","cal",
+                                             external_conc=1.5)
+        
+    
 if __name__ == "__main__":
     unittest.main()
