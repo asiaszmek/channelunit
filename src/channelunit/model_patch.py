@@ -318,6 +318,78 @@ class ModelPatch(sciunit.Model, NModlChannel):
         for key in current.keys():
             new_current[key] = current[key]/factor
         return new_current
+
+
+
+class ModelPatchWithCa(ModelPatch):
+    def __init__(self, path_to_mods, channel_name, ion_name,
+                 external_conc=None, gbar_name="gbar", temp=22, recompile=True,
+                 liquid_junction_pot=0, cvode=True, v_rest=-65):
+        self.compile_and_add(mechanisms_path, True)
+        super(ModelDendriteAttachedPatch, self).__init__(path_to_mods, channel_name,
+                                                         ion_name, external_conc,
+                                                         gbar_name, temp, recompile,
+                                                         liquid_junction_pot, cvode,
+                                                         v_rest, E_rev=None)
+        if self.ion_name == "ca":
+            self.patch.insert("cad")
+            self.patch.cainf_cad = self._cai
+            h.cao0_ca_ion = self._external_conc
+        elif self.ion_name == "Ca":
+            self.patch.insert("Cad")
+            self.patch.cainf_Cad = self._cai
+            h.Cao0_Ca_ion = self._external_conc
+        else:
+            raise SystemExit("Unknown ion %s. I only know Ca and ca"
+                             % self.ion_name )
+
+    @property
+    def cai(self):
+        if self.ion_name == "ca":
+            return self.patch.cainf_cad
+        elif self.ion_name == "Ca":
+            return self.patch.cainf_cad
+
+    @cai.setter
+    def cai(self, value):
+        self._cai = value
+        if self.ion_name.lower() == "ca":
+            self.patch.cainf_cad = self._cai
+        elif self.ion_name == "Ca":
+            self.patch.cainf_Cad = self._cai
+
+    @property
+    def Cai(self):
+        if self.ion_name == "ca":
+            return self.patch.cainf_cad
+        elif self.ion_name == "Ca":
+            return self.patch.cainf_cad
+
+
+    @cai.setter
+    def Cai(self, value):
+        self._cai = value
+        if self.ion_name.lower() == "ca":
+            self.patch.cainf_cad = self._cai
+        elif self.ion_name == "Ca":
+            self.patch.cainf_Cad = self._cai
+
+    @property
+    def external_conc(self):
+        return  self._external_conc
+
+    @external_conc.setter
+    def external_conc(self, value):
+        self._external_conc = value
+        if self.ca_ion == "ca":
+            h.cao0_ca_ion = self._external_conc
+        elif self.ca_ion == "Ca":
+            h.Cao0_Ca_ion = self._external_conc
+        else:
+            raise SystemExit("Unknown ion %s. I only know Ca and ca"
+                             % self.ion_name )
+
+
 class ModelCellAttachedPatch(ModelPatch):
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
