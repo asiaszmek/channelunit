@@ -39,6 +39,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
         elif self.ion_name.lower() == "ca":
             internal = self._cai
             valence = 2
+        elif E_rev is None:
+            raise SystemExit("Unknown ion type %s. Only now na, k, ca and Ca"
+                              % self.ion_name)
+        elif self._external_conc is not None:
+            raise SystemExit("Unknown ion type %s. Only now na, k, ca and Ca"
+                             % self.ion_name)
         external = self._external_conc
         if external is None:
             if E_rev is None:
@@ -337,7 +343,7 @@ class ModelPatchWithCa(ModelPatch):
             h.cao0_ca_ion = self._external_conc
         elif self.ion_name == "Ca":
             self.patch.insert("Cad")
-            self.patch.cainf_Cad = self._cai
+            self.patch.Cainf_Cad = self._cai
             h.Cao0_Ca_ion = self._external_conc
         else:
             raise SystemExit("Unknown ion %s. I only know Ca and ca"

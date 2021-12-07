@@ -248,14 +248,14 @@ class TestPatchWithCa(unittest.TestCase):
         cls.modelCaghk = ModelPatchWithCa(channel_loc, "CalHGHK","Ca",
                                              external_conc=1.5)
         cls.modelca_eca = ModelPatchWithCa(channel_loc, "calH_eca","ca",
-                                              external_conc=1.5)
+                                           external_conc=1.5,
+                                           gbar_name="gcal")
         cls.modelCa_eCa = ModelPatchWithCa(channel_loc, "CalH_eCa","Ca",
-                                              external_conc=1.5)
+                                           external_conc=1.5, gbar_name="gCal")
 
     def test_raises(self):
-        self.assertRaises(SystemExit, ModelPatchWithCa, channel_loc, "callHGHK","cal",
-                                             external_conc=1.5)
-        
+        self.assertRaises(SystemExit, ModelPatchWithCa, channel_loc,
+                          "callHGHK","cal", external_conc=1.5)
     
 if __name__ == "__main__":
     unittest.main()
