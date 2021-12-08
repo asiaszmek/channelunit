@@ -123,7 +123,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
-                 liquid_junction_pot=0, cvode=True, v_rest=-65, E_rev=None):
+                 liquid_junction_pot=0, cvode=True, R_m=20000, v_rest=-65, 
+                 E_rev=None):
         """
         ion_name: str
             most common ions are: na (sodium), k, ca (sometimes Ca, if 
@@ -133,6 +134,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
             specified with a lowercase or an uppercase letter, because 
             the name of the reversal potential variable is constructed
             based on the ion name (na -> ena, k -> ek, ca -> eca, Ca -> eCa).
+        R_m: float 
+            mebrane resistivity (in ohm*cm^2)
         """
         h.load_file("stdrun.hoc")
         self.dt = 0.01
@@ -145,7 +148,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.patch.diam = 1
         self.patch.insert("pas")
         self.patch.e_pas = v_rest
-        self.patch.g_pas = 1/60000
+        self.patch.g_pas = 1/R_m
         self.channel = self.patch.insert(self.channel_name)
         self.junction = liquid_junction_pot
         self.base_directory = "validation_results"
@@ -174,7 +177,6 @@ class ModelPatch(sciunit.Model, NModlChannel):
             self.E_rev = self._find_E_rev_value(E_rev)
             setattr(self.patch,  E_rev_name, self.E_rev)
         self.cvode = cvode
-            
 
     def set_vclamp(self, dur1, v1, dur2, v2):
         self.vclamp.dur1 = dur1
@@ -330,13 +332,14 @@ class ModelPatch(sciunit.Model, NModlChannel):
 class ModelPatchWithCa(ModelPatch):
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
-                 liquid_junction_pot=0, cvode=True, v_rest=-65):
+                 liquid_junction_pot=0, cvode=True, R_m=20000, v_rest=-65):
         self.compile_and_add(mechanisms_path, True)
         super(ModelPatchWithCa, self).__init__(path_to_mods, channel_name,
-                                                         ion_name, external_conc,
-                                                         gbar_name, temp, recompile,
-                                                         liquid_junction_pot, cvode,
-                                                         v_rest, E_rev=None)
+                                               ion_name, external_conc=external_conc,
+                                               gbar_name=gbar_name, temp=temp,
+                                               recompile=recompile,
+                                               liquid_junction_pot=liquid_junction_pot, cvode=cvode,
+                                               R_m=20000, v_rest=v_rest, E_rev=None)
         if self.ion_name == "ca":
             self.patch.insert("cad")
             self.patch.cainf_cad = self._cai
@@ -396,32 +399,93 @@ class ModelPatchWithCa(ModelPatch):
                              % self.ion_name )
 
 
-class ModelCellAttachedPatch(ModelPatch):
+
+class WholeCellAttributes:
+    
+    def _set_g_pas(self, R_in, sec_list):
+        self._R_in = R_in
+        area = 0
+        for sec in sec_list:
+            for seg in sec:
+                area += seg.area()*1e-4 #  in cm2
+        for sec in sec_list:
+            sec.g_pas = 1/(self._R_in*area)  # in mho/cm2
+            
+    @property
+    def R_in(self):
+        return self._R_in
+
+    @R_in.setter
+    def R_in(self, value):
+        self._set_g_pas(value)
+
+
+class ModelCellAttachedPatch(ModelPatch, WholeCellAttributes):
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
-                 liquid_junction_pot=0, cvode=True, v_rest=-65, E_rev=None):
-        super(ModelDendriteAttachedPatch, self).__init__(path_to_mods, channel_name,
-                                                         ion_name, external_conc,
-                                                         gbar_name, temp, recompile,
-                                                         liquid_junction_pot, cvode,
-                                                         v_rest, E_rev)
+                 liquid_junction_pot=0, cvode=True, R_in=200e6, v_rest=-65,
+                 E_rev=None):
+        super(ModelCellAttachedPatch, self).__init__(path_to_mods,
+                                                     channel_name,
+                                                     ion_name,
+                                                     external_conc=external_conc,
+                                                     gbar_name=gbar_name, temp=temp,
+                                                     recompile=recompile,
+                                                     liquid_junction_pot=liquid_junction_pot,
+                                                     cvode=cvode, R_m=20000, v_rest=v_rest,
+                                                     E_rev=E_rev)
+        self.soma = h.Section("soma")
+        self.soma.insert("pas")
+        self.soma.e_pas = v_rest
+        self.soma.L = 10
+        self.soma.diam = 10
+        self.soma.Ra = 100
+        self.patch.Ra = 100
+        self._set_g_pas(R_in, [self.soma, self.patch])
+        self.sections = [self.soma, self.patch]
+        
+    @property
+    def L(self):
+        return self.soma.L
+
+    @L.setter
+    def L(self, value):
+        self._L = value
+        self.soma.L = self._L
+
+    @property
+    def diam(self):
+        return self.soma.diam
+
+    @diam.setter
+    def diam(self, value):
+        self._diam = value
+        self.soma.diam = self._diam
+    
 
 
 
-class ModelWholeCellPatch(ModelPatch):
+class ModelWholeCellPatch(ModelPatch, WholeCellAttributes):
+    """
+    R_in -- in ohms
+    """
     def __init__(self, path_to_mods, channel_name, ion_name,
-                 external_conc=None, gbar_name="gbar", temp=22, recompile=True,
-                 liquid_junction_pot=0, cvode=True, v_rest=-65, E_rev=None):
+                 external_conc=None, gbar_name="gbar",
+                 temp=22, recompile=True,
+                 liquid_junction_pot=0, cvode=True,  R_in=200e6,
+                 v_rest=-65, E_rev=None):
 
         super(ModelWholeCellPatch, self).__init__(path_to_mods, channel_name,
-                                                  ion_name, external_conc, gbar_name,
-                                                  temp, recompile, liquid_junction_pot,
-                                                  cvode, v_rest, E_rev)
+                                                  ion_name, external_conc,
+                                                  gbar_name, temp, recompile,
+                                                  liquid_junction_pot,
+                                                  cvode, 20000, v_rest, E_rev)
         self._L = 10
         self._diam = 10
         self.patch.L = self._L
         self.patch.Ra = 100
         self.patch.diam = self._diam
+        self._set_g_pas(R_in, [self.patch])
 
     @property
     def L(self):
@@ -440,5 +504,6 @@ class ModelWholeCellPatch(ModelPatch):
     def diam(self, value):
         self._diam = value
         self.patch.diam = self._diam
-
     
+
+
