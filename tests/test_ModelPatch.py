@@ -5,7 +5,7 @@ import numpy as np
 
 from channelunit import ModelPatch
 from channelunit import ModelWholeCellPatch
-from channelunit import ModelPatchWithCa
+from channelunit import CaModelPatch
 from channelunit import ModelCellAttachedPatch
 
 
@@ -254,18 +254,18 @@ class TestWholeCellPatch(unittest.TestCase):
 class TestPatchWithCa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelcaghk = ModelPatchWithCa(channel_loc, "calHGHK","ca",
+        cls.modelcaghk = CaModelPatch(channel_loc, "calHGHK","ca",
                                              external_conc=1.5)
-        cls.modelCaghk = ModelPatchWithCa(channel_loc, "CalHGHK","Ca",
+        cls.modelCaghk = CaModelPatch(channel_loc, "CalHGHK","Ca",
                                              external_conc=1.5)
-        cls.modelca_eca = ModelPatchWithCa(channel_loc, "calH_eca","ca",
+        cls.modelca_eca = CaModelPatch(channel_loc, "calH_eca","ca",
                                            external_conc=1.5,
                                            gbar_name="gcal")
-        cls.modelCa_eCa = ModelPatchWithCa(channel_loc, "CalH_eCa","Ca",
+        cls.modelCa_eCa = CaModelPatch(channel_loc, "CalH_eCa","Ca",
                                            external_conc=1.5, gbar_name="gCal")
 
     def test_raises(self):
-        self.assertRaises(SystemExit, ModelPatchWithCa, channel_loc,
+        self.assertRaises(SystemExit, CaModelPatch, channel_loc,
                           "callHGHK","cal", external_conc=1.5)
 
 

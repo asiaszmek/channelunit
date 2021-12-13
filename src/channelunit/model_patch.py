@@ -329,12 +329,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
 
 
-class ModelPatchWithCa(ModelPatch):
+class CaModelPatch(ModelPatch):
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
                  liquid_junction_pot=0, cvode=True, R_m=20000, v_rest=-65):
         self.compile_and_add(mechanisms_path, True)
-        super(ModelPatchWithCa, self).__init__(path_to_mods, channel_name,
+        super(CaModelPatch, self).__init__(path_to_mods, channel_name,
                                                ion_name, external_conc=external_conc,
                                                gbar_name=gbar_name, temp=temp,
                                                recompile=recompile,
