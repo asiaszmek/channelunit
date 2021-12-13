@@ -6,7 +6,7 @@ import numpy as np
 from channelunit.tests import SteadyStateTest
 from channelunit.tests import InactivationSteadyStateTest
 from channelunit.tests import ActivationSteadyStateTest
-from channelunit import ModelPatch
+from channelunit import ModelPatchNernst
 
 
 my_loc = os.path.dirname(os.path.abspath(__file__))
@@ -68,7 +68,7 @@ class TestActivationSteadyState(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         E_rev = 8.314*(273.15+22)/96485*np.log(110/15)
-        cls.model = ModelPatch(channel_loc, "na3", "na", external_conc=110, temp=22,
+        cls.model = ModelPatchNernst(channel_loc, "na3", "na", external_conc=110, temp=22,
                                liquid_junction_pot=0)
         activation_data = np.loadtxt(activation_loc, skiprows=1,
                                      delimiter=",")
@@ -98,11 +98,11 @@ class TestInactivationSteadyState(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         E_rev = 8.314*(273.15+22)/96485*np.log(110/15)
-        cls.model = ModelPatch(channel_loc, "na3", "na", external_conc=110,
-                               temp=22,
-                               liquid_junction_pot=0)
+        cls.model = ModelPatchNernst(channel_loc, "na3", "na", external_conc=110,
+                                     temp=22,
+                                     liquid_junction_pot=0)
         inactivation_data = np.loadtxt(inactivation_loc, skiprows=1,
-                                     delimiter=",")
+                                       delimiter=",")
         cls.inactivation_data = dict(val.tolist() for val in inactivation_data)
         cls.power = 1
         cls.test = InactivationSteadyStateTest(cls.inactivation_data,
