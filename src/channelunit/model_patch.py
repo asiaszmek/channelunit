@@ -11,7 +11,7 @@ from channelunit.capabilities import NModlChannel
 
 loc = os.path.dirname(os.path.abspath(__file__))
 mechanisms_path = os.path.join(loc, 'mechanisms')
-
+print(mechanisms_path)
 
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1

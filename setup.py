@@ -16,10 +16,17 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/asiaszmek/channelunit/issues",
     },
     package_dir={"": "src"},
-    packages=setuptools.find_packages(where="src"),
+    packages=["channelunit"],
     include_package_data=True,
-    package_data={'channelunit': ["demo_CA1/ion_channels/*mod",
-                                  "demo_CA1/data/*csv"]},
+    package_data={
+        'channelunit': [
+            "mechanisms/*mod",
+            "demo_CA1/ion_channels/*mod",
+            "demo_CA1/data/*csv",
+
+        ]
+    },
+    
     python_requires=">=3.6",
     license='LGPL-2.1-or-later',
     install_requires=['sciunit>=0.2.1']

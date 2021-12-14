@@ -7,13 +7,13 @@ from channelunit.tests import SteadyStateTest
 from channelunit.tests import InactivationSteadyStateTest
 from channelunit.tests import ActivationSteadyStateTest
 from channelunit import ModelPatchNernst
+from channelunit import data_path
 
 
-my_loc = os.path.dirname(os.path.abspath(__file__))
-channel_loc = os.path.join(my_loc, "..", "demo_CA1", "ion_channels")
-activation_loc = os.path.join(my_loc, "..", "demo_CA1", "data",
+channel_loc = os.path.join(data_path, "ion_channels")
+activation_loc = os.path.join(data_path, "data",
                               "I_Na_activation.csv")
-inactivation_loc = os.path.join(my_loc, "..", "demo_CA1", "data",
+inactivation_loc = os.path.join(data_path, "data",
                                 "I_Na_inactivation.csv")
 
 

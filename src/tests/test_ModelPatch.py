@@ -3,15 +3,16 @@ import unittest
 
 import numpy as np
 
+
 from channelunit.model_patch import ModelPatch
 from channelunit import ModelPatchNernst
 from channelunit import ModelWholeCellPatchNernst
 from channelunit import ModelPatchConcentration
+from channelunit import data_path
 
 
 
-my_loc = os.path.dirname(os.path.abspath(__file__))
-channel_loc = os.path.join(my_loc, "..", "demo_CA1", "ion_channels")
+channel_loc = os.path.join(data_path, "ion_channels")
 
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
@@ -363,6 +364,7 @@ class TestPatchWithCa(unittest.TestCase):
 #             for seg in sec:
 #                 area += seg.area()*1e-4
 #         self.assertEqual(self.model_init.patch.g_pas, 1/area/2*1e-9)
+
 
 if __name__ == "__main__":
     unittest.main()
