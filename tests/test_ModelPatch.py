@@ -40,12 +40,30 @@ class TestModelPatch(unittest.TestCase):
         self.assertEqual(0.001,
                          out.patch.psection()["density_mechs"]["nap"]["gnabar"][0])
 
+    def test_setup_gbar_custom_value(self):
+        out = ModelPatch(channel_loc, "nap", "na", gbar_name="gnabar",
+                         gbar_value=1)
+        self.assertEqual(1,
+                         out.patch.psection()["density_mechs"]["nap"]["gnabar"][0])
+        
     def test_Rm(self):
         out = ModelPatch(channel_loc, "nap", "na", 110,
                          gbar_name="gnabar", R_m=50000)
         self.assertEqual(out.patch.g_pas, 1/50000)
 
-    
+    def test_gbar_1(self):
+        out = ModelPatch(channel_loc, "nap", "na", 110,
+                         gbar_name="gnabar", R_m=50000,
+                         gbar_value=1)
+        self.assertEqual(1, out.gbar)
+
+    def test_gbar_2(self):
+        out = ModelPatch(channel_loc, "nap", "na", 110,
+                         gbar_name="gnabar", R_m=50000,
+                         gbar_value=1)
+        out.gbar = 0.2
+        self.assertEqual(0.2, out.gbar)
+
 class TestModelPatchNernst(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -150,6 +168,12 @@ class TestModelPatchNernst(unittest.TestCase):
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         self.assertEqual(self.modelNJ.E_rev, new_E_rev)
 
+    def test_setup_gbar_custom_value(self):
+        out = ModelPatchNernst(channel_loc, "nap", "na", gbar_name="gnabar",
+                               gbar_value=1, E_rev=50)
+        self.assertEqual(1,
+                         out.patch.psection()["density_mechs"]["nap"]["gnabar"][0])
+
         
 class TestCapabilites(unittest.TestCase):
     @classmethod
@@ -213,7 +237,7 @@ class TestCapabilites(unittest.TestCase):
                          list(self.inactivationN_cc.keys()))
         
 
-class TestWholeCellPatch(unittest.TestCase):
+class TestWholeCellPatchNernst(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.model = ModelWholeCellPatchNernst(channel_loc, "nap", "na", 110,
@@ -226,6 +250,19 @@ class TestWholeCellPatch(unittest.TestCase):
                                                    cvode=False,
                                                    v_rest=-90,
                                                    E_rev=15, R_in=2e9)
+    def test_setup_gbar_custom_value(self):
+        out = ModelWholeCellPatchNernst(channel_loc, "nap", "na",
+                                        gbar_name="gnabar",
+                                        gbar_value=1,
+                                        external_conc=110,
+                                        temp=35, recompile=False,
+                                        liquid_junction_pot=4,
+                                        cvode=False,
+                                        v_rest=-90,
+                                        E_rev=15, R_in=2e9)
+        self.assertEqual(1,
+                         out.patch.psection()["density_mechs"]["nap"]["gnabar"][0])
+
     def test_get_L(self):
         L = self.model.L
         self.assertEqual(L, self.model.patch.L)

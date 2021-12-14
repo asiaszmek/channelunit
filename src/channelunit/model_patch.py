@@ -30,10 +30,33 @@ class ModelPatch(sciunit.Model, NModlChannel):
         neuron.load_mechanisms(path)
         os.chdir(working_dir)
 
+    @property
+    def gbar(self):
+        values = self.patch.psection()["density_mechs"][self.channel_name][self.gbar_name]
+        if len(values) == 1:
+            return values[0]
+        elif len(set(values)) == 1:
+            return values[0]
+        return values
+
+    @gbar.setter
+    def gbar(self, value):
+        if not isinstance(value, list):
+            value = [value]
+        if len(value) == self.patch.nseg:
+            for i, seg in enumerate(self.patch):
+                from_mech = getattr(seg, self.channel_name)
+                setattr(from_mech, self.gbar_name, value[i])
+        elif len(value) == 1:
+            for i, seg in enumerate(self.patch):
+                from_mech = getattr(seg, self.channel_name)
+                setattr(from_mech, self.gbar_name, value[0])
+          
+
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22,
                  recompile=True, liquid_junction_pot=0,
-                 cvode=True, R_m=20000, v_rest=-65):
+                 cvode=True, R_m=20000, v_rest=-65, gbar_value=None):
         """
         ion_name: str
             most common ions are: na (sodium), k, ca (sometimes Ca, if 
@@ -63,15 +86,17 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.base_directory = "validation_results"
         #set up channel conductance/permeability in case it is 0
         chan = self.patch.psection()["density_mechs"][channel_name]
+        self.gbar_name = gbar_name
         if gbar_name not in chan.keys():
             raise SystemExit('Unable to proceed, unknown %s conductance (gbar)'
                              % channel_name)
 
-        if chan[gbar_name][0] == 0:
+        if chan[gbar_name][0] == 0 or gbar_value is not None:
             for seg in self.patch:
                 from_mech = getattr(seg, channel_name)
-                gbar_val = 0.001
-                setattr(from_mech, gbar_name, gbar_val)
+                if gbar_value is None:
+                    gbar_value = 0.001
+                setattr(from_mech, gbar_name, gbar_value)
         self.temperature = temp
         self.vclamp = h.SEClamp(self.patch(0.5))
         self.ion_name = ion_name
@@ -231,7 +256,7 @@ class ModelPatchNernst(ModelPatch):
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
                  liquid_junction_pot=0, cvode=True, R_m=20000, v_rest=-65,
-                 E_rev=None):
+                 E_rev=None, gbar_value=None):
         super(ModelPatchNernst, self).__init__(path_to_mods, channel_name,
                                                ion_name,
                                                external_conc=external_conc,
@@ -239,7 +264,8 @@ class ModelPatchNernst(ModelPatch):
                                                recompile=recompile,
                                                liquid_junction_pot=liquid_junction_pot,
                                                cvode=cvode,
-                                               R_m=20000, v_rest=v_rest)
+                                               R_m=20000, v_rest=v_rest,
+                                               gbar_value=gbar_value)
         if ion_name.lower() == "nonspecific":
             if isinstance(E_rev, int) or isinstance(E_rev, float):
                 self.E_rev = E_rev
@@ -344,7 +370,8 @@ class ModelPatchNernst(ModelPatch):
 class ModelPatchConcentration(ModelPatch):
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
-                 liquid_junction_pot=0, cvode=True, R_m=20000, v_rest=-65):
+                 liquid_junction_pot=0, cvode=True, R_m=20000, v_rest=-65,
+                 gbar_value=None):
         """
         Model class for testing calcium channels with 
         """
@@ -356,8 +383,10 @@ class ModelPatchConcentration(ModelPatch):
                                                       gbar_name=gbar_name,
                                                       temp=temp,
                                                       recompile=recompile,
-                                                      liquid_junction_pot=liquid_junction_pot, cvode=cvode,
-                                                      R_m=20000, v_rest=v_rest)
+                                                      liquid_junction_pot=liquid_junction_pot,
+                                                      cvode=cvode,
+                                                      R_m=20000, v_rest=v_rest,
+                                                      gbar_value=gbar_value)
         if self.ion_name == "ca":
             self.patch.insert("cad")
             self.patch.cainf_cad = self._cai
@@ -464,47 +493,47 @@ class WholeCellAttributes:
         self._set_g_pas(value)
 
 
-class ModelCellAttachedPatch(ModelPatch, WholeCellAttributes):
-    def __init__(self, path_to_mods, channel_name, ion_name,
-                 external_conc=None, gbar_name="gbar", temp=22, recompile=True,
-                 liquid_junction_pot=0, cvode=True, R_in=200e6, v_rest=-65,
-                 E_rev=None):
-        super(ModelCellAttachedPatch, self).__init__(path_to_mods,
-                                                     channel_name,
-                                                     ion_name,
-                                                     external_conc=external_conc,
-                                                     gbar_name=gbar_name, temp=temp,
-                                                     recompile=recompile,
-                                                     liquid_junction_pot=liquid_junction_pot,
-                                                     cvode=cvode, R_m=20000, v_rest=v_rest,
-                                                     E_rev=E_rev)
-        self.soma = h.Section("soma")
-        self.soma.insert("pas")
-        self.soma.e_pas = v_rest
-        self.soma.L = 10
-        self.soma.diam = 10
-        self.soma.Ra = 100
-        self.patch.Ra = 100
-        self._set_g_pas(R_in, [self.soma, self.patch])
-        self.sections = [self.soma, self.patch]
+# class ModelCellAttachedPatch(ModelPatch, WholeCellAttributes):
+#     def __init__(self, path_to_mods, channel_name, ion_name,
+#                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
+#                  liquid_junction_pot=0, cvode=True, R_in=200e6, v_rest=-65,
+#                  E_rev=None):
+#         super(ModelCellAttachedPatch, self).__init__(path_to_mods,
+#                                                      channel_name,
+#                                                      ion_name,
+#                                                      external_conc=external_conc,
+#                                                      gbar_name=gbar_name, temp=temp,
+#                                                      recompile=recompile,
+#                                                      liquid_junction_pot=liquid_junction_pot,
+#                                                      cvode=cvode, R_m=20000, v_rest=v_rest,
+#                                                      E_rev=E_rev)
+#         self.soma = h.Section("soma")
+#         self.soma.insert("pas")
+#         self.soma.e_pas = v_rest
+#         self.soma.L = 10
+#         self.soma.diam = 10
+#         self.soma.Ra = 100
+#         self.patch.Ra = 100
+#         self._set_g_pas(R_in, [self.soma, self.patch])
+#         self.sections = [self.soma, self.patch]
         
-    @property
-    def L(self):
-        return self.soma.L
+#     @property
+#     def L(self):
+#         return self.soma.L
 
-    @L.setter
-    def L(self, value):
-        self._L = value
-        self.soma.L = self._L
+#     @L.setter
+#     def L(self, value):
+#         self._L = value
+#         self.soma.L = self._L
 
-    @property
-    def diam(self):
-        return self.soma.diam
+#     @property
+#     def diam(self):
+#         return self.soma.diam
 
-    @diam.setter
-    def diam(self, value):
-        self._diam = value
-        self.soma.diam = self._diam
+#     @diam.setter
+#     def diam(self, value):
+#         self._diam = value
+#         self.soma.diam = self._diam
     
 
 class ModelWholeCellPatchNernst(ModelPatchNernst, WholeCellAttributes):
@@ -515,13 +544,14 @@ class ModelWholeCellPatchNernst(ModelPatchNernst, WholeCellAttributes):
                  external_conc=None, gbar_name="gbar",
                  temp=22, recompile=True,
                  liquid_junction_pot=0, cvode=True,  R_in=200e6,
-                 v_rest=-65, E_rev=None):
+                 v_rest=-65, E_rev=None, gbar_value=None):
 
         super(ModelWholeCellPatchNernst, self).__init__(path_to_mods, channel_name,
                                                         ion_name, external_conc,
                                                         gbar_name, temp, recompile,
                                                         liquid_junction_pot,
-                                                        cvode, 20000, v_rest, E_rev)
+                                                        cvode, 20000, v_rest, E_rev,
+                                                        gbar_value)
         self._L = 10
         self._diam = 10
         self.patch.L = self._L
@@ -556,13 +586,14 @@ class ModelWholeCellPatchConcentration(ModelPatchConcentration, WholeCellAttribu
                  external_conc=None, gbar_name="gbar",
                  temp=22, recompile=True,
                  liquid_junction_pot=0, cvode=True,  R_in=200e6,
-                 v_rest=-65):
+                 v_rest=-65, gbar_value=None):
 
         super(ModelWholeCellPatchConcentration, self).__init__(path_to_mods, channel_name,
                                                                ion_name, external_conc,
                                                                gbar_name, temp, recompile,
                                                                liquid_junction_pot,
-                                                               cvode, 20000, v_rest)
+                                                               cvode, 20000, v_rest,
+                                                               gbar_value)
         self._L = 10
         self._diam = 10
         self.patch.L = self._L
