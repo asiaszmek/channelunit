@@ -385,8 +385,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
                 t_start += dur2 + delay
             current = current - pulse
         if chord_conductance:
-            return abs(current/(self.vclamp.amp2 - self.E_rev))
-        return abs(current)
+            return current/(self.vclamp.amp2 - self.E_rev)
+        return current
 
     @staticmethod
     def normalize_to_one(current):
@@ -400,7 +400,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def get_max_of_dict(current):
         new_current = {}
         for key in current.keys():
-            new_current[key] = current[key].max()
+            new_current[key] = abs(current[key]).max()
         return new_current
 
 
