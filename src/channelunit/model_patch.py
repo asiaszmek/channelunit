@@ -11,7 +11,6 @@ from channelunit.capabilities import NModlChannel
 
 loc = os.path.dirname(os.path.abspath(__file__))
 mechanisms_path = os.path.join(loc, 'mechanisms')
-print(mechanisms_path)
 
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
@@ -73,6 +72,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.dt = 0.01
         self.channel_name = channel_name
         self.mod_path = path_to_mods
+        self.compile_and_add(mechanisms_path, recompile)
         self.compile_and_add(self.mod_path, recompile)
         self.patch = h.Section(name="patch")
         self.patch.L = 1
@@ -375,7 +375,6 @@ class ModelPatchConcentration(ModelPatch):
         """
         Model class for testing calcium channels with 
         """
-        self.compile_and_add(mechanisms_path, True)
         super(ModelPatchConcentration, self).__init__(path_to_mods,
                                                       channel_name,
                                                       ion_name,
