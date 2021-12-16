@@ -125,20 +125,28 @@ class ActivationSteadyStateTest(SteadyStateTest):
             self.chord_conductance = experimental_conditions["chord_conductance"]
         except:
             raise SystemExit("chord_conductance not specified in experimental conditions")
+        try:
+            self.leak_subtraction = experimental_conditions["leak_subtraction"]
+        except KeyError:
+            self.leak_subtraction = True
         self.power = power
         self.observation = OrderedDict(sorted(self.observation.items()))
         self.stimulus_list = self.extract_stimulation(self.observation)
 
-    def run_model(self, model, stim_list, v_init, t_stop, power, chord_conductance):
+    def run_model(self, model, stim_list, v_init, t_stop,
+                  power, chord_conductance, leak_subtraction):
         return model.get_activation_steady_state(stim_list,
                                                  v_init, t_stop, power,
-                                                 chord_conductance)
+                                                 chord_conductance,
+                                                 leak_subtraction)
     
 
     def generate_prediction(self, model, verbose=False):
         
         prediction = self.run_model(model, self.stimulus_list, self.v_init,
-                                    self.t_stop, self.power, self.chord_conductance)
+                                    self.t_stop, self.power,
+                                    self.chord_conductance,
+                                    self.leak_subtraction)
         if self.save_figures:
             name = self.name.replace(" ", "_")
             self.generate_figures(model, self.observation, prediction,
@@ -168,22 +176,28 @@ class InactivationSteadyStateTest(SteadyStateTest):
             self.chord_conductance = experimental_conditions["chord_conductance"]
         except KeyError:
             raise SystemExit("chord_conductance not specified in experimental conditions")
+        try:
+            self.leak_subtraction = experimental_conditions["leak_subtraction"]
+        except KeyError:
+            self.leak_subtraction = True
         self.power = power
         self.observation = OrderedDict(sorted(self.observation.items()))
         self.stimulus_list = self.extract_stimulation(self.observation)
 
     def run_model(self, model, stim_list, v_test, t_test, power,
-                  chord_conductance):
+                  chord_conductance, leak_subtraction):
         return model.get_inactivation_steady_state(stim_list,
                                                    v_test, t_test, power,
-                                                   chord_conductance)
+                                                   chord_conductance,
+                                                   leak_subtraction)
     
 
     def generate_prediction(self, model, verbose=False):
         
         prediction = self.run_model(model, self.stimulus_list, self.v_test,
                                     self.t_test, self.power,
-                                    self.chord_conductance)
+                                    self.chord_conductance,
+                                    self.leak_subtraction)
         if self.save_figures:
             name = self.name.replace(" ", "_")
             self.generate_figures(model, self.observation, prediction,

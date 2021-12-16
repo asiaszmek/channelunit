@@ -22,10 +22,16 @@ class TestModelPatch(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.modelJ = ModelPatch(channel_loc, "nap", "na", 110,
-                                gbar_name="gnabar")
-        cls.modelNJ = ModelPatch(channel_loc, "nap", "na", 110,
+                                gbar_name="gnabar",
+                                liquid_junction_pot=10)
+        cls.modelJ.set_vclamp(10, 10, 100, 100, False)
+       
+        cls.modelJ2 = ModelPatch(channel_loc, "nap", "na", 110,
                                  gbar_name="gnabar",
-                                 liquid_junction_pot=0)
+                                 liquid_junction_pot=10)
+        cls.modelJ2.set_vclamp(10, 10, 20, 90, True, 30)
+       
+        
 
     def test_reading_in_no_gbar(self):
         self.assertRaises(SystemExit,  ModelPatch,
@@ -65,6 +71,128 @@ class TestModelPatch(unittest.TestCase):
         out.gbar = 0.2
         self.assertEqual(0.2, out.gbar)
 
+    def test_max_of_dict(self):
+        dict1 = {1: np.array([1,3,4,1]), 2: np.array([2,2,2,1])}
+        self.assertEqual(ModelPatch.get_max_of_dict(dict1),
+                         {1: 4, 2:2})
+
+    def test_set_vclamp_junction_amp1(self):
+        self.assertEqual(self.modelJ.vclamp.amp1,
+                         10-self.modelJ.junction)
+
+    def test_set_vclamp_junction_amp2(self):
+        self.assertEqual(self.modelJ.vclamp.amp2,
+                         100-self.modelJ.junction)
+
+
+    def test_set_vclamp_junction_dur1(self):
+        self.assertEqual(self.modelJ.vclamp.dur1,
+                         10)
+
+    def test_set_vclamp_junction_dur2(self):
+        self.assertEqual(self.modelJ.vclamp.dur2,
+                         100)
+
+    def test_set_vclamp_ls_junction_amp1(self):
+        self.assertEqual(self.modelJ2.vclamp.amp1,
+                         10-self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_amp2(self):
+        self.assertEqual(self.modelJ2.vclamp.amp2,
+                         90-self.modelJ2.junction)
+
+
+    def test_set_vclamp_ls_junction_dur1(self):
+        self.assertEqual(self.modelJ2.vclamp.dur1,
+                         10)
+
+    def test_set_vclamp_ls_junction_dur2(self):
+        self.assertEqual(self.modelJ2.vclamp.dur2,
+                         20)
+
+    def test_set_vclamp_ls_junction_amp3(self):
+        self.assertEqual(self.modelJ2.vclamp.amp3,
+                         10-self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_dur3(self):
+        self.assertEqual(self.modelJ2.vclamp.dur3,
+                         30)
+
+    def test_set_vclamp_ls_junction_amp4(self):
+        print(self.modelJ2.vclamp.amp4)
+        self.assertEqual(self.modelJ2.vclamp.amp4,
+                         -40-2*self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_dur4(self):
+        self.assertEqual(self.modelJ2.vclamp.dur4,
+                         30)
+
+    def test_set_vclamp_ls_junction_amp5(self):
+        self.assertEqual(self.modelJ2.vclamp.amp5,
+                         -20-3*self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_dur5(self):
+        self.assertEqual(self.modelJ2.vclamp.dur5,
+                         20)
+
+    def test_set_vclamp_ls_junction_amp6(self):
+        
+        self.assertEqual(self.modelJ2.vclamp.amp6,
+                         -40-2*self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_dur6(self):
+        self.assertEqual(self.modelJ2.vclamp.dur6,
+                         30)
+
+    def test_set_vclamp_ls_junction_amp7(self):
+        self.assertEqual(self.modelJ2.vclamp.amp7,
+                         -20-3*self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_dur7(self):
+        self.assertEqual(self.modelJ2.vclamp.dur7,
+                         20)
+
+    def test_set_vclamp_ls_junction_amp8(self):
+        self.assertEqual(self.modelJ2.vclamp.amp8,
+                         -40-2*self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_dur8(self):
+        self.assertEqual(self.modelJ2.vclamp.dur8,
+                         30)
+
+    def test_set_vclamp_ls_junction_amp9(self):
+        self.assertEqual(self.modelJ2.vclamp.amp9,
+                         -20-3*self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_dur9(self):
+        self.assertEqual(self.modelJ2.vclamp.dur9,
+                         20)
+
+    def test_set_vclamp_ls_junction_amp10(self):
+        self.assertEqual(self.modelJ2.vclamp.amp10,
+                         -40-2*self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_dur10(self):
+        self.assertEqual(self.modelJ2.vclamp.dur10,
+                         30)
+
+    def test_set_vclamp_ls_junction_amp11(self):
+        self.assertEqual(self.modelJ2.vclamp.amp11,
+                         -20-3*self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_dur11(self):
+        self.assertEqual(self.modelJ2.vclamp.dur11,
+                         20)
+
+    def test_set_vclamp_ls_junction_amp12(self):
+        self.assertEqual(self.modelJ2.vclamp.amp12,
+                         -40-2*self.modelJ2.junction)
+
+    def test_set_vclamp_ls_junction_dur12(self):
+        self.assertEqual(self.modelJ2.vclamp.dur12,
+                         30)
+ 
+        
 class TestModelPatchNernst(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -74,8 +202,6 @@ class TestModelPatchNernst(unittest.TestCase):
         cls.modelNJ = ModelPatchNernst(channel_loc, "nap", "na", 110,
                                        gbar_name="gnabar",
                                        liquid_junction_pot=0)
-        cls.modelJ.set_vclamp(10, 10, 100, 100)
-        cls.modelNJ.set_vclamp(10, 10, 100, 100)
     
     def test_reading_in_easy(self):
         out = ModelPatchNernst(channel_loc, "na3", "na", 140)
@@ -94,7 +220,8 @@ class TestModelPatchNernst(unittest.TestCase):
         self.assertEqual(-30, out.E_rev)
 
     def test_setup_ext_conc_e_rev(self):
-        out = ModelPatchNernst(channel_loc, "nax", "na", external_conc=140, E_rev=-30)
+        out = ModelPatchNernst(channel_loc, "nax", "na", external_conc=140,
+                               E_rev=-30)
         conc_fact = np.log(out.external_conc/out.nai)
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         self.assertEqual(out.E_rev, new_E_rev)
@@ -109,49 +236,65 @@ class TestModelPatchNernst(unittest.TestCase):
         name = out._find_E_rev_name()
         self.assertEqual("ena", name)
 
-    def test_set_vclamp_junction_amp1(self):
-        self.assertEqual(self.modelJ.vclamp.amp1,
-                         10-self.modelJ.junction)
+    def test_extract_current_chord_conductance(self):
+        dt = 0.01
+        I = np.ones((int((10+20)/dt)))
+        out = self.modelJ.extract_current(I, True, False, 10, 20, 0)
+        expected = abs(I[int(10/dt):]/(self.modelJ.vclamp.amp2
+                                       - self.modelJ.E_rev))
+        comparison = np.allclose(expected, out)
+        self.assertTrue(comparison)
 
-    def test_set_vclamp_junction_amp2(self):
-        self.assertEqual(self.modelJ.vclamp.amp2,
-                         100-self.modelJ.junction)
+    def test_extract_current_nothing(self):
+        dt = 0.01
+        I = np.ones((int((10+20)/dt)))
+        out = self.modelJ.extract_current(I, False, False, 10, 20, 0)
+        expected = I[int(10/dt):]
+        comparison = np.allclose(expected, out)
+        self.assertTrue(comparison)
 
-    def test_set_vclamp_nojunction_amp1(self):
-        self.assertEqual(self.modelNJ.vclamp.amp1,
-                         10)
+    def test_extract_current_ls_chord_conductance(self):
+        dt = 0.01
+        dur1 = 20
+        dur2 = 10
+        delay = 5
+        I = np.ones((int((dur1+5*dur2+6*delay)/dt)))
+        I[:int(dur1/dt)] = 0
+        I[int(dur1/dt):int((dur1+dur2)/dt)] = 10
+        I[int((dur1+dur2)/dt):int((dur1+dur2+delay)/dt)] = 0
+        I[int((dur1+dur2+delay)/dt):int((dur1+dur2+2*delay)/dt)] = -5
+        t_start = dur1+dur2+2*delay
+        for i in range(4):
+            I[int(t_start/dt):int((t_start+dur2)/dt)] = 2
+            I[int((t_start+dur2)/dt):int((t_start+dur2+delay)/dt)] = -5
+            t_start += dur2 + delay
+        out = self.modelJ.extract_current(I, True, True, dur1, dur2, delay)
+        expected = abs((I[int(dur1/dt):int((dur1+dur2)/dt)]
+                    -8)/(self.modelJ.vclamp.amp2 - self.modelJ.E_rev))
+        comparison = np.allclose(expected, out)
+        self.assertTrue(comparison)
 
-    def test_set_vclamp_nojunction_amp2(self):
-        self.assertEqual(self.modelNJ.vclamp.amp2,
-                         100)
+    def test_extract_current_ls_no_chord_conductance(self):
+        dt = 0.01
+        dur1 = 20
+        dur2 = 10
+        delay = 5
+        I = np.ones((int((dur1+5*dur2+6*delay)/dt)))
+        I[:int(dur1/dt)] = 0
+        I[int(dur1/dt):int((dur1+dur2)/dt)] = 10
+        I[int((dur1+dur2)/dt):int((dur1+dur2+delay)/dt)] = 0
+        I[int((dur1+dur2+delay)/dt):int((dur1+dur2+2*delay)/dt)] = -5
+        t_start = dur1+dur2+2*delay
+        for i in range(4):
+            I[int(t_start/dt):int((t_start+dur2)/dt)] = 2
+            I[int((t_start+dur2)/dt):int((t_start+dur2+delay)/dt)] = -5
+            t_start += dur2 + delay
+        out = self.modelJ.extract_current(I, False, True, dur1, dur2, delay)
+        expected = (I[int(dur1/dt):int((dur1+dur2)/dt)]-8)
+        comparison = np.allclose(expected, out)
+        self.assertTrue(comparison)
 
-    def test_set_vclamp_junction_dur1(self):
-        self.assertEqual(self.modelJ.vclamp.dur1,
-                         10)
-
-    def test_set_vclamp_junction_dur2(self):
-        self.assertEqual(self.modelJ.vclamp.dur2,
-                         100)
-
-    def test_set_vclamp_nojunction_dur1(self):
-        self.assertEqual(self.modelNJ.vclamp.dur1,
-                         10)
-
-    def test_set_vclamp_nojunction_dur2(self):
-        self.assertEqual(self.modelNJ.vclamp.dur2,
-                         100)
-
-    def test_extract_current(self):
-        I = 2
-        out = self.modelJ.extract_current(I, True)
-        expected = I/(self.modelJ.vclamp.amp2 - self.modelJ.E_rev)
-        self.assertEqual(out, expected)
-
-    def test_extract_current(self):
-        I = -22
-        out = self.modelJ.extract_current(I, False)
-        self.assertEqual(out, 22)
-
+        
     def test_normalize_to_one(self):
         dic = {1:1, 2:2}
         out = self.modelJ.normalize_to_one(dic)
@@ -184,9 +327,9 @@ class TestCapabilites(unittest.TestCase):
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
         cls.activationY_cc = cls.modelY.get_activation_steady_state(
-            cls.stim_levels_act, -90, 800, 1, chord_conductance=True)
+            cls.stim_levels_act, -90, 200, 1, chord_conductance=True)
         cls.activationY = cls.modelY.get_activation_steady_state(
-            cls.stim_levels_act, -90, 800, 1, chord_conductance=False)
+            cls.stim_levels_act, -90, 200, 1, chord_conductance=False)
         cls.inactivationY_cc = cls.modelY.get_inactivation_steady_state(
             cls.stim_levels_inact, -5, 20, 1, chord_conductance=True)
         cls.inactivationY = cls.modelY.get_inactivation_steady_state(
@@ -197,9 +340,9 @@ class TestCapabilites(unittest.TestCase):
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
         cls.activationN_cc = cls.modelN.get_activation_steady_state(
-            cls.stim_levels_act, -90, 800, 1, chord_conductance=True)
+            cls.stim_levels_act, -90, 200, 1, chord_conductance=True)
         cls.activationN = cls.modelN.get_activation_steady_state(
-            cls.stim_levels_act, -90, 800, 1, chord_conductance=False)
+            cls.stim_levels_act, -90, 200, 1, chord_conductance=False)
         cls.inactivationN_cc = cls.modelN.get_inactivation_steady_state(
             cls.stim_levels_inact, -5, 20, 1, chord_conductance=True)
         cls.inactivationN = cls.modelN.get_inactivation_steady_state(

@@ -98,21 +98,123 @@ class ModelPatch(sciunit.Model, NModlChannel):
                     gbar_value = 0.001
                 setattr(from_mech, gbar_name, gbar_value)
         self.temperature = temp
-        self.vclamp = h.SEClamp(self.patch(0.5))
+        self.vclamp = h.SEClampOLS(self.patch(0.5))
         self.ion_name = ion_name
         self._external_conc = external_conc
         self.cvode = cvode
 
-    def set_vclamp(self, dur1, v1, dur2, v2):
+    def set_vclamp(self, dur1, v1, dur2, v2, leak_subtraction, delay=200):
         self.vclamp.dur1 = dur1
         self.vclamp.amp1 = v1 - self.junction
         self.vclamp.dur2 = dur2
         self.vclamp.amp2 = v2 - self.junction
+        if not leak_subtraction:
+            self.vclamp.dur3 = 0
+            self.vclamp.dur4 = 0
+            self.vclamp.dur5 = 0
+            self.vclamp.dur6 = 0
+            self.vclamp.dur7 = 0
+            self.vclamp.dur8 = 0
+            self.vclamp.dur9 = 0
+            self.vclamp.dur10 = 0
+            self.vclamp.dur11 = 0
+            self.vclamp.dur12 = 0
+            return dur1+dur2
+
+        pulse_amp = self.vclamp.amp2 - self.vclamp.amp1
+        self.vclamp.dur3 = delay
+        self.vclamp.amp3 = self.vclamp.amp1
+        v_sub = self.vclamp.amp1 - pulse_amp/4 - 30 - self.junction
+        v_pulse = v_sub + pulse_amp/4 - self.junction
+        self.vclamp.amp4 = v_sub
+        self.vclamp.dur4 = delay
+        # 1st pulse
+        self.vclamp.amp5 = v_pulse
+        self.vclamp.dur5 = dur2
+        self.vclamp.amp6 = v_sub
+        self.vclamp.dur6 = delay
+        #2nd pulse
+        self.vclamp.amp7 = v_pulse
+        self.vclamp.dur7 = dur2
+        self.vclamp.amp8 = v_sub
+        self.vclamp.dur8 = delay
+        #3rd pulse
+        self.vclamp.amp9 = v_pulse
+        self.vclamp.dur9 = dur2
+        self.vclamp.amp10 = v_sub
+        self.vclamp.dur10 = delay
+        #4th pulse
+        self.vclamp.amp11 = v_pulse
+        self.vclamp.dur11 = dur2
+        self.vclamp.amp12 = v_sub
+        self.vclamp.dur12 = delay
+        return dur1 + 6*delay + 5*dur2
+
+    def get_activation_traces(self, stimulation_levels: list,
+                              v_hold: float, t_stop:float,
+                              chord_conductance=False,
+                              leak_subtraction=True,
+                              duration=200, sim_dt=0.001, interval=200):
+        """
+        Function for running step experiments to determine 
+        current/chord conductance traces
+
+
+        Diagram of the experiment:
+              ________________________ stimulation_levels
+             |________________________
+             |________________________
+             |________________________
+             |________________________
+             |________________________
+        _____| <- v_hold
+
+        simulation_levels: list
+           list of voltages to test
+        v_hold: float
+          initial holding potential
+        t_stop:
+          stimulation duration
+        chord_conductance: boolean
+          in many experiments current is normalized by membrane voltage 
+          minus the ion's reversal potential.
+        duration: float
+          duration of the simulation
+        sim_dt: float
+          for channels that can not be simulated using cvode. This value 
+          should be small.
+        """
+        if self.cvode:
+            h.cvode_active(1)
+        else:
+            h.cvode_active(0)
+            h.dt = sim_dt
+        h.celsius = self.temperature
+        current_vals = {}
+        current = h.Vector()
+        current.record(self.vclamp._ref_i, self.dt)
+        time = h.Vector()
+        time.record(h._ref_t, self.dt)
+        delay = 200
+        stim_start = int(delay/self.dt)
+        for level in stimulation_levels:
+            stim_stop = self.set_vclamp(delay, v_hold, duration, level,
+                                        leak_subtraction,
+                                        delay=interval)
+            h.init()
+            h.tstop = stim_stop
+            h.run()
+            I = current.as_numpy()[stim_start:]
+            out = self.extract_current(I, chord_conductance, leak_subtraction,
+                                       delay, duration, interval)
+            current_vals[level] = out
+        return current_vals
 
     def get_activation_steady_state(self, stimulation_levels: list,
                                     v_hold: float, t_stop:float,
                                     power: int, chord_conductance=False,
-                                    duration=1000, sim_dt=0.001):
+                                    leak_subtraction=True,
+                                    duration=200, sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine steady-state
         activation curves.
@@ -146,37 +248,87 @@ class ModelPatch(sciunit.Model, NModlChannel):
           for channels that can not be simulated using cvode. This value 
           should be small.
         """
-        if self.cvode:
-            h.cvode_active(1)
-        else:
-            h.cvode_active(0)
-            h.dt = sim_dt
-        h.celsius = self.temperature
-        max_current = {}
-        current = h.Vector()
-        current.record(self.vclamp._ref_i, self.dt)
-        time = h.Vector()
-        time.record(h._ref_t, self.dt)
-        delay = 200
-        stim_start = int(delay/self.dt)
-        for level in stimulation_levels:
-            self.set_vclamp(delay, v_hold, duration, level)
-            h.init()
-            h.tstop = t_stop
-            h.run()
-            I = current.as_numpy()[stim_start:]
-            out = self.extract_current(I, chord_conductance)
-            max_current[level] = max(out)
+        currents = self.get_activation_traces(stimulation_levels,
+                                              v_hold, t_stop,
+                                              chord_conductance,
+                                              leak_subtraction,
+                                              duration=duration,
+                                              sim_dt=sim_dt,
+                                              interval=interval)
+        max_current = self.get_max_of_dict(currents)
         result = self.normalize_to_one(max_current)
         if power != 1:
             for key in result.keys():
                 result[key] = result[key]**(1/power)
         return result
 
+    def get_inactivation_traces(self, stimulation_levels: list,
+                                v_test: float, t_test:float,
+                                chord_conductance=False,
+                                leak_subtraction=True,
+                                sim_dt=0.001, interval=200):
+        """
+        Function for running step experiments to determine steady-state
+        inactivation currents.
+
+
+        Diagram of the experiment
+              ___ v_test
+             |   |
+             |   |
+        _____|   |
+        _____|   |
+        _____|   |
+        _____| <- stimulation_levels
+
+        simulation_levels: list
+           list of voltages to test
+        v_test: float
+          voltage level to test inactivated 
+        t_test: float
+          duration of test pulse
+        chord_conductance: boolean
+          in many experiments current is normalized by membrane voltage
+          minus the ion's reversal potential.
+        sim_dt: float
+          for channels that can not be simulated using cvode. T
+          his value should be small.
+        """
+        if self.cvode:
+            h.cvode_active(1)
+        else:
+            h.cvode_active(0)
+            h.dt = sim_dt
+
+        h.celsius = self.temperature
+        delay = 200
+        stim_start = int(delay/self.dt)
+
+        current_values = {}
+        current = h.Vector()
+        current.record(self.vclamp._ref_i, self.dt)
+        time = h.Vector()
+        time.record(h._ref_t, self.dt)
+        for v_hold in stimulation_levels:
+            t_stop = self.set_vclamp(delay, v_hold, t_test, v_test,
+                                     leak_subtraction,
+                                     delay=interval)
+            h.init()
+            h.tstop = t_stop
+            h.run()
+            I = current.as_numpy()[stim_start:]
+            out = self.extract_current(I, chord_conductance,
+                                       leak_subtraction, delay, t_test,
+                                       interval)
+            current_values[v_hold] = out
+        return current_values
+        
     def get_inactivation_steady_state(self, stimulation_levels: list,
                                       v_test: float, t_test:float,
                                       power: int,
-                                      chord_conductance=False, sim_dt=0.001):
+                                      chord_conductance=False,
+                                      leak_subtraction=True,
+                                      sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine steady-state
         inactivation curves.
@@ -208,47 +360,47 @@ class ModelPatch(sciunit.Model, NModlChannel):
           for channels that can not be simulated using cvode. T
           his value should be small.
         """
-        if self.cvode:
-            h.cvode_active(1)
-        else:
-            h.cvode_active(0)
-            h.dt = sim_dt
-
-        h.celsius = self.temperature
-        delay = 200
-        stim_start = int(delay/self.dt)
-        t_stop = delay +  t_test
-        max_current = {}
-        current = h.Vector()
-        current.record(self.vclamp._ref_i, self.dt)
-        time = h.Vector()
-        time.record(h._ref_t, self.dt)
-        for v_hold in stimulation_levels:
-            self.set_vclamp(delay, v_hold, t_test, v_test)
-            h.init()
-            h.tstop = t_stop
-            h.run()
-            I = current.as_numpy()[stim_start:]
-            out = self.extract_current(I, chord_conductance)
-            max_current[v_hold] = max(out)
+        currents = self.get_inactivation_traces(stimulation_levels,
+                                                v_test, t_test,
+                                                chord_conductance,
+                                                leak_subtraction,
+                                                sim_dt, interval)
+        max_current = self.get_max_of_dict(currents)
         result = self.normalize_to_one(max_current)
         if power != 1:
             for key in result.keys():
                 result[key] = result[key]**(1/power)
         return result
-
                 
-    def extract_current(self, I, chord_conductance):
+    def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
+                        dur2, delay):
+        #dt = self.dt
+        current = I[int(dur1/self.dt):int((dur1+dur2)/self.dt)]
+        #either step injection or the short pulse
+        if leak_subtraction:
+            pulse = np.zeros(current.shape)
+            t_start = dur1 + dur2 + 2*delay
+            for i in range(4):
+                pulse += I[int(t_start/self.dt):int((t_start+dur2)/self.dt)]
+                t_start += dur2 + delay
+            current = current - pulse
         if chord_conductance:
-            return I/(self.vclamp.amp2 - self.E_rev)
-        return abs(I)
+            return abs(current/(self.vclamp.amp2 - self.E_rev))
+        return abs(current)
 
     @staticmethod
     def normalize_to_one(current):
-        factor = max(current.values())
+        factor = max(sorted(current.values()))
         new_current = {}
         for key in current.keys():
             new_current[key] = current[key]/factor
+        return new_current
+
+    @staticmethod
+    def get_max_of_dict(current):
+        new_current = {}
+        for key in current.keys():
+            new_current[key] = current[key].max()
         return new_current
 
 

@@ -72,26 +72,70 @@ class TestActivationSteadyState(unittest.TestCase):
                                liquid_junction_pot=0)
         activation_data = np.loadtxt(activation_loc, skiprows=1,
                                      delimiter=",")
-        cls.power = 2
+        cls.power = 1
         cls.activation_data = dict(val.tolist() for val in activation_data)
-        cls.test = ActivationSteadyStateTest(cls.activation_data,
-                                             {"v_init": -90, "t_stop": 400,
-                                              "chord_conductance":True}, 2,
-                                             "ActvationSSTest",
-                                             save_figures=True)
+        cls.test_no_ls = ActivationSteadyStateTest(cls.activation_data,
+                                             {"v_init": -90, "t_stop": 800,
+                                              "leak_subtraction":False,
+                                              "chord_conductance":True}, 1,
+                                                   "ActvationSSTest",
+                                                   save_figures=True)
+        cls.test_ls = ActivationSteadyStateTest(cls.activation_data,
+                                                {"v_init": -90, "t_stop": 800,
+                                                 "leak_subtraction":True,
+                                                 "chord_conductance":True}, 1,
+                                                "ActvationSSTest",
+                                                save_figures=True)
 
 
 
     def test_summarize(self):
-        self.score = self.test.judge(self.model)
+        self.score = self.test_ls.judge(self.model)
         self.score.summarize()
-        
-    def test_run_model(self):
-        out = self.test.run_model(self.model, self.test.stimulus_list,
-                                  self.test.v_init, self.test.t_stop,
-                                  self.power,
-                                  self.test.chord_conductance)
-        self.assertEqual(list(out.keys()), self.test.stimulus_list)
+
+
+    def test_summarize_no_ls(self):
+        self.score = self.test_no_ls.judge(self.model)
+        self.score.summarize()
+
+    def test_run_model_1_keys(self):
+        out = self.test_no_ls.run_model(self.model, self.test_no_ls.stimulus_list,
+                                        self.test_no_ls.v_init,
+                                        self.test_no_ls.t_stop,
+                                        self.power,
+                                        self.test_no_ls.chord_conductance,
+                                        False)
+        self.assertEqual(list(out.keys()), self.test_no_ls.stimulus_list)
+
+    def test_run_model_1_values(self):
+        out = self.test_no_ls.run_model(self.model, self.test_no_ls.stimulus_list,
+                                        self.test_no_ls.v_init,
+                                        self.test_no_ls.t_stop,
+                                        self.power,
+                                        self.test_no_ls.chord_conductance,
+                                        False)
+        values = np.array(list(out.values()))
+        is_all_less_1 = np.all((values<=1))
+        self.assertTrue(is_all_less_1)
+
+    def test_run_model_2_keys(self):
+        out = self.test_ls.run_model(self.model, self.test_ls.stimulus_list,
+                                     self.test_ls.v_init, self.test_ls.t_stop,
+                                     self.power,
+                                     self.test_ls.chord_conductance,
+                                     True)
+        self.assertEqual(list(out.keys()), self.test_ls.stimulus_list)
+
+    def test_run_model_2_values(self):
+        out = self.test_ls.run_model(self.model, self.test_ls.stimulus_list,
+                                     self.test_ls.v_init,
+                                     self.test_ls.t_stop,
+                                     self.power,
+                                     self.test_ls.chord_conductance,
+                                     True)
+        values = np.array(list(out.values()))
+        is_all_less_1 = np.all((values<=1))
+        self.assertTrue(is_all_less_1)
 
 
 class TestInactivationSteadyState(unittest.TestCase):
@@ -107,7 +151,8 @@ class TestInactivationSteadyState(unittest.TestCase):
         cls.power = 1
         cls.test = InactivationSteadyStateTest(cls.inactivation_data,
                                                {"v_test": -5, "t_test": 100,
-                                                "chord_conductance":True}, 1,
+                                                "chord_conductance":True,
+                                                "leak_subtraction":True}, 1,
                                                "InactvationSSTest",
                                                save_figures=True)
 
@@ -120,7 +165,7 @@ class TestInactivationSteadyState(unittest.TestCase):
     def test_run_model(self):
         out = self.test.run_model(self.model, self.test.stimulus_list,
                                   self.test.v_test, self.test.t_test, self.power,
-                                  self.test.chord_conductance)
+                                  self.test.chord_conductance, True)
         self.assertEqual(list(out.keys()), self.test.stimulus_list)
 
 if __name__ == "__main__":
