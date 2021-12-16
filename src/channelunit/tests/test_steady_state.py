@@ -109,8 +109,10 @@ class ActivationSteadyStateTest(SteadyStateTest):
                  name="Activation Steady State Test",
                  base_directory="", save_figures=True):
 
-        SteadyStateTest.__init__(self, observation, experimental_conditions,
-                                name, base_directory, save_figures)
+        super(ActivationSteadyStateTest, self).__init__(observation,
+                                                        experimental_conditions,
+                                                        name, base_directory,
+                                                        save_figures)
         try:
             self.v_init = experimental_conditions["v_init"]
         except KeyError:
@@ -150,8 +152,10 @@ class InactivationSteadyStateTest(SteadyStateTest):
                  name="Inctivation Steady State Test",
                  base_directory="", save_figures=True):
 
-        SteadyStateTest.__init__(self, observation, experimental_conditions,
-                                name, base_directory, save_figures)
+        super(InactivationSteadyStateTest, self).__init__(observation,
+                                                          experimental_conditions,
+                                                          name, base_directory,
+                                                          save_figures)
         try:
             self.v_test = experimental_conditions["v_test"]
         except KeyError:
