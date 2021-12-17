@@ -153,7 +153,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def get_activation_traces(self, stimulation_levels: list,
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
-                              leak_subtraction=True,
+                              channel_current=False,
                               duration=200, sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine 
@@ -192,11 +192,31 @@ class ModelPatch(sciunit.Model, NModlChannel):
         h.celsius = self.temperature
         current_vals = {}
         current = h.Vector()
-        current.record(self.vclamp._ref_i, self.dt)
+        if not channel_current:
+            current.record(self.vclamp._ref_i, self.dt)
+            leak_subtraction = True
+        else:
+            leak_subtraction = False
+            if self.ion_name == "na":
+                current.record(self.patch(0.5)._ref_ina, self.dt)
+            elif self.ion_name == "k":
+                current.record(self.patch(0.5)._ref_ik, self.dt)
+            elif self.ion_name == "ca":
+                current.record(self.patch(0.5)._ref_ica, self.dt)
+            elif self.ion_name == "Ca":
+                current.record(self.patch(0.5)._ref_iCa, self.dt)
+            elif self.ion_name == "ba":
+                current.record(self.patch(0.5)._ref_ica, self.dt)
+            elif self.ion_name == "Ba":
+                current.record(self.patch(0.5)._ref_iCa, self.dt)
+            else:
+                current.record(self.vclamp._ref_i, self.dt)
+                leak_subtraction = True
         time = h.Vector()
         time.record(h._ref_t, self.dt)
         delay = 200
         stim_start = int(delay/self.dt)
+        
         for level in stimulation_levels:
             stim_stop = self.set_vclamp(delay, v_hold, duration, level,
                                         leak_subtraction,
@@ -204,7 +224,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
             h.init()
             h.tstop = stim_stop
             h.run()
-            I = current.as_numpy()[stim_start:]
+            I = current.as_numpy()
             out = self.extract_current(I, chord_conductance, leak_subtraction,
                                        delay, duration, interval)
             current_vals[level] = out
@@ -213,7 +233,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def get_activation_steady_state(self, stimulation_levels: list,
                                     v_hold: float, t_stop:float,
                                     power: int, chord_conductance=False,
-                                    leak_subtraction=True,
+                                    channel_current=False,
                                     duration=200, sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine steady-state
@@ -251,7 +271,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         currents = self.get_activation_traces(stimulation_levels,
                                               v_hold, t_stop,
                                               chord_conductance,
-                                              leak_subtraction,
+                                              channel_current,
                                               duration=duration,
                                               sim_dt=sim_dt,
                                               interval=interval)
@@ -265,7 +285,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def get_inactivation_traces(self, stimulation_levels: list,
                                 v_test: float, t_test:float,
                                 chord_conductance=False,
-                                leak_subtraction=True,
+                                channel_current=False,
                                 sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine steady-state
@@ -306,7 +326,27 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
         current_values = {}
         current = h.Vector()
-        current.record(self.vclamp._ref_i, self.dt)
+        if not channel_current:
+            current.record(self.vclamp._ref_i, self.dt)
+            leak_subtraction = True
+        else:
+            leak_subtraction = False
+            if self.ion_name == "na":
+                current.record(self.patch(0.5)._ref_ina, self.dt)
+            elif self.ion_name == "k":
+                current.record(self.patch(0.5)._ref_ik, self.dt)
+            elif self.ion_name == "ca":
+                current.record(self.patch(0.5)._ref_ica, self.dt)
+            elif self.ion_name == "Ca":
+                current.record(self.patch(0.5)._ref_iCa, self.dt)
+            elif self.ion_name == "ba":
+                current.record(self.patch(0.5)._ref_ica, self.dt)
+            elif self.ion_name == "Ba":
+                current.record(self.patch(0.5)._ref_iCa, self.dt)
+            else:
+                current.record(self.vclamp._ref_i, self.dt)
+                leak_subtraction = True
+
         time = h.Vector()
         time.record(h._ref_t, self.dt)
         for v_hold in stimulation_levels:
@@ -316,10 +356,10 @@ class ModelPatch(sciunit.Model, NModlChannel):
             h.init()
             h.tstop = t_stop
             h.run()
-            I = current.as_numpy()[stim_start:]
+            I = current.as_numpy()
             out = self.extract_current(I, chord_conductance,
                                        leak_subtraction, delay, t_test,
-                                       interval)
+                                       0)
             current_values[v_hold] = out
         return current_values
         
@@ -328,6 +368,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                       power: int,
                                       chord_conductance=False,
                                       leak_subtraction=True,
+                                      channel_current=False,
                                       sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine steady-state
@@ -385,7 +426,9 @@ class ModelPatch(sciunit.Model, NModlChannel):
                 t_start += dur2 + delay
             current = current - pulse
         if chord_conductance:
-            return current/(self.vclamp.amp2 - self.E_rev)
+            current = current/(self.vclamp.amp2 - self.E_rev)
+        if self.ion_name in ["na", "k", "ca", "ba", "Ca", "Ba"]:
+            return abs(current)
         return current
 
     @staticmethod
@@ -550,6 +593,7 @@ class ModelPatchConcentration(ModelPatch):
             self.patch.insert("Cad")
             self.patch.cainf_cad = 0
             h.cao0_ca_ion = self._external_conc
+            chan = self.patch.psection()["density_mechs"][channel_name]
             for i, seg in enumerate(self.patch):
                 from_mech = getattr(seg, channel_name)
                 gbar_val = 2*chan[gbar_name][i]
@@ -558,6 +602,7 @@ class ModelPatchConcentration(ModelPatch):
             self.patch.insert("cad")
             self.patch.cainf_cad = 0
             h.cao0_ca_ion = self._external_conc
+            chan = self.patch.psection()["density_mechs"][channel_name]
             for i, seg in enumerate(self.patch):
                 from_mech = getattr(seg, channel_name)
                 gbar_val = 2*chan[gbar_name][i]
