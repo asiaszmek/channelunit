@@ -153,7 +153,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def get_activation_traces(self, stimulation_levels: list,
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
-                              channel_current=False,
+                              electrode_current=True,
                               sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine 
@@ -192,7 +192,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         h.celsius = self.temperature
         current_vals = {}
         current = h.Vector()
-        if not channel_current:
+        if electrode_current:
             current.record(self.vclamp._ref_i, self.dt)
             leak_subtraction = True
         else:
@@ -232,9 +232,9 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     def get_activation_steady_state(self, stimulation_levels: list,
                                     v_hold: float, t_stop:float,
-                                    power: int, chord_conductance=False,
-                                    channel_current=False,
-                                     sim_dt=0.001, interval=200):
+                                    power: int, chord_conductance,
+                                    electrode_current,
+                                    sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine steady-state
         activation curves.
@@ -271,7 +271,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         currents = self.get_activation_traces(stimulation_levels,
                                               v_hold, t_stop,
                                               chord_conductance,
-                                              channel_current,
+                                              electrode_current,
                                               sim_dt=sim_dt,
                                               interval=interval)
         max_current = self.get_max_of_dict(currents)
@@ -283,8 +283,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     def get_inactivation_traces(self, stimulation_levels: list,
                                 v_test: float, t_test:float,
-                                chord_conductance=False,
-                                channel_current=False,
+                                chord_conductance,
+                                electrode_current,
                                 sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine steady-state
@@ -325,7 +325,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
         current_values = {}
         current = h.Vector()
-        if not channel_current:
+        if electrode_current:
             current.record(self.vclamp._ref_i, self.dt)
             leak_subtraction = True
         else:
@@ -367,7 +367,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                       power: int,
                                       chord_conductance=False,
                                       leak_subtraction=True,
-                                      channel_current=False,
+                                      electrode_current=True,
                                       sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine steady-state

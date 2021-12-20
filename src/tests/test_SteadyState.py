@@ -68,21 +68,22 @@ class TestActivationSteadyState(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         E_rev = 8.314*(273.15+22)/96485*np.log(110/15)
-        cls.model = ModelPatchNernst(channel_loc, "na3", "na", external_conc=110, temp=22,
-                               liquid_junction_pot=0)
+        cls.model = ModelPatchNernst(channel_loc, "na3", "na",
+                                     external_conc=110, temp=22,
+                                     liquid_junction_pot=0)
         activation_data = np.loadtxt(activation_loc, skiprows=1,
                                      delimiter=",")
         cls.power = 1
         cls.activation_data = dict(val.tolist() for val in activation_data)
         cls.test_no_ls = ActivationSteadyStateTest(cls.activation_data,
                                              {"v_init": -90, "t_stop": 800,
-                                              "channel_current":True,
+                                              "electrode_current":False,
                                               "chord_conductance":True}, 1,
                                                    "ActvationSSTest",
                                                    save_figures=True)
         cls.test_ls = ActivationSteadyStateTest(cls.activation_data,
                                                 {"v_init": -90, "t_stop": 800,
-                                                 "channel_current":False,
+                                                 "electrode_current":True,
                                                  "chord_conductance":True}, 1,
                                                 "ActvationSSTest",
                                                 save_figures=True)
@@ -104,7 +105,7 @@ class TestActivationSteadyState(unittest.TestCase):
                                         self.test_no_ls.t_stop,
                                         self.power,
                                         self.test_no_ls.chord_conductance,
-                                        False)
+                                        self.test_no_ls.electrode_current)
         self.assertEqual(list(out.keys()), self.test_no_ls.stimulus_list)
 
     def test_run_model_1_values(self):
@@ -113,7 +114,7 @@ class TestActivationSteadyState(unittest.TestCase):
                                         self.test_no_ls.t_stop,
                                         self.power,
                                         self.test_no_ls.chord_conductance,
-                                        False)
+                                        self.test_no_ls.electrode_current)
         values = np.array(list(out.values()))
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)
@@ -123,7 +124,7 @@ class TestActivationSteadyState(unittest.TestCase):
                                      self.test_ls.v_init, self.test_ls.t_stop,
                                      self.power,
                                      self.test_ls.chord_conductance,
-                                     True)
+                                     self.test_ls.electrode_current)
         self.assertEqual(list(out.keys()), self.test_ls.stimulus_list)
 
     def test_run_model_2_values(self):
@@ -132,7 +133,7 @@ class TestActivationSteadyState(unittest.TestCase):
                                      self.test_ls.t_stop,
                                      self.power,
                                      self.test_ls.chord_conductance,
-                                     True)
+                                     self.test_ls.electrode_current)
         values = np.array(list(out.values()))
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)
@@ -152,7 +153,7 @@ class TestInactivationSteadyState(unittest.TestCase):
         cls.test = InactivationSteadyStateTest(cls.inactivation_data,
                                                {"v_test": -5, "t_test": 100,
                                                 "chord_conductance":True,
-                                                "channel_current":False}, 1,
+                                                "electrode_current":True}, 1,
                                                "InactvationSSTest",
                                                save_figures=True)
 
@@ -165,7 +166,8 @@ class TestInactivationSteadyState(unittest.TestCase):
     def test_run_model(self):
         out = self.test.run_model(self.model, self.test.stimulus_list,
                                   self.test.v_test, self.test.t_test, self.power,
-                                  self.test.chord_conductance, True)
+                                  self.test.chord_conductance,
+                                  self.test.electrode_current)
         self.assertEqual(list(out.keys()), self.test.stimulus_list)
 
 if __name__ == "__main__":

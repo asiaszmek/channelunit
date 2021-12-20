@@ -47,7 +47,7 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
         cls.activation_data = dict(val.tolist() for val in activation_data)
         cls.test_Ba20 = ActivationSteadyStateTest(cls.activation_data,
                                                 {"v_init": -90, "t_stop": 70,
-                                                 "channel_current": True,
+                                                 "electrode_current": False,
                                                  "chord_conductance":False}, 1,
                                                 "ActvationSSTest",
                                                 save_figures=True)
@@ -77,7 +77,7 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
                                        self.test_Ba20.t_stop,
                                        self.power,
                                        self.test_Ba20.chord_conductance,
-                                       True)
+                                       self.test_Ba20.electrode_current)
         self.assertEqual(list(out.keys()), self.test_Ba20.stimulus_list)
 
     def test_run_model_H_values(self):
@@ -86,7 +86,7 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
                                        self.test_Ba20.t_stop,
                                        self.power,
                                        self.test_Ba20.chord_conductance,
-                                       True)
+                                       self.test_Ba20.electrode_current)
         values = np.array(list(out.values()))
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)
@@ -96,7 +96,7 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
                                        self.test_Ba20.v_init, self.test_Ba20.t_stop,
                                        self.power,
                                        self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.channel_current)
+                                       self.test_Ba20.electrode_current)
         self.assertEqual(list(out.keys()), self.test_Ba20.stimulus_list)
 
     def test_run_model_L_values(self):
@@ -105,7 +105,7 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
                                        self.test_Ba20.t_stop,
                                        self.power,
                                        self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.channel_current)
+                                       self.test_Ba20.electrode_current)
         values = np.array(list(out.values()))
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)
@@ -117,7 +117,7 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
                                        self.test_Ba20.t_stop,
                                        self.power,
                                        self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.channel_current)
+                                       self.test_Ba20.electrode_current)
         self.assertEqual(list(out.keys()), self.test_Ba20.stimulus_list)
 
     def test_run_model_12_values(self):
@@ -126,7 +126,7 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
                                        self.test_Ba20.t_stop,
                                        self.power,
                                        self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.channel_current)
+                                       self.test_Ba20.electrode_current)
         values = np.array(list(out.values()))
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)
@@ -136,7 +136,7 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
                                        self.test_Ba20.v_init, self.test_Ba20.t_stop,
                                        self.power,
                                        self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.channel_current)
+                                       self.test_Ba20.electrode_current)
         self.assertEqual(list(out.keys()), self.test_Ba20.stimulus_list)
 
     def test_run_model_13_values(self):
@@ -145,7 +145,7 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
                                        self.test_Ba20.t_stop,
                                        self.power,
                                        self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.channel_current)
+                                       self.test_Ba20.electrode_current)
         values = np.array(list(out.values()))
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)

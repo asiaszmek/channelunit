@@ -8,7 +8,7 @@ class NModlChannel(sciunit.Capability):
     def get_activation_steady_state(self, stimulation_levels: list,
                                     v_init: float, t_stop:float,
                                     chord_conductance=False,
-                                    channel_current=False,
+                                    electrode_current=True,
                                     sim_dt=0.001):
         """This function must be implemented by the patch model class.
         """
@@ -18,7 +18,7 @@ class NModlChannel(sciunit.Capability):
     def get_inactivation_steady_state(self, stimulation_levels: list,
                                       v_test: float, t_test:float,
                                       chord_conductance=False,
-                                      channel_current=False,
+                                      electrode_current=True,
                                       sim_dt=0.001):
         """This function must be implemented by the patch model class.
         """
@@ -28,7 +28,7 @@ class NModlChannel(sciunit.Capability):
     def get_activation_traces(self, stimulation_levels: list,
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
-                              channel_current=False,
+                              electrode_current=True,
                               sim_dt=0.001, interval=200):
         """This function must be implemented by the patch model class.
         """
@@ -38,7 +38,7 @@ class NModlChannel(sciunit.Capability):
     def get_inactivation_traces(self, stimulation_levels: list,
                                 v_test: float, t_test:float,
                                 chord_conductance=False,
-                                channel_current=False,
+                                electrode_current=True,
                                 sim_dt=0.001, interval=200):
         
         """This function must be implemented by the patch model class.

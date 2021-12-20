@@ -126,20 +126,20 @@ class ActivationSteadyStateTest(SteadyStateTest):
         except:
             raise SystemExit("chord_conductance not specified in experimental conditions")
         try:
-            self.channel_current = experimental_conditions["channel_current"]
+            self.electrode_current = experimental_conditions["electrode_current"]
         except KeyError:
-            raise SystemExit("It must be specified in experimental condition if it is channel_current")
+            raise SystemExit("It must be specified, if it's an electrode_current")
 
         self.power = power
         self.observation = OrderedDict(sorted(self.observation.items()))
         self.stimulus_list = self.extract_stimulation(self.observation)
 
     def run_model(self, model, stim_list, v_init, t_stop,
-                  power, chord_conductance, channel_current):
+                  power, chord_conductance, electrode_current):
         return model.get_activation_steady_state(stim_list,
                                                  v_init, t_stop, power,
                                                  chord_conductance,
-                                                 channel_current)
+                                                 electrode_current)
     
 
     def generate_prediction(self, model, verbose=False):
@@ -147,7 +147,7 @@ class ActivationSteadyStateTest(SteadyStateTest):
         prediction = self.run_model(model, self.stimulus_list, self.v_init,
                                     self.t_stop, self.power,
                                     self.chord_conductance,
-                                    self.channel_current)
+                                    self.electrode_current)
         if self.save_figures:
             name = self.name.replace(" ", "_")
             self.generate_figures(model, self.observation, prediction,
@@ -178,19 +178,19 @@ class InactivationSteadyStateTest(SteadyStateTest):
         except KeyError:
             raise SystemExit("chord_conductance not specified in experimental conditions")
         try:
-            self.channel_current = experimental_conditions["channel_current"]
+            self.electrode_current = experimental_conditions["electrode_current"]
         except KeyError:
-              raise SystemExit("It must be specified in experimental condition if it is channel_current")    
+              raise SystemExit("It must be specified, if it's an electrode_current")    
         self.power = power
         self.observation = OrderedDict(sorted(self.observation.items()))
         self.stimulus_list = self.extract_stimulation(self.observation)
 
     def run_model(self, model, stim_list, v_test, t_test, power,
-                  chord_conductance, channel_current):
+                  chord_conductance, electrode_current):
         return model.get_inactivation_steady_state(stim_list,
                                                    v_test, t_test, power,
                                                    chord_conductance,
-                                                   channel_current)
+                                                   electrode_current)
     
 
     def generate_prediction(self, model, verbose=False):
@@ -198,7 +198,7 @@ class InactivationSteadyStateTest(SteadyStateTest):
         prediction = self.run_model(model, self.stimulus_list, self.v_test,
                                     self.t_test, self.power,
                                     self.chord_conductance,
-                                    self.channel_current)
+                                    self.electrode_current)
         if self.save_figures:
             name = self.name.replace(" ", "_")
             self.generate_figures(model, self.observation, prediction,
