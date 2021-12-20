@@ -18,8 +18,7 @@ activation_loc_Cal_20_Ba = os.path.join(data_path, "data",
 activation_loc_Cal_110_Ba = os.path.join(data_path, "data",
                                          "I_CaL_activation_Ba_20_mM.csv")
 
-
-class TestCaLChannelsLowBarium(unittest.TestCase):
+class TestCaLChannelsLowBariumba(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.modelBa20_H = ModelWholeCellPatchConcentration(channel_loc,
@@ -28,18 +27,49 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
                                                            external_conc=20,
                                                            temp=22,
                                                            liquid_junction_pot=0)
-        cls.modelBa20_L = ModelWholeCellPatchConcentration(channel_loc,
-                                                           "calGHK", "ba",
-                                                           external_conc=20, temp=22,
+        activation_data = np.loadtxt(activation_loc_Cal_20_Ba, skiprows=1,
+                                     delimiter=",")
+        cls.power = 1
+        cls.activation_data = dict(val.tolist() for val in activation_data)
+        cls.test_Ba20 = ActivationSteadyStateTest(cls.activation_data,
+                                                {"v_init": -90, "t_stop": 70,
+                                                 "electrode_current": False,
+                                                 "chord_conductance":False}, 1,
+                                                "ActvationSSTest",
+                                                save_figures=True)
+        cls.act_results = cls.test_Ba20.run_model(cls.modelBa20_H,
+                                                  cls.test_Ba20.stimulus_list,
+                                                  cls.test_Ba20.v_init,
+                                                  cls.test_Ba20.t_stop,
+                                                  cls.power,
+                                                  cls.test_Ba20.chord_conductance,
+                                                  cls.test_Ba20.electrode_current)
+       
+
+    def test_summarize_H(self):
+        self.score = self.test_Ba20.judge(self.modelBa20_H)
+        self.score.summarize()
+
+    def test_run_model_H_keys(self):
+        self.assertEqual(list(self.act_results.keys()),
+                         self.test_Ba20.stimulus_list)
+
+    def test_run_model_H_values(self):
+        values = np.array(list(self.act_results.values()))
+        is_all_less_1 = np.all((values<=1))
+        self.assertTrue(is_all_less_1)
+
+        
+class TestCaLChannelsLowBariumBa(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        
+        cls.modelBa20_HH = ModelWholeCellPatchConcentration(channel_loc,
+                                                           "CalHGHK",
+                                                           "Ba",
+                                                           external_conc=20,
+                                                           temp=22,
                                                            liquid_junction_pot=0)
-        cls.modelBa20_12 = ModelWholeCellPatchConcentration(channel_loc,
-                                                            "cal12", "ba",
-                                                            external_conc=20, temp=22,
-                                                            liquid_junction_pot=0)
-        cls.modelBa20_13 = ModelWholeCellPatchConcentration(channel_loc,
-                                                            "cal13", "ba",
-                                                            external_conc=20, temp=22,
-                                                            liquid_junction_pot=0)
 
         activation_data = np.loadtxt(activation_loc_Cal_20_Ba, skiprows=1,
                                      delimiter=",")
@@ -51,105 +81,27 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
                                                  "chord_conductance":False}, 1,
                                                 "ActvationSSTest",
                                                 save_figures=True)
-
+        cls.act_results = cls.test_Ba20.run_model(cls.modelBa20_HH,
+                                                  cls.test_Ba20.stimulus_list,
+                                                  cls.test_Ba20.v_init,
+                                                  cls.test_Ba20.t_stop,
+                                                  cls.power,
+                                                  cls.test_Ba20.chord_conductance,
+                                                  cls.test_Ba20.electrode_current)
 
 
     def test_summarize_H(self):
-        self.score = self.test_Ba20.judge(self.modelBa20_H)
+        self.score = self.test_Ba20.judge(self.modelBa20_HH)
         self.score.summarize()
 
-    def test_summarize_L(self):
-        self.score = self.test_Ba20.judge(self.modelBa20_L)
-        self.score.summarize()
-
-    def test_summarize_12(self):
-        self.score = self.test_Ba20.judge(self.modelBa20_12)
-        self.score.summarize()
-
-    def test_summarize_13(self):
-        self.score = self.test_Ba20.judge(self.modelBa20_13)
-        self.score.summarize()
-
-    
     def test_run_model_H_keys(self):
-        out = self.test_Ba20.run_model(self.modelBa20_H, self.test_Ba20.stimulus_list,
-                                       self.test_Ba20.v_init,
-                                       self.test_Ba20.t_stop,
-                                       self.power,
-                                       self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.electrode_current)
-        self.assertEqual(list(out.keys()), self.test_Ba20.stimulus_list)
+        self.assertEqual(list(self.act_results.keys()),
+                         self.test_Ba20.stimulus_list)
 
     def test_run_model_H_values(self):
-        out = self.test_Ba20.run_model(self.modelBa20_H, self.test_Ba20.stimulus_list,
-                                       self.test_Ba20.v_init,
-                                       self.test_Ba20.t_stop,
-                                       self.power,
-                                       self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.electrode_current)
-        values = np.array(list(out.values()))
+        values = np.array(list(self.act_results.values()))
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)
-
-    def test_run_model_L_keys(self):
-        out = self.test_Ba20.run_model(self.modelBa20_L, self.test_Ba20.stimulus_list,
-                                       self.test_Ba20.v_init, self.test_Ba20.t_stop,
-                                       self.power,
-                                       self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.electrode_current)
-        self.assertEqual(list(out.keys()), self.test_Ba20.stimulus_list)
-
-    def test_run_model_L_values(self):
-        out = self.test_Ba20.run_model(self.modelBa20_L, self.test_Ba20.stimulus_list,
-                                       self.test_Ba20.v_init,
-                                       self.test_Ba20.t_stop,
-                                       self.power,
-                                       self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.electrode_current)
-        values = np.array(list(out.values()))
-        is_all_less_1 = np.all((values<=1))
-        self.assertTrue(is_all_less_1)
-
-        
-    def test_run_model_12_keys(self):
-        out = self.test_Ba20.run_model(self.modelBa20_12, self.test_Ba20.stimulus_list,
-                                       self.test_Ba20.v_init,
-                                       self.test_Ba20.t_stop,
-                                       self.power,
-                                       self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.electrode_current)
-        self.assertEqual(list(out.keys()), self.test_Ba20.stimulus_list)
-
-    def test_run_model_12_values(self):
-        out = self.test_Ba20.run_model(self.modelBa20_12, self.test_Ba20.stimulus_list,
-                                       self.test_Ba20.v_init,
-                                       self.test_Ba20.t_stop,
-                                       self.power,
-                                       self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.electrode_current)
-        values = np.array(list(out.values()))
-        is_all_less_1 = np.all((values<=1))
-        self.assertTrue(is_all_less_1)
-
-    def test_run_model_13_keys(self):
-        out = self.test_Ba20.run_model(self.modelBa20_13, self.test_Ba20.stimulus_list,
-                                       self.test_Ba20.v_init, self.test_Ba20.t_stop,
-                                       self.power,
-                                       self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.electrode_current)
-        self.assertEqual(list(out.keys()), self.test_Ba20.stimulus_list)
-
-    def test_run_model_13_values(self):
-        out = self.test_Ba20.run_model(self.modelBa20_13, self.test_Ba20.stimulus_list,
-                                       self.test_Ba20.v_init,
-                                       self.test_Ba20.t_stop,
-                                       self.power,
-                                       self.test_Ba20.chord_conductance,
-                                       self.test_Ba20.electrode_current)
-        values = np.array(list(out.values()))
-        is_all_less_1 = np.all((values<=1))
-        self.assertTrue(is_all_less_1)
-
 
 
 if __name__ == "__main__":

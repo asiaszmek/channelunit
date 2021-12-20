@@ -8,7 +8,7 @@ INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms) }
 
 NEURON{
 	SUFFIX cad
-	USEION ca READ ica, cai WRITE cai
+	USEION ca READ ica, cai WRITE cai VALENCE 2
 	RANGE ica, channel_flow, depth, B
 	RANGE cai, tau, cainf
 }

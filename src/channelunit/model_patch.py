@@ -87,6 +87,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
         #set up channel conductance/permeability in case it is 0
         chan = self.patch.psection()["density_mechs"][channel_name]
         self.gbar_name = gbar_name
+        self.ion_name = ion_name
+        self._external_conc = external_conc
         if gbar_name not in chan.keys():
             raise SystemExit('Unable to proceed, unknown %s conductance (gbar)'
                              % channel_name)
@@ -95,12 +97,13 @@ class ModelPatch(sciunit.Model, NModlChannel):
             for seg in self.patch:
                 from_mech = getattr(seg, channel_name)
                 if gbar_value is None:
-                    gbar_value = 0.001
+                    if self.ion_name == "Ca" or self.ion_name == "ca":
+                        gbar_value = 0.00001
+                    else:
+                        gbar_value = 0.001
                 setattr(from_mech, gbar_name, gbar_value)
         self.temperature = temp
         self.vclamp = h.SEClampOLS(self.patch(0.5))
-        self.ion_name = ion_name
-        self._external_conc = external_conc
         self.cvode = cvode
 
     def set_vclamp(self, dur1, v1, dur2, v2, leak_subtraction, delay=200):
@@ -590,8 +593,8 @@ class ModelPatchConcentration(ModelPatch):
             h.Cao0_Ca_ion = self._external_conc
         elif self.ion_name == "Ba":
             self.patch.insert("Cad")
-            self.patch.cainf_cad = 0
-            h.cao0_ca_ion = self._external_conc
+            self.patch.Cainf_Cad = 0
+            h.Cao0_Ca_ion = self._external_conc
             chan = self.patch.psection()["density_mechs"][channel_name]
             for i, seg in enumerate(self.patch):
                 from_mech = getattr(seg, channel_name)
