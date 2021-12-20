@@ -94,8 +94,8 @@ class SteadyStateTest(Test):
         ax.plot(v_values, pred_val, "d", label=model.channel_name)
         ax.errorbar(v_values, obs_val, yerr=obs_std, marker="d", linewidth=0,
                     label="experimental data")
-        ax.set_ylabel("Voltage (mV)")
-        ax.set_xlabel("Normalized current")
+        ax.set_xlabel("Voltage (mV)")
+        ax.set_ylabel("Normalized current")
         ax.legend()
         savefig_path = os.path.join(path, "%s_%s.png" % (model.channel_name,
                                                          name))

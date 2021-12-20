@@ -46,7 +46,7 @@ class TestCaLChannelsLowBarium(unittest.TestCase):
         cls.power = 1
         cls.activation_data = dict(val.tolist() for val in activation_data)
         cls.test_Ba20 = ActivationSteadyStateTest(cls.activation_data,
-                                                {"v_init": -65, "t_stop": 200,
+                                                {"v_init": -90, "t_stop": 70,
                                                  "channel_current": True,
                                                  "chord_conductance":False}, 1,
                                                 "ActvationSSTest",

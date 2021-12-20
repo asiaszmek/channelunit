@@ -119,7 +119,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
             self.vclamp.dur10 = 0
             self.vclamp.dur11 = 0
             self.vclamp.dur12 = 0
-            return dur1+dur2
+            return dur1+dur2+delay
 
         pulse_amp = self.vclamp.amp2 - self.vclamp.amp1
         self.vclamp.dur3 = delay
@@ -154,7 +154,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
                               channel_current=False,
-                              duration=200, sim_dt=0.001, interval=200):
+                              sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine 
         current/chord conductance traces
@@ -218,7 +218,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         stim_start = int(delay/self.dt)
         
         for level in stimulation_levels:
-            stim_stop = self.set_vclamp(delay, v_hold, duration, level,
+            stim_stop = self.set_vclamp(delay, v_hold, t_stop, level,
                                         leak_subtraction,
                                         delay=interval)
             h.init()
@@ -226,7 +226,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
             h.run()
             I = current.as_numpy()
             out = self.extract_current(I, chord_conductance, leak_subtraction,
-                                       delay, duration, interval)
+                                       delay, t_stop, interval)
             current_vals[level] = out
         return current_vals
 
@@ -234,7 +234,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                     v_hold: float, t_stop:float,
                                     power: int, chord_conductance=False,
                                     channel_current=False,
-                                    duration=200, sim_dt=0.001, interval=200):
+                                     sim_dt=0.001, interval=200):
         """
         Function for running step experiments to determine steady-state
         activation curves.
@@ -272,7 +272,6 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                               v_hold, t_stop,
                                               chord_conductance,
                                               channel_current,
-                                              duration=duration,
                                               sim_dt=sim_dt,
                                               interval=interval)
         max_current = self.get_max_of_dict(currents)

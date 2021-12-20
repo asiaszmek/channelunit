@@ -9,7 +9,7 @@ class NModlChannel(sciunit.Capability):
                                     v_init: float, t_stop:float,
                                     chord_conductance=False,
                                     channel_current=False,
-                                    duration=200, sim_dt=0.001):
+                                    sim_dt=0.001):
         """This function must be implemented by the patch model class.
         """
 
@@ -29,7 +29,7 @@ class NModlChannel(sciunit.Capability):
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
                               channel_current=False,
-                              duration=200, sim_dt=0.001, interval=200):
+                              sim_dt=0.001, interval=200):
         """This function must be implemented by the patch model class.
         """
 
