@@ -76,13 +76,13 @@ class TestActivationSteadyState(unittest.TestCase):
         cls.power = 1
         cls.activation_data = dict(val.tolist() for val in activation_data)
         cls.test_no_ls = ActivationSteadyStateTest(cls.activation_data,
-                                             {"v_init": -90, "t_stop": 800,
+                                             {"v_init": -90, "t_stop": 200,
                                               "electrode_current":False,
                                               "chord_conductance":True}, 1,
                                                    "ActvationSSTest",
                                                    save_figures=True)
         cls.test_ls = ActivationSteadyStateTest(cls.activation_data,
-                                                {"v_init": -90, "t_stop": 800,
+                                                {"v_init": -90, "t_stop": 200,
                                                  "electrode_current":True,
                                                  "chord_conductance":True}, 1,
                                                 "ActvationSSTest",
@@ -151,7 +151,7 @@ class TestInactivationSteadyState(unittest.TestCase):
         cls.inactivation_data = dict(val.tolist() for val in inactivation_data)
         cls.power = 1
         cls.test = InactivationSteadyStateTest(cls.inactivation_data,
-                                               {"v_test": -5, "t_test": 100,
+                                               {"v_test": -5, "t_test": 10,
                                                 "chord_conductance":True,
                                                 "electrode_current":True}, 1,
                                                "InactvationSSTest",
