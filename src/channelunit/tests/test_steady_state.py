@@ -129,17 +129,21 @@ class ActivationSteadyStateTest(SteadyStateTest):
             self.electrode_current = experimental_conditions["electrode_current"]
         except KeyError:
             raise SystemExit("It must be specified, if it's an electrode_current")
-
+        try:
+            self.normalization = experimental_conditions["normalization"]
+        except KeyError:
+            raise SystemExit("It must be specified, if currents normalized to_one")    
         self.power = power
         self.observation = OrderedDict(sorted(self.observation.items()))
         self.stimulus_list = self.extract_stimulation(self.observation)
 
     def run_model(self, model, stim_list, v_init, t_stop,
-                  power, chord_conductance, electrode_current):
+                  power, chord_conductance, electrode_current, normalization):
         return model.get_activation_steady_state(stim_list,
                                                  v_init, t_stop, power,
                                                  chord_conductance,
-                                                 electrode_current)
+                                                 electrode_current,
+                                                 normalization=normalization)
     
 
     def generate_prediction(self, model, verbose=False):
@@ -147,7 +151,8 @@ class ActivationSteadyStateTest(SteadyStateTest):
         prediction = self.run_model(model, self.stimulus_list, self.v_init,
                                     self.t_stop, self.power,
                                     self.chord_conductance,
-                                    self.electrode_current)
+                                    self.electrode_current,
+                                    self.normalization)
         if self.save_figures:
             name = self.name.replace(" ", "_")
             self.generate_figures(model, self.observation, prediction,
@@ -180,17 +185,22 @@ class InactivationSteadyStateTest(SteadyStateTest):
         try:
             self.electrode_current = experimental_conditions["electrode_current"]
         except KeyError:
-              raise SystemExit("It must be specified, if it's an electrode_current")    
+              raise SystemExit("It must be specified, if it's an electrode_current")
+        try:
+            self.normalization = experimental_conditions["normalization"]
+        except KeyError:
+            raise SystemExit("It must be specified, if currents normalized to_one")    
         self.power = power
         self.observation = OrderedDict(sorted(self.observation.items()))
         self.stimulus_list = self.extract_stimulation(self.observation)
 
     def run_model(self, model, stim_list, v_test, t_test, power,
-                  chord_conductance, electrode_current):
+                  chord_conductance, electrode_current, normalization):
         return model.get_inactivation_steady_state(stim_list,
                                                    v_test, t_test, power,
                                                    chord_conductance,
-                                                   electrode_current)
+                                                   electrode_current,
+                                                   normalization=normalization)
     
 
     def generate_prediction(self, model, verbose=False):
@@ -198,7 +208,8 @@ class InactivationSteadyStateTest(SteadyStateTest):
         prediction = self.run_model(model, self.stimulus_list, self.v_test,
                                     self.t_test, self.power,
                                     self.chord_conductance,
-                                    self.electrode_current)
+                                    self.electrode_current,
+                                    self.normalization)
         if self.save_figures:
             name = self.name.replace(" ", "_")
             self.generate_figures(model, self.observation, prediction,

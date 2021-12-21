@@ -157,7 +157,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
                               electrode_current=True,
-                              sim_dt=0.001, interval=200):
+                              sim_dt=0.001, interval=200,
+                              save_traces=True):
         """
         Function for running step experiments to determine 
         current/chord conductance traces
@@ -219,7 +220,6 @@ class ModelPatch(sciunit.Model, NModlChannel):
         time.record(h._ref_t, self.dt)
         delay = 200
         stim_start = int(delay/self.dt)
-        
         for level in stimulation_levels:
             stim_stop = self.set_vclamp(delay, v_hold, t_stop, level,
                                         leak_subtraction,
@@ -237,7 +237,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                     v_hold: float, t_stop:float,
                                     power: int, chord_conductance,
                                     electrode_current,
-                                    sim_dt=0.001, interval=200):
+                                    sim_dt=0.001, interval=200,
+                                    normalization="to_one"):
         """
         Function for running step experiments to determine steady-state
         activation curves.
@@ -277,8 +278,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                               electrode_current,
                                               sim_dt=sim_dt,
                                               interval=interval)
-        max_current = self.get_max_of_dict(currents)
-        result = self.normalize_to_one(max_current)
+        max_current = self.get_max_of_dict(currents, self.ion_name)
+        result = self.normalize_to_one(max_current, self.ion_name, normalization)
         if power != 1:
             for key in result.keys():
                 result[key] = result[key]**(1/power)
@@ -288,7 +289,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                 v_test: float, t_test:float,
                                 chord_conductance,
                                 electrode_current,
-                                sim_dt=0.001, interval=200):
+                                sim_dt=0.001, interval=200,
+                                save_traces=True):
         """
         Function for running step experiments to determine steady-state
         inactivation currents.
@@ -371,7 +373,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                       chord_conductance=False,
                                       leak_subtraction=True,
                                       electrode_current=True,
-                                      sim_dt=0.001, interval=200):
+                                      sim_dt=0.001, interval=200,
+                                      normalization="to_one"):
         """
         Function for running step experiments to determine steady-state
         inactivation curves.
@@ -408,8 +411,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                                 chord_conductance,
                                                 leak_subtraction,
                                                 sim_dt, interval)
-        max_current = self.get_max_of_dict(currents)
-        result = self.normalize_to_one(max_current)
+        max_current = self.get_max_of_dict(currents, self.ion_name)
+        result = self.normalize_to_one(max_current, self.ion_name, normalization)
         if power != 1:
             for key in result.keys():
                 result[key] = result[key]**(1/power)
@@ -429,23 +432,35 @@ class ModelPatch(sciunit.Model, NModlChannel):
             current = current - pulse
         if chord_conductance:
             current = current/(self.vclamp.amp2 - self.E_rev)
-        if self.ion_name in ["na", "k", "ca", "ba", "Ca", "Ba"]:
-            return abs(current)
         return current
 
     @staticmethod
-    def normalize_to_one(current):
-        factor = max(sorted(current.values()))
+    def normalize_to_one(current, ion_name, normalization="to_one"):
+        values = np.array(list(current.values()))
+        if ion_name in ["Ca", "ca", "Ba", "ba", "na"]:
+            if normalization == "to_one":
+                factor = min(values)
+            else:
+                factor = max(abs(values))
+        else:
+            factor = max(abs(values))
+            
         new_current = {}
         for key in current.keys():
             new_current[key] = current[key]/factor
         return new_current
 
     @staticmethod
-    def get_max_of_dict(current):
+    def get_max_of_dict(current, ion_name):
         new_current = {}
         for key in current.keys():
-            new_current[key] = abs(current[key]).max()
+            #inward currents are negative
+            if ion_name in ["Ca", "ca", "Ba", "ba", "na"]:
+                new_current[key] = current[key].min()
+            elif ion_name == "k":
+                new_current[key] = current[key].max()
+            else:
+                new_current[key] = abs(current[key]).max()
         return new_current
 
 
@@ -612,7 +627,7 @@ class ModelPatchConcentration(ModelPatch):
         else:
             raise SystemExit("Unknown ion %s. I only know Ca, ca, Ba and ba"
                              % self.ion_name )
-
+        
     @property
     def cai(self):
         if self.ion_name == "ca":
@@ -623,7 +638,6 @@ class ModelPatchConcentration(ModelPatch):
             return self.patch.cainf_cad
         elif self.ion_name == "Ba":
             return self.patch.cainf_Cad
-        
 
     @cai.setter
     def cai(self, value):
@@ -744,12 +758,15 @@ class ModelWholeCellPatchNernst(ModelPatchNernst, WholeCellAttributes):
                  liquid_junction_pot=0, cvode=True,  R_in=200e6,
                  v_rest=-65, E_rev=None, gbar_value=None):
 
-        super(ModelWholeCellPatchNernst, self).__init__(path_to_mods, channel_name,
-                                                        ion_name, external_conc,
-                                                        gbar_name, temp, recompile,
+        super(ModelWholeCellPatchNernst, self).__init__(path_to_mods,
+                                                        channel_name,
+                                                        ion_name,
+                                                        external_conc,
+                                                        gbar_name, temp,
+                                                        recompile,
                                                         liquid_junction_pot,
-                                                        cvode, 20000, v_rest, E_rev,
-                                                        gbar_value)
+                                                        cvode, 20000, v_rest,
+                                                        E_rev, gbar_value)
         self._L = 10
         self._diam = 10
         self.patch.L = self._L
@@ -786,11 +803,15 @@ class ModelWholeCellPatchConcentration(ModelPatchConcentration, WholeCellAttribu
                  liquid_junction_pot=0, cvode=True,  R_in=200e6,
                  v_rest=-65, gbar_value=None):
 
-        super(ModelWholeCellPatchConcentration, self).__init__(path_to_mods, channel_name,
-                                                               ion_name, external_conc,
-                                                               gbar_name, temp, recompile,
+        super(ModelWholeCellPatchConcentration, self).__init__(path_to_mods,
+                                                               channel_name,
+                                                               ion_name,
+                                                               external_conc,
+                                                               gbar_name, temp,
+                                                               recompile,
                                                                liquid_junction_pot,
-                                                               cvode, 20000, v_rest,
+                                                               cvode, 20000,
+                                                               v_rest,
                                                                gbar_value)
         self._L = 10
         self._diam = 10
