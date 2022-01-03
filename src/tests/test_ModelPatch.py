@@ -73,7 +73,17 @@ class TestModelPatch(unittest.TestCase):
 
     def test_max_of_dict(self):
         dict1 = {1: np.array([1,3,4,1]), 2: np.array([2,2,2,1])}
-        self.assertEqual(ModelPatch.get_max_of_dict(dict1, "k"),
+        self.assertEqual(ModelPatch.get_max_of_dict(dict1, "k", False),
+                         {1: 4, 2:2})
+
+    def test_max_of_dict_1(self):
+        dict1 = {1: np.array([-1,-3,-4,-1]), 2: np.array([-2,-2,-2,-1])}
+        self.assertEqual(ModelPatch.get_max_of_dict(dict1, "na", False),
+                         {1: -4, 2:-2})
+    
+    def test_max_of_dict_3(self):
+        dict1 = {1: np.array([1,3,4,1]), 2: np.array([2,2,2,1])}
+        self.assertEqual(ModelPatch.get_max_of_dict(dict1, "na", True),
                          {1: 4, 2:2})
 
     def test_set_vclamp_junction_amp1(self):

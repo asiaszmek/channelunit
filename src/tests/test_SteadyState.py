@@ -119,6 +119,7 @@ class TestActivationSteadyState(unittest.TestCase):
                                         self.test_no_ls.chord_conductance,
                                         self.test_no_ls.electrode_current,
                                         self.test_no_ls.normalization)
+        
         values = np.array(list(out.values()))
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)

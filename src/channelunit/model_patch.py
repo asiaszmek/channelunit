@@ -50,12 +50,55 @@ class ModelPatch(sciunit.Model, NModlChannel):
             for i, seg in enumerate(self.patch):
                 from_mech = getattr(seg, self.channel_name)
                 setattr(from_mech, self.gbar_name, value[0])
-          
+       
+    def _find_E_rev_name(self):
+        ions = list(self.patch.psection()["ions"].keys())
+        if self.ion_name not in ions:
+            raise SystemError("Could not find %s in patch. I have only" %
+                              (ion_name) + str(ions))
+        return "e%s" % self.ion_name
+
+    def _find_E_rev_value(self, E_rev=None):
+        if self.ion_name.lower() == "k":
+            internal = self._ki
+            valence = 1
+        elif self.ion_name.lower() == "na":
+            internal = self._nai
+            valence = 1
+        elif self.ion_name.lower() == "ca":
+            internal = self._cai
+            valence = 2
+        elif E_rev is None:
+            raise SystemExit("Unknown ion type %s. Only now na, k, ca and Ca"
+                              % self.ion_name)
+        elif self._external_conc is not None:
+            raise SystemExit("Unknown ion type %s. Only now na, k, ca and Ca"
+                             % self.ion_name)
+        external = self._external_conc
+        if external is None:
+            if E_rev is None:
+                name = "e%s" % self.ion_name
+                return self.patch.psection()["ions"][self.ion_name][name][0]
+            else:
+                return E_rev
+        elif not isinstance(external, int) and not isinstance(external, float):
+            if E_rev is None:
+                name = "e%s" % self.ion_name
+                return self.patch.psection()["ions"][self.ion_name][name][0]
+            else:
+                return E_rev
+        assert internal > 0
+        # convert to mV
+        conc_fact = np.log(self._external_conc/internal)
+        E_rev = 1e3*R*(273.15+self.temperature)/(valence*F)*conc_fact
+        return E_rev
+
 
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22,
                  recompile=True, liquid_junction_pot=0,
-                 cvode=True, R_m=20000, v_rest=-65, gbar_value=None):
+                 cvode=True, R_m=20000, v_rest=-65, gbar_value=None,
+                 directory="validation_results"):
         """
         ion_name: str
             most common ions are: na (sodium), k, ca (sometimes Ca, if 
@@ -83,7 +126,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.patch.g_pas = 1/R_m
         self.channel = self.patch.insert(self.channel_name)
         self.junction = liquid_junction_pot
-        self.base_directory = "validation_results"
+        self.base_directory = directory
         #set up channel conductance/permeability in case it is 0
         chan = self.patch.psection()["density_mechs"][channel_name]
         self.gbar_name = gbar_name
@@ -566,6 +609,35 @@ class ModelPatchNernst(ModelPatch):
             self.E_rev = self._find_E_rev_value(E_rev)
             setattr(self.patch,  E_rev_name, self.E_rev)
 
+    
+    @property
+    def cai(self):
+        return self._cai
+   
+    @cai.setter
+    def cai(self, value):
+        self._cai = value
+        if self.ion_name.lower() == "ca" and self._external_conc is not None:
+            self.E_rev = self._find_E_rev_value()
+
+    @property
+    def Cai(self):
+        return self._cai
+
+    @cai.setter
+    def Cai(self, value):
+        self._cai = value
+        if self.ion_name.lower() == "ca" and self._external_conc is not None:
+            self.E_rev = self._find_E_rev_value()
+
+    @property
+    def external_conc(self):
+        return self._external_conc
+
+    @external_conc.setter
+    def external_conc(self, value):
+        self._external_conc = value
+        self.E_rev = self._find_E_rev_value()
     @property
     def ki(self):
         return self._ki
@@ -586,75 +658,6 @@ class ModelPatchNernst(ModelPatch):
         if self.ion_name == "na" and self._external_conc is not None:
             self.E_rev = self._find_E_rev_value()
 
-    @property
-    def cai(self):
-        return self._cai
-   
-    @cai.setter
-    def cai(self, value):
-        self._cai = value
-        if self.ion_name.lower() == "ca" and self._external_conc is not None:
-            self.E_rev = self._find_E_rev_value()
-    @property
-    def Cai(self):
-        return self._cai
-
-    @cai.setter
-    def Cai(self, value):
-        self._cai = value
-        if self.ion_name.lower() == "ca" and self._external_conc is not None:
-            self.E_rev = self._find_E_rev_value()
-
-    @property
-    def external_conc(self):
-        return self._external_conc
-
-    @external_conc.setter
-    def external_conc(self, value):
-        self._external_conc = value
-        self.E_rev = self._find_E_rev_value()
-       
-    def _find_E_rev_name(self):
-        ions = list(self.patch.psection()["ions"].keys())
-        if self.ion_name not in ions:
-            raise SystemError("Could not find %s in patch. I have only" %
-                              (ion_name) + str(ions))
-        return "e%s" % self.ion_name
-
-    def _find_E_rev_value(self, E_rev=None):
-        if self.ion_name.lower() == "k":
-            internal = self._ki
-            valence = 1
-        elif self.ion_name.lower() == "na":
-            internal = self._nai
-            valence = 1
-        elif self.ion_name.lower() == "ca":
-            internal = self._cai
-            valence = 2
-        elif E_rev is None:
-            raise SystemExit("Unknown ion type %s. Only now na, k, ca and Ca"
-                              % self.ion_name)
-        elif self._external_conc is not None:
-            raise SystemExit("Unknown ion type %s. Only now na, k, ca and Ca"
-                             % self.ion_name)
-        external = self._external_conc
-        if external is None:
-            if E_rev is None:
-                name = "e%s" % self.ion_name
-                return self.patch.psection()["ions"][self.ion_name][name][0]
-            else:
-                return E_rev
-        elif not isinstance(external, int) and not isinstance(external, float):
-            if E_rev is None:
-                name = "e%s" % self.ion_name
-                return self.patch.psection()["ions"][self.ion_name][name][0]
-            else:
-                return E_rev
-        assert internal > 0
-        # convert to mV
-        conc_fact = np.log(self._external_conc/internal)
-        E_rev = 1e3*R*(273.15+self.temperature)/(valence*F)*conc_fact
-        return E_rev
 
     
 class ModelPatchConcentration(ModelPatch):
@@ -680,13 +683,16 @@ class ModelPatchConcentration(ModelPatch):
             self.patch.insert("cad")
             self.patch.cainf_cad = self._cai
             h.cao0_ca_ion = self._external_conc
+            self.E_rev = self._find_E_rev_value()
         elif self.ion_name == "Ca":
             self.patch.insert("Cad")
             self.patch.Cainf_Cad = self._cai
             h.Cao0_Ca_ion = self._external_conc
+            self.E_rev = self._find_E_rev_value()            
         elif self.ion_name == "Ba":
             self.patch.insert("Cad")
             self.patch.Cainf_Cad = 0
+            self.E_rev = None
             h.Cao0_Ca_ion = self._external_conc
             chan = self.patch.psection()["density_mechs"][channel_name]
             for i, seg in enumerate(self.patch):
@@ -696,6 +702,7 @@ class ModelPatchConcentration(ModelPatch):
         elif self.ion_name == "ba":
             self.patch.insert("cad")
             self.patch.cainf_cad = 0
+            self.E_rev = None
             h.cao0_ca_ion = self._external_conc
             chan = self.patch.psection()["density_mechs"][channel_name]
             for i, seg in enumerate(self.patch):
@@ -704,8 +711,8 @@ class ModelPatchConcentration(ModelPatch):
                 setattr(from_mech, gbar_name, gbar_val)
         else:
             raise SystemExit("Unknown ion %s. I only know Ca, ca, Ba and ba"
-                             % self.ion_name )
-        
+                             % self.ion_name)
+
     @property
     def cai(self):
         if self.ion_name == "ca":
@@ -713,36 +720,38 @@ class ModelPatchConcentration(ModelPatch):
         elif self.ion_name == "Ca":
             return self.patch.cainf_Cad
         elif self.ion_name == "ba":
-            return self.patch.cainf_cad
+            return 0
         elif self.ion_name == "Ba":
-            return self.patch.cainf_Cad
+            return 0
 
     @cai.setter
     def cai(self, value):
         self._cai = value
         if self.ion_name.lower() == "ca":
             self.patch.cainf_cad = self._cai
+            self.E_rev = self._find_E_rev_value()
         elif self.ion_name == "Ca":
             self.patch.cainf_Cad = self._cai
-        elif self.ion_name == "ba":
-            return self.patch.cainf_cad
-        elif self.ion_name == "Ba":
-            return self.patch.cainf_Cad
-
+            self.E_rev = self._find_E_rev_value()
+                             
     @property
     def Cai(self):
         if self.ion_name == "ca":
             return self.patch.cainf_cad
         elif self.ion_name == "Ca":
             return self.patch.cainf_cad
+        else:
+            return 0
 
     @cai.setter
     def Cai(self, value):
         self._cai = value
         if self.ion_name.lower() == "ca":
             self.patch.cainf_cad = self._cai
+            self.E_rev = self._find_E_rev_value()
         elif self.ion_name == "Ca":
             self.patch.cainf_Cad = self._cai
+            self.E_rev = self._find_E_rev_value()
 
     @property
     def external_conc(self):
@@ -753,8 +762,10 @@ class ModelPatchConcentration(ModelPatch):
         self._external_conc = value
         if self.ca_ion == "ca":
             h.cao0_ca_ion = self._external_conc
+            self.E_rev = self._find_E_rev_value()
         elif self.ca_ion == "Ca":
             h.Cao0_Ca_ion = self._external_conc
+            self.E_rev = self._find_E_rev_value()
         elif self.ca_ion == "Ba":
             h.Cao0_Ca_ion = self._external_conc
         elif self.ca_ion == "ba":
