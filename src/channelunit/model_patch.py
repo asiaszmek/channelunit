@@ -188,6 +188,27 @@ class ModelPatch(sciunit.Model, NModlChannel):
           for channels that can not be simulated using cvode. This value 
           should be small.
         """
+        if save_traces:
+            if self._external_conc:
+                fname = "%s_%s_%s_ext_%4.2f_from_%4.2f_to_%4.2f"%("Activ_traces",
+                                                                  self.channel_name,
+                                                                  self.ion_name,
+                                                                  self._external_conc,
+                                                                  min(stimulation_levels),
+                                                                  max(stimulation_levels))
+            else:
+                fname = "%s_%s_%s_E_rev_%4.2f_from_%4.2f_to_%4.2f"%("Activ_traces",
+                                                                    self.channel_name,
+                                                                    self.ion_name,
+                                                                    self.E_rev,
+                                                                    min(stimulation_levels),
+                                                                    max(stimulation_levels))             
+            if chord_conductance:
+                fname = "%s_%s" % (fname, "g")
+            if not electrode_current:
+                fname = "%s_%s" % (fname, "gmax_np")
+            output = []
+            header = "time"
         if self.cvode:
             h.cvode_active(1)
         else:
@@ -220,7 +241,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
         time.record(h._ref_t, self.dt)
         delay = 200
         stim_start = int(delay/self.dt)
-        for level in stimulation_levels:
+        for i, level in enumerate(stimulation_levels):
             stim_stop = self.set_vclamp(delay, v_hold, t_stop, level,
                                         leak_subtraction,
                                         delay=interval)
@@ -230,7 +251,23 @@ class ModelPatch(sciunit.Model, NModlChannel):
             I = current.as_numpy()
             out = self.extract_current(I, chord_conductance, leak_subtraction,
                                        delay, t_stop, interval)
+                      
+            if save_traces:
+                if not i:
+                    save_time = time.as_numpy()[int(delay/self.dt)+1:
+                                                int((delay+t_stop)/self.dt)]
+                    output.append(save_time)
+                output.append(out)
+                header += ";%4.2f" % level
+
             current_vals[level] = out
+        if save_traces:
+            path = os.path.join(self.base_directory, "data")
+            if not os.path.exists(path):
+                os.makedirs(path)
+            path_to_save = os.path.join(path, "%s.csv" % fname)
+            np.savetxt(path_to_save, np.array(output), delimiter=";",
+                       header=header, comments="")
         return current_vals
 
     def get_activation_steady_state(self, stimulation_levels: list,
@@ -278,8 +315,9 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                               electrode_current,
                                               sim_dt=sim_dt,
                                               interval=interval)
-        max_current = self.get_max_of_dict(currents, self.ion_name)
-        result = self.normalize_to_one(max_current, self.ion_name, normalization)
+        max_current = self.get_max_of_dict(currents, self.ion_name,
+                                           chord_conductance)
+        result = self.normalize_to_one(max_current, normalization)
         if power != 1:
             for key in result.keys():
                 result[key] = result[key]**(1/power)
@@ -318,16 +356,35 @@ class ModelPatch(sciunit.Model, NModlChannel):
           for channels that can not be simulated using cvode. T
           his value should be small.
         """
+        if save_traces:
+            if self._external_conc:
+                fname = "%s_%s_%s_ext_%4.2f_from_%4.2f_to_%4.2f"%("Inactiv_traces",
+                                                                  self.channel_name,
+                                                                  self.ion_name,
+                                                                  self._external_conc,
+                                                                  min(stimulation_levels),
+                                                                  max(stimulation_levels))
+            else:
+                fname = "%s_%s_%s_E_rev_%4.2f_from_%4.2f_to_%4.2f"%("Inactiv_traces",
+                                                                    self.channel_name,
+                                                                    self.ion_name,
+                                                                    self.E_rev,
+                                                                    min(stimulation_levels),
+                                                                    max(stimulation_levels))
+            if chord_conductance:
+                fname = "%s_%s" % (fname, "g")
+            if not electrode_current:
+                fname = "%s_%s" % (fname, "gmax_np")
+            output = []
+            header = "time"
         if self.cvode:
             h.cvode_active(1)
         else:
             h.cvode_active(0)
             h.dt = sim_dt
-
         h.celsius = self.temperature
         delay = 200
         stim_start = int(delay/self.dt)
-
         current_values = {}
         current = h.Vector()
         if electrode_current:
@@ -350,10 +407,9 @@ class ModelPatch(sciunit.Model, NModlChannel):
             else:
                 current.record(self.vclamp._ref_i, self.dt)
                 leak_subtraction = True
-
         time = h.Vector()
         time.record(h._ref_t, self.dt)
-        for v_hold in stimulation_levels:
+        for i, v_hold in enumerate(stimulation_levels):
             t_stop = self.set_vclamp(delay, v_hold, t_test, v_test,
                                      leak_subtraction,
                                      delay=interval)
@@ -365,6 +421,23 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                        leak_subtraction, delay, t_test,
                                        0)
             current_values[v_hold] = out
+            if save_traces:
+                if not i:
+                    save_time = time.as_numpy()[int(delay/self.dt)+1:
+                                                int((delay+t_test)/self.dt)]
+                    output.append(save_time)
+                    print(save_time.shape)
+                output.append(out)
+                print(out.shape)
+                header += ";%4.2f" % v_hold
+        if save_traces:
+            path = os.path.join(self.base_directory, "data")
+            if not os.path.exists(path):
+                os.makedirs(path)
+            path_to_save = os.path.join(path, "%s.csv" % fname)
+            
+            np.savetxt(path_to_save, np.array(output), delimiter=";",
+                       header=header, comments="")
         return current_values
         
     def get_inactivation_steady_state(self, stimulation_levels: list,
@@ -411,8 +484,9 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                                 chord_conductance,
                                                 leak_subtraction,
                                                 sim_dt, interval)
-        max_current = self.get_max_of_dict(currents, self.ion_name)
-        result = self.normalize_to_one(max_current, self.ion_name, normalization)
+        max_current = self.get_max_of_dict(currents, self.ion_name,
+                                           chord_conductance)
+        result = self.normalize_to_one(max_current, normalization)
         if power != 1:
             for key in result.keys():
                 result[key] = result[key]**(1/power)
@@ -421,42 +495,46 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
                         dur2, delay):
         #dt = self.dt
-        current = I[int(dur1/self.dt):int((dur1+dur2)/self.dt)]
+        current = I[int(dur1/self.dt)+1:int((dur1+dur2)/self.dt)]
         #either step injection or the short pulse
         if leak_subtraction:
             pulse = np.zeros(current.shape)
             t_start = dur1 + dur2 + 2*delay
             for i in range(4):
-                pulse += I[int(t_start/self.dt):int((t_start+dur2)/self.dt)]
+                pulse += I[int(t_start/self.dt)+1:int((t_start+dur2)/self.dt)]
                 t_start += dur2 + delay
             current = current - pulse
+
         if chord_conductance:
             current = current/(self.vclamp.amp2 - self.E_rev)
         return current
 
     @staticmethod
-    def normalize_to_one(current, ion_name, normalization="to_one"):
+    def normalize_to_one(current, normalization="to_one"):
+        """
+        normalization: "to_one" or "save_sign"
+        """
         values = np.array(list(current.values()))
-        if ion_name in ["Ca", "ca", "Ba", "ba", "na"]:
-            if normalization == "to_one":
-                factor = min(values)
-            else:
-                factor = max(abs(values))
-        else:
-            factor = max(abs(values))
-            
+        factor = max(abs(values))
         new_current = {}
-        for key in current.keys():
-            new_current[key] = current[key]/factor
+        if normalization == "save_sign":
+            for key in current.keys():
+                new_current[key] = current[key]/factor
+        else:
+            for key in current.keys():
+                new_current[key] = abs(current[key])/factor
         return new_current
 
     @staticmethod
-    def get_max_of_dict(current, ion_name):
+    def get_max_of_dict(current, ion_name, chord_conductance):
         new_current = {}
         for key in current.keys():
             #inward currents are negative
             if ion_name in ["Ca", "ca", "Ba", "ba", "na"]:
-                new_current[key] = current[key].min()
+                if not chord_conductance:
+                    new_current[key] = current[key].min()
+                else:
+                    new_current[key] = current[key].max()
             elif ion_name == "k":
                 new_current[key] = current[key].max()
             else:

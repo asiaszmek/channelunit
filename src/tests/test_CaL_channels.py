@@ -32,12 +32,12 @@ class TestCaLChannelsLowBariumba(unittest.TestCase):
         cls.power = 1
         cls.activation_data = dict(val.tolist() for val in activation_data)
         cls.test_Ba20 = ActivationSteadyStateTest(cls.activation_data,
-                                                {"v_init": -90, "t_stop": 70,
-                                                 "electrode_current": False,
-                                                 "chord_conductance":False,
-                                                 "normalization": "to_one"}, 1,
-                                                "ActvationSSTest",
-                                                save_figures=True)
+                                                  {"v_init": -90, "t_stop": 70,
+                                                   "electrode_current": False,
+                                                   "chord_conductance":False,
+                                                   "normalization": "to_one"}, 1,
+                                                  "ActvationSSTestLowBa",
+                                                  save_figures=True)
         cls.act_results = cls.test_Ba20.run_model(cls.modelBa20_H,
                                                   cls.test_Ba20.stimulus_list,
                                                   cls.test_Ba20.v_init,
@@ -78,12 +78,12 @@ class TestCaLChannelsLowBariumBa(unittest.TestCase):
         cls.power = 1
         cls.activation_data = dict(val.tolist() for val in activation_data)
         cls.test_Ba20 = ActivationSteadyStateTest(cls.activation_data,
-                                                {"v_init": -90, "t_stop": 70,
-                                                 "electrode_current": False,
-                                                 "chord_conductance":False,
-                                                 "normalization": "to_one"}, 1,
-                                                "ActvationSSTest",
-                                                save_figures=True)
+                                                  {"v_init": -90, "t_stop": 70,
+                                                   "electrode_current": False,
+                                                   "chord_conductance": False,
+                                                   "normalization": "to_one"}, 1,
+                                                  "ActvationSSTestLowBa",
+                                                  save_figures=True)
         cls.act_results = cls.test_Ba20.run_model(cls.modelBa20_HH,
                                                   cls.test_Ba20.stimulus_list,
                                                   cls.test_Ba20.v_init,
@@ -91,7 +91,7 @@ class TestCaLChannelsLowBariumBa(unittest.TestCase):
                                                   cls.power,
                                                   cls.test_Ba20.chord_conductance,
                                                   cls.test_Ba20.electrode_current,
-                                                  "None")
+                                                  "save_sign")
 
 
     def test_summarize_H(self):
@@ -105,6 +105,105 @@ class TestCaLChannelsLowBariumBa(unittest.TestCase):
     def test_run_model_H_values(self):
         values = np.array(list(self.act_results.values()))
         is_all_less_1 = np.all((values<=0))
+        self.assertTrue(is_all_less_1)
+
+
+
+class TestCaLChannelsLowCalciumca(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.modelCa20_H = ModelWholeCellPatchConcentration(channel_loc,
+                                                           "calHGHK",
+                                                           "ca",
+                                                           external_conc=20,
+                                                           temp=22,
+                                                           liquid_junction_pot=0,
+                                                           cvode=False)
+        activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
+                                     delimiter=",")
+        cls.power = 1
+        cls.activation_data = dict()
+        for val in activation_data:
+            cls.activation_data[val[0]] = val[1:].tolist()
+        cls.test_Ca20 = ActivationSteadyStateTest(cls.activation_data,
+                                                {"v_init": -90, "t_stop": 70,
+                                                 "electrode_current": True,
+                                                 "chord_conductance":False,
+                                                 "normalization": "save_sign"}, 1,
+                                                "ActvationSSTest",
+                                                save_figures=True)
+        cls.act_results = cls.test_Ca20.run_model(cls.modelCa20_H,
+                                                  cls.test_Ca20.stimulus_list,
+                                                  cls.test_Ca20.v_init,
+                                                  cls.test_Ca20.t_stop,
+                                                  cls.power,
+                                                  cls.test_Ca20.chord_conductance,
+                                                  cls.test_Ca20.electrode_current,
+                                                  "save_sign")
+       
+
+    def test_summarize_H(self):
+        self.score = self.test_Ca20.judge(self.modelCa20_H)
+        self.score.summarize()
+
+    def test_run_model_H_keys(self):
+        self.assertEqual(list(self.act_results.keys()),
+                         self.test_Ca20.stimulus_list)
+
+    def test_run_model_H_values(self):
+        values = np.array(list(self.act_results.values()))
+        is_all_less_1 = np.all((values<=1))
+        self.assertTrue(is_all_less_1)
+
+        
+class TestCaLChannelsLowCalciumCa(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        
+        cls.modelCa20_HH = ModelWholeCellPatchConcentration(channel_loc,
+                                                            "CalHGHK",
+                                                            "Ca",
+                                                            external_conc=20,
+                                                            temp=22,
+                                                            liquid_junction_pot=0,
+                                                            cvode=False)
+
+        activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
+                                     delimiter=",")
+        cls.power = 1
+        cls.activation_data = dict()
+        for val in activation_data:
+            cls.activation_data[val[0]] = val[1:].tolist()
+        cls.test_Ca20 = ActivationSteadyStateTest(cls.activation_data,
+                                                {"v_init": -90, "t_stop": 70,
+                                                 "electrode_current": True,
+                                                 "chord_conductance":False,
+                                                 "normalization": "save_sign"}, 1,
+                                                "ActvationSSTest",
+                                                save_figures=True)
+        cls.act_results = cls.test_Ca20.run_model(cls.modelCa20_HH,
+                                                  cls.test_Ca20.stimulus_list,
+                                                  cls.test_Ca20.v_init,
+                                                  cls.test_Ca20.t_stop,
+                                                  cls.power,
+                                                  cls.test_Ca20.chord_conductance,
+                                                  cls.test_Ca20.electrode_current,
+                                                  "save_sign")
+
+
+    def test_summarize_H(self):
+        self.score = self.test_Ca20.judge(self.modelCa20_HH)
+        self.score.summarize()
+
+    def test_run_model_H_keys(self):
+        self.assertEqual(list(self.act_results.keys()),
+                         self.test_Ca20.stimulus_list)
+
+    def test_run_model_H_values(self):
+        values = np.array(list(self.act_results.values()))
+        
+        is_all_less_1 = np.all((values<=1))
+
         self.assertTrue(is_all_less_1)
 
 

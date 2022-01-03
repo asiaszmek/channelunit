@@ -240,7 +240,7 @@ class TestModelPatchNernst(unittest.TestCase):
         dt = 0.01
         I = np.ones((int((10+20)/dt)))
         out = self.modelJ.extract_current(I, True, False, 10, 20, 0)
-        expected = I[int(10/dt):]/(self.modelJ.vclamp.amp2
+        expected = I[int(10/dt)+1:]/(self.modelJ.vclamp.amp2
                                        - self.modelJ.E_rev)
         comparison = np.allclose(expected, out)
         self.assertTrue(comparison)
@@ -249,7 +249,7 @@ class TestModelPatchNernst(unittest.TestCase):
         dt = 0.01
         I = np.ones((int((10+20)/dt)))
         out = self.modelJ.extract_current(I, False, False, 10, 20, 0)
-        expected = I[int(10/dt):]
+        expected = I[int(10/dt)+1:]
         comparison = np.allclose(expected, out)
         self.assertTrue(comparison)
 
@@ -259,7 +259,7 @@ class TestModelPatchNernst(unittest.TestCase):
         dur2 = 10
         delay = 5
         I = np.ones((int((dur1+5*dur2+6*delay)/dt)))
-        I[:int(dur1/dt)] = 0
+        I[:int(dur1/dt)+1] = 0
         I[int(dur1/dt):int((dur1+dur2)/dt)] = 10
         I[int((dur1+dur2)/dt):int((dur1+dur2+delay)/dt)] = 0
         I[int((dur1+dur2+delay)/dt):int((dur1+dur2+2*delay)/dt)] = -5
@@ -269,7 +269,7 @@ class TestModelPatchNernst(unittest.TestCase):
             I[int((t_start+dur2)/dt):int((t_start+dur2+delay)/dt)] = -5
             t_start += dur2 + delay
         out = self.modelJ.extract_current(I, True, True, dur1, dur2, delay)
-        expected = (I[int(dur1/dt):int((dur1+dur2)/dt)]
+        expected = (I[int(dur1/dt)+1:int((dur1+dur2)/dt)]
                     -8)/(self.modelJ.vclamp.amp2 - self.modelJ.E_rev)
         comparison = np.allclose(expected, out)
         self.assertTrue(comparison)
@@ -290,24 +290,19 @@ class TestModelPatchNernst(unittest.TestCase):
             I[int((t_start+dur2)/dt):int((t_start+dur2+delay)/dt)] = -5
             t_start += dur2 + delay
         out = self.modelJ.extract_current(I, False, True, dur1, dur2, delay)
-        expected = (I[int(dur1/dt):int((dur1+dur2)/dt)]-8)
+        expected = (I[int(dur1/dt)+1:int((dur1+dur2)/dt)]-8)
         comparison = np.allclose(expected, out)
         self.assertTrue(comparison)
 
         
     def test_normalize_to_one(self):
         dic = {1:-1, 2:-2}
-        out = self.modelJ.normalize_to_one(dic, "custom", "to_one")
+        out = self.modelJ.normalize_to_one(dic, "save_sign")
         self.assertEqual({1:-0.5, 2:-1.}, out)
 
     def test_normalize_to_one_2(self):
         dic = {1:-1, 2:-2}
-        out = self.modelJ.normalize_to_one(dic, "na", "to_one")
-        self.assertEqual({1:0.5, 2:1.}, out)
-
-    def test_normalize_to_one_3(self):
-        dic = {1:1, 2:2}
-        out = self.modelJ.normalize_to_one(dic, "k", "to_one")
+        out = self.modelJ.normalize_to_one(dic, "to_one")
         self.assertEqual({1:0.5, 2:1.}, out)
 
     def test_change_nai(self):
