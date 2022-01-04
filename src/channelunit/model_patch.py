@@ -537,7 +537,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
                         dur2, delay):
         #dt = self.dt
-        current = I[int(dur1/self.dt)+1:int((dur1+dur2)/self.dt)]
+        current = I[int(dur1/self.dt)+1:int((dur1+dur2)/self.dt)].copy()
         #either step injection or the short pulse
         if leak_subtraction:
             pulse = np.zeros(current.shape)
