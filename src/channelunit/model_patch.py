@@ -100,7 +100,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                  external_conc=None, gbar_name="gbar", temp=22,
                  recompile=True, liquid_junction_pot=0,
                  cvode=True, R_m=20000, v_rest=-65, gbar_value=None,
-                 directory="validation_results"):
+                 directory="validation_results",  sim_dt=0.001):
         """
         ion_name: str
             most common ions are: na (sodium), k, ca (sometimes Ca, if 
@@ -148,7 +148,13 @@ class ModelPatch(sciunit.Model, NModlChannel):
         self.v_low = 50
         self.vclamp = h.SEClampOLS(self.patch(0.5))
         self.cvode = cvode
-
+        if cvode:
+            h.CVode()
+            h.CVode().atol(1e-5)
+        else:
+            h.dt = sim_dt
+        self.ca = None
+          
     def set_vclamp(self, dur1, v1, dur2, v2, leak_subtraction, delay=200):
         self.vclamp.dur1 = dur1
         self.vclamp.amp1 = v1 - self.junction
@@ -200,7 +206,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
                               electrode_current=True,
-                              sim_dt=0.001, interval=200,
+                              interval=200,
                               save_traces=True):
         """
         Function for running step experiments to determine 
@@ -227,9 +233,6 @@ class ModelPatch(sciunit.Model, NModlChannel):
           minus the ion's reversal potential.
         duration: float
           duration of the simulation
-        sim_dt: float
-          for channels that can not be simulated using cvode. This value 
-          should be small.
         """
         if save_traces:
             if self._external_conc:
@@ -250,13 +253,10 @@ class ModelPatch(sciunit.Model, NModlChannel):
                 fname = "%s_%s" % (fname, "g")
             if not electrode_current:
                 fname = "%s_%s" % (fname, "imax_np")
+            if self.cvode:
+                fname = "%s_%s" % (fname, "cvode")
             output = []
             header = "time"
-        if self.cvode:
-            h.cvode_active(1)
-        else:
-            h.cvode_active(0)
-            h.dt = sim_dt
         h.celsius = self.temperature
         current_vals = {}
         current = h.Vector()
@@ -288,7 +288,10 @@ class ModelPatch(sciunit.Model, NModlChannel):
             stim_stop = self.set_vclamp(delay, v_hold, t_stop, level,
                                         leak_subtraction,
                                         delay=interval)
-            h.init()
+            if self.cvode:
+                h.CVode().re_init()
+            else:
+                h.init()
             h.tstop = stim_stop
             h.run()
             I = current.as_numpy()
@@ -302,7 +305,6 @@ class ModelPatch(sciunit.Model, NModlChannel):
                     output.append(save_time)
                 output.append(out)
                 header += ";%4.2f" % level
-
             current_vals[level] = out
         if save_traces:
             path = os.path.join(self.base_directory, "data")
@@ -316,8 +318,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
     def get_activation_steady_state(self, stimulation_levels: list,
                                     v_hold: float, t_stop:float,
                                     power: int, chord_conductance,
-                                    electrode_current,
-                                    sim_dt=0.001, interval=200,
+                                    electrode_current, interval=200,
                                     normalization="to_one"):
         """
         Function for running step experiments to determine steady-state
@@ -348,15 +349,12 @@ class ModelPatch(sciunit.Model, NModlChannel):
           minus the ion's reversal potential.
         duration: float
           duration of the simulation
-        sim_dt: float
-          for channels that can not be simulated using cvode. This value 
           should be small.
         """
         currents = self.get_activation_traces(stimulation_levels,
                                               v_hold, t_stop,
                                               chord_conductance,
                                               electrode_current,
-                                              sim_dt=sim_dt,
                                               interval=interval)
         max_current = self.get_max_of_dict(currents, self.ion_name,
                                            chord_conductance)
@@ -370,7 +368,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                 v_test: float, t_test:float,
                                 chord_conductance,
                                 electrode_current,
-                                sim_dt=0.001, interval=200,
+                                interval=200,
                                 save_traces=True):
         """
         Function for running step experiments to determine steady-state
@@ -395,9 +393,6 @@ class ModelPatch(sciunit.Model, NModlChannel):
         chord_conductance: boolean
           in many experiments current is normalized by membrane voltage
           minus the ion's reversal potential.
-        sim_dt: float
-          for channels that can not be simulated using cvode. T
-          his value should be small.
         """
         if save_traces:
             if self._external_conc:
@@ -418,13 +413,10 @@ class ModelPatch(sciunit.Model, NModlChannel):
                 fname = "%s_%s" % (fname, "g")
             if not electrode_current:
                 fname = "%s_%s" % (fname, "imax_np")
+            if self.cvode:
+                fname = "%s_%s" % (fname, "cvode")
             output = []
             header = "time"
-        if self.cvode:
-            h.cvode_active(1)
-        else:
-            h.cvode_active(0)
-            h.dt = sim_dt
         h.celsius = self.temperature
         delay = 200
         stim_start = int(delay/self.dt)
@@ -456,7 +448,10 @@ class ModelPatch(sciunit.Model, NModlChannel):
             t_stop = self.set_vclamp(delay, v_hold, t_test, v_test,
                                      leak_subtraction,
                                      delay=interval)
-            h.init()
+            if self.cvode:
+                h.CVode().re_init()
+            else:
+                h.init()
             h.tstop = t_stop
             h.run()
             I = current.as_numpy()
@@ -469,9 +464,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                     save_time = time.as_numpy()[int(delay/self.dt)+1:
                                                 int((delay+t_test)/self.dt)]
                     output.append(save_time)
-                    print(save_time.shape)
                 output.append(out)
-                print(out.shape)
                 header += ";%4.2f" % v_hold
         if save_traces:
             path = os.path.join(self.base_directory, "data")
@@ -489,7 +482,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                       chord_conductance=False,
                                       leak_subtraction=True,
                                       electrode_current=True,
-                                      sim_dt=0.001, interval=200,
+                                      interval=200,
                                       normalization="to_one"):
         """
         Function for running step experiments to determine steady-state
@@ -518,15 +511,13 @@ class ModelPatch(sciunit.Model, NModlChannel):
         chord_conductance: boolean
           in many experiments current is normalized by membrane voltage
           minus the ion's reversal potential.
-        sim_dt: float
-          for channels that can not be simulated using cvode. T
           his value should be small.
         """
         currents = self.get_inactivation_traces(stimulation_levels,
                                                 v_test, t_test,
                                                 chord_conductance,
                                                 leak_subtraction,
-                                                sim_dt, interval)
+                                                interval)
         max_current = self.get_max_of_dict(currents, self.ion_name,
                                            chord_conductance)
         result = self.normalize_to_one(max_current, normalization)
