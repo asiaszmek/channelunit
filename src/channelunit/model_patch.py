@@ -145,6 +145,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                     gbar_value = 0.001
                 setattr(from_mech, gbar_name, gbar_value)
         self.temperature = temp
+        self.v_low = 50
         self.vclamp = h.SEClampOLS(self.patch(0.5))
         self.cvode = cvode
 
@@ -169,8 +170,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
         pulse_amp = self.vclamp.amp2 - self.vclamp.amp1
         self.vclamp.dur3 = delay
         self.vclamp.amp3 = self.vclamp.amp1
-        v_sub = self.vclamp.amp1 - pulse_amp/4 - 30 - self.junction
-        v_pulse = v_sub + pulse_amp/4 - self.junction
+        v_sub = self.vclamp.amp1 - pulse_amp/4 - self.v_low - self.junction
+        v_pulse = v_sub + pulse_amp/4 
         self.vclamp.amp4 = v_sub
         self.vclamp.dur4 = delay
         # 1st pulse
