@@ -115,10 +115,9 @@ class TestCaLChannelsLowCalciumca(unittest.TestCase):
         cls.modelCa20_H = ModelWholeCellPatchConcentration(channel_loc,
                                                            "calHGHK",
                                                            "ca",
-                                                           external_conc=20,
+                                                           external_conc=1.5,
                                                            temp=22,
-                                                           liquid_junction_pot=0,
-                                                           cvode=False)
+                                                           liquid_junction_pot=0)
         activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
                                      delimiter=",")
         cls.power = 1
@@ -163,10 +162,9 @@ class TestCaLChannelsLowCalciumCa(unittest.TestCase):
         cls.modelCa20_HH = ModelWholeCellPatchConcentration(channel_loc,
                                                             "CalHGHK",
                                                             "Ca",
-                                                            external_conc=20,
+                                                            external_conc=1.5,
                                                             temp=22,
-                                                            liquid_junction_pot=0,
-                                                            cvode=False)
+                                                            liquid_junction_pot=0)
 
         activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
                                      delimiter=",")
@@ -176,7 +174,7 @@ class TestCaLChannelsLowCalciumCa(unittest.TestCase):
             cls.activation_data[val[0]] = val[1:].tolist()
         cls.test_Ca20 = ActivationSteadyStateTest(cls.activation_data,
                                                 {"v_init": -90, "t_stop": 70,
-                                                 "electrode_current": True,
+                                                 "electrode_current": False,
                                                  "chord_conductance":False,
                                                  "normalization": "save_sign"}, 1,
                                                 "ActvationSSTest",

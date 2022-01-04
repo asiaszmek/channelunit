@@ -5,9 +5,11 @@ import numpy as np
 
 import sciunit
 from neuron import h
+from neuron import rxd
 import neuron
 from channelunit.capabilities import NModlChannel
 
+membrane_shell_width = .1
 
 loc = os.path.dirname(os.path.abspath(__file__))
 mechanisms_path = os.path.join(loc, 'mechanisms')
@@ -140,10 +142,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
             for seg in self.patch:
                 from_mech = getattr(seg, channel_name)
                 if gbar_value is None:
-                    if self.ion_name == "Ca" or self.ion_name == "ca":
-                        gbar_value = 0.00001
-                    else:
-                        gbar_value = 0.001
+                    gbar_value = 0.001
                 setattr(from_mech, gbar_name, gbar_value)
         self.temperature = temp
         self.vclamp = h.SEClampOLS(self.patch(0.5))
@@ -249,7 +248,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
             if chord_conductance:
                 fname = "%s_%s" % (fname, "g")
             if not electrode_current:
-                fname = "%s_%s" % (fname, "gmax_np")
+                fname = "%s_%s" % (fname, "imax_np")
             output = []
             header = "time"
         if self.cvode:
@@ -417,7 +416,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
             if chord_conductance:
                 fname = "%s_%s" % (fname, "g")
             if not electrode_current:
-                fname = "%s_%s" % (fname, "gmax_np")
+                fname = "%s_%s" % (fname, "imax_np")
             output = []
             header = "time"
         if self.cvode:
@@ -664,7 +663,7 @@ class ModelPatchConcentration(ModelPatch):
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
                  liquid_junction_pot=0, cvode=True, R_m=20000, v_rest=-65,
-                 gbar_value=None):
+                 gbar_value=None, t_decay=100):
         """
         Model class for testing calcium channels with 
         """
@@ -679,19 +678,30 @@ class ModelPatchConcentration(ModelPatch):
                                                       cvode=cvode,
                                                       R_m=20000, v_rest=v_rest,
                                                       gbar_value=gbar_value)
+        self.memb_shell = rxd.Region(self.patch, nrn_region='i',
+                                     geometry=rxd.Shell(1-membrane_shell_width,
+                                                        1),
+                                     name="membrane_shell")
+        
         if self.ion_name == "ca":
-            self.patch.insert("cad")
-            self.patch.cainf_cad = self._cai
+            self.ca = rxd.Species(self.memb_shell, d=0.2,
+                                  name='ca', charge=2,
+                                  initial=self._cai,
+                                  atolscale=1e-9)
             h.cao0_ca_ion = self._external_conc
             self.E_rev = self._find_E_rev_value()
         elif self.ion_name == "Ca":
-            self.patch.insert("Cad")
-            self.patch.Cainf_Cad = self._cai
-            h.Cao0_Ca_ion = self._external_conc
+            self.ca = rxd.Species(self.memb_shell, d=0.2,
+                                  name='Ca', charge=2,
+                                  initial=self._cai,
+                                  atolscale=1e-9)
             self.E_rev = self._find_E_rev_value()            
         elif self.ion_name == "Ba":
-            self.patch.insert("Cad")
-            self.patch.Cainf_Cad = 0
+            self.ca = rxd.Species(self.memb_shell, d=0.2,
+                                  name='Ca', charge=2,
+                                  initial=0,
+                                  atolscale=1e-9)
+            self._cai = 0
             self.E_rev = None
             h.Cao0_Ca_ion = self._external_conc
             chan = self.patch.psection()["density_mechs"][channel_name]
@@ -700,8 +710,11 @@ class ModelPatchConcentration(ModelPatch):
                 gbar_val = 2*chan[gbar_name][i]
                 setattr(from_mech, gbar_name, gbar_val)
         elif self.ion_name == "ba":
-            self.patch.insert("cad")
-            self.patch.cainf_cad = 0
+            self.ca = rxd.Species(self.memb_shell, d=0.2,
+                                  name='ca', charge=2,
+                                  initial=0,
+                                  atolscale=1e-9)
+            self._cai = 0
             self.E_rev = None
             h.cao0_ca_ion = self._external_conc
             chan = self.patch.psection()["density_mechs"][channel_name]
@@ -712,6 +725,7 @@ class ModelPatchConcentration(ModelPatch):
         else:
             raise SystemExit("Unknown ion %s. I only know Ca, ca, Ba and ba"
                              % self.ion_name)
+        self.ca_decay = rxd.Rate(self.ca, (self._cai - self.ca)/t_decay)
 
     @property
     def cai(self):
