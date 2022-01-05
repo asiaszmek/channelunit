@@ -16,7 +16,8 @@ setuptools.setup(
         "Bug Tracker": "https://github.com/asiaszmek/channelunit/issues",
     },
     package_dir={"": "src"},
-    packages=["channelunit"],
+    packages=["channelunit", "channelunit.capabilities", "channelunit.tests",
+              "channelunit.tests", "channelunit.scores"],
     include_package_data=True,
     package_data={
         'channelunit': [
