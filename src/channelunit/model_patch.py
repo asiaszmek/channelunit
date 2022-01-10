@@ -33,7 +33,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
 
     @property
     def gbar(self):
-        values = self.patch.psection()["density_mechs"][self.channel_name][self.gbar_name]
+        mech = self.patch.psection()["density_mechs"][self.channel_name]
+        values = mech[self.gbar_name]
         if len(values) == 1:
             return values[0]
         elif len(set(values)) == 1:
@@ -207,7 +208,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                               chord_conductance=False,
                               electrode_current=True,
                               interval=200,
-                              save_traces=True):
+                              save_traces=True, save_ca=True):
         """
         Function for running step experiments to determine 
         current/chord conductance traces
@@ -257,6 +258,15 @@ class ModelPatch(sciunit.Model, NModlChannel):
                 fname = "%s_%s" % (fname, "cvode")
             output = []
             header = "time"
+        if save_ca and self.ca is None:
+            save_ca = False
+        if save_ca:
+            ca_fname = "%s_calcium" % fname
+            calcium_vals = []
+            calcium = h.Vector()
+            calcium.record(self.ca[self.memb_shell].nodes[0]._ref_concentration, self.dt)
+        else:
+            ca_fname = ""
         h.celsius = self.temperature
         current_vals = {}
         current = h.Vector()
@@ -297,11 +307,17 @@ class ModelPatch(sciunit.Model, NModlChannel):
             I = current.as_numpy()
             out = self.extract_current(I, chord_conductance, leak_subtraction,
                                        delay, t_stop, interval)
-                      
+            beg = int(delay/self.dt)+1
+            end = int((delay+t_stop)/self.dt)
+            if save_ca:
+                if not i:
+                    save_time = time.as_numpy()[beg: end].copy()
+                    calcium_vals.append(save_time)
+  
+                calcium_vals.append(calcium.as_numpy()[beg: end].copy())
             if save_traces:
                 if not i:
-                    save_time = time.as_numpy()[int(delay/self.dt)+1:
-                                                int((delay+t_stop)/self.dt)]
+                    save_time = time.as_numpy()[beg:end].copy()                  
                     output.append(save_time)
                 output.append(out)
                 header += ";%4.2f" % level
@@ -313,13 +329,22 @@ class ModelPatch(sciunit.Model, NModlChannel):
             path_to_save = os.path.join(path, "%s.csv" % fname)
             np.savetxt(path_to_save, np.array(output), delimiter=";",
                        header=header, comments="")
+        if save_ca:
+            path = os.path.join(self.base_directory, "data")
+            if not os.path.exists(path):
+                os.makedirs(path)
+            path_to_save = os.path.join(path, "%s.csv" % ca_fname)
+            np.savetxt(path_to_save, np.array(calcium_vals), delimiter=";",
+                       header=header, comments="")
+            
         return current_vals
 
     def get_activation_steady_state(self, stimulation_levels: list,
                                     v_hold: float, t_stop:float,
                                     power: int, chord_conductance,
                                     electrode_current, interval=200,
-                                    normalization="to_one"):
+                                    normalization="to_one",
+                                    save_traces=True, save_ca=True):
         """
         Function for running step experiments to determine steady-state
         activation curves.
@@ -355,7 +380,9 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                               v_hold, t_stop,
                                               chord_conductance,
                                               electrode_current,
-                                              interval=interval)
+                                              interval=interval,
+                                              save_traces=save_traces,
+                                              save_ca=save_ca)
         max_current = self.get_max_of_dict(currents, self.ion_name,
                                            chord_conductance)
         result = self.normalize_to_one(max_current, normalization)
@@ -369,7 +396,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                 chord_conductance,
                                 electrode_current,
                                 interval=200,
-                                save_traces=True):
+                                save_traces=True, save_ca=True):
         """
         Function for running step experiments to determine steady-state
         inactivation currents.
@@ -417,6 +444,16 @@ class ModelPatch(sciunit.Model, NModlChannel):
                 fname = "%s_%s" % (fname, "cvode")
             output = []
             header = "time"
+        if save_ca and self.ca is None:
+            save_ca = False
+        if save_ca:
+            ca_fname = "%s_calcium" % fname
+            calcium_vals = []
+            calcium = h.Vector()
+            calcium.record(self.ca[self.memb_shell].nodes[0]._ref_concentration, self.dt)
+        else:
+            ca_fname = ""
+
         h.celsius = self.temperature
         delay = 200
         stim_start = int(delay/self.dt)
@@ -459,13 +496,20 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                        leak_subtraction, delay, t_test,
                                        0)
             current_values[v_hold] = out
+            beg = int(delay/self.dt)+1
+            end = int((delay+t_stop)/self.dt)
+            if save_ca:
+                if not i:
+                    save_time = time.as_numpy()[beg: end].copy()
+                    calcium_vals.append(save_time)
+                calcium_vals.append(calcium.as_numpy()[beg: end].copy())
             if save_traces:
                 if not i:
-                    save_time = time.as_numpy()[int(delay/self.dt)+1:
-                                                int((delay+t_test)/self.dt)]
+                    save_time = time.as_numpy()[beg:end].copy()                  
                     output.append(save_time)
                 output.append(out)
                 header += ";%4.2f" % v_hold
+
         if save_traces:
             path = os.path.join(self.base_directory, "data")
             if not os.path.exists(path):
@@ -474,6 +518,14 @@ class ModelPatch(sciunit.Model, NModlChannel):
             
             np.savetxt(path_to_save, np.array(output), delimiter=";",
                        header=header, comments="")
+        if save_ca:
+            path = os.path.join(self.base_directory, "data")
+            if not os.path.exists(path):
+                os.makedirs(path)
+            path_to_save = os.path.join(path, "%s.csv" % ca_fname)
+            np.savetxt(path_to_save, np.array(calcium_vals), delimiter=";",
+                       header=header, comments="")
+  
         return current_values
         
     def get_inactivation_steady_state(self, stimulation_levels: list,
@@ -483,7 +535,8 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                       leak_subtraction=True,
                                       electrode_current=True,
                                       interval=200,
-                                      normalization="to_one"):
+                                      normalization="to_one",
+                                      save_traces=True, save_ca=True):
         """
         Function for running step experiments to determine steady-state
         inactivation curves.
@@ -517,7 +570,9 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                                 v_test, t_test,
                                                 chord_conductance,
                                                 leak_subtraction,
-                                                interval)
+                                                interval,
+                                                save_traces=save_traces,
+                                                save_ca=save_ca)
         max_current = self.get_max_of_dict(currents, self.ion_name,
                                            chord_conductance)
         result = self.normalize_to_one(max_current, normalization)
