@@ -497,7 +497,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                                        0)
             current_values[v_hold] = out
             beg = int(delay/self.dt)+1
-            end = int((delay+t_stop)/self.dt)
+            end = int((delay+t_test)/self.dt)
             if save_ca:
                 if not i:
                     save_time = time.as_numpy()[beg: end].copy()
@@ -505,7 +505,7 @@ class ModelPatch(sciunit.Model, NModlChannel):
                 calcium_vals.append(calcium.as_numpy()[beg: end].copy())
             if save_traces:
                 if not i:
-                    save_time = time.as_numpy()[beg:end].copy()                  
+                    save_time = time.as_numpy()[beg:end].copy()
                     output.append(save_time)
                 output.append(out)
                 header += ";%4.2f" % v_hold
@@ -515,7 +515,6 @@ class ModelPatch(sciunit.Model, NModlChannel):
             if not os.path.exists(path):
                 os.makedirs(path)
             path_to_save = os.path.join(path, "%s.csv" % fname)
-            
             np.savetxt(path_to_save, np.array(output), delimiter=";",
                        header=header, comments="")
         if save_ca:
