@@ -709,7 +709,8 @@ class ModelPatchConcentration(ModelPatch):
     def __init__(self, path_to_mods, channel_name, ion_name,
                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
                  liquid_junction_pot=0, cvode=True, R_m=20000, v_rest=-65,
-                 gbar_value=None, t_decay=100):
+                 gbar_value=None, t_decay=20, buffer_capacity=18,
+                 membrane_shell_width=membrane_shell_width):
         """
         Model class for testing calcium channels with 
         """
@@ -724,11 +725,16 @@ class ModelPatchConcentration(ModelPatch):
                                                       cvode=cvode,
                                                       R_m=20000, v_rest=v_rest,
                                                       gbar_value=gbar_value)
-        self.memb_shell = rxd.Region(self.patch, nrn_region='i',
-                                     geometry=rxd.Shell(1-membrane_shell_width,
-                                                        1),
+        self.t_decay = t_decay
+        self.Kb = buffer_capacity
+        self.memb_shell_width = membrane_shell_width
+        self.geom = rxd.Shell(1- self.memb_shell_width, 1)
+        self.memb_shell = rxd.Region(self.patch,
+                                     geometry=self.geom,
+                                     nrn_region="i",
                                      name="membrane_shell")
-        
+        old_surface_area_function = self.geom.surface_areas1d
+        self.geom.surface_areas1d = lambda sec: old_surface_area_function(sec)/self.Kb
         if self.ion_name == "ca":
             self.ca = rxd.Species(self.memb_shell, d=0.2,
                                   name='ca', charge=2,
@@ -741,7 +747,7 @@ class ModelPatchConcentration(ModelPatch):
                                   name='Ca', charge=2,
                                   initial=self._cai,
                                   atolscale=1e-9)
-            self.E_rev = self._find_E_rev_value()            
+            self.E_rev = self._find_E_rev_value()
         elif self.ion_name == "Ba":
             self.ca = rxd.Species(self.memb_shell, d=0.2,
                                   name='Ca', charge=2,
@@ -771,7 +777,8 @@ class ModelPatchConcentration(ModelPatch):
         else:
             raise SystemExit("Unknown ion %s. I only know Ca, ca, Ba and ba"
                              % self.ion_name)
-        self.ca_decay = rxd.Rate(self.ca, (self._cai - self.ca)/t_decay)
+        self.decay_eq = (self._cai - self.ca)/self.t_decay
+        self.ca_decay = rxd.Rate(self.ca, self.decay_eq)
 
     @property
     def cai(self):
