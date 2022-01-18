@@ -5,7 +5,6 @@ import numpy as np
 
 
 from channelunit.model_patch import ModelPatchWithChannel
-from channelunit.model_patch import ModelPatch
 from channelunit import ModelPatchNernst
 from channelunit import ModelWholeCellPatchNernst
 from channelunit import ModelPatchConcentration
@@ -130,8 +129,8 @@ class TestModelPatchNernst(unittest.TestCase):
     def test_extract_current_chord_conductance(self):
         dt = 0.01
         I = np.ones((int((10+20)/dt)))
-        out = self.modelJ.extract_current(I, True, False, 10, 20, 0)
-        expected = I[int(10/dt)+1:]/(self.modelJ.vclamp.amp2
+        out = self.modelJ.extract_current(I, True, False, 10, 20, 0, dt)
+        expected = I[int(10/dt)+10:]/(self.modelJ.vclamp.amp2
                                        - self.modelJ.E_rev)
         comparison = np.allclose(expected, out)
         self.assertTrue(comparison)
@@ -139,8 +138,8 @@ class TestModelPatchNernst(unittest.TestCase):
     def test_extract_current_nothing(self):
         dt = 0.01
         I = np.ones((int((10+20)/dt)))
-        out = self.modelJ.extract_current(I, False, False, 10, 20, 0)
-        expected = I[int(10/dt)+1:]
+        out = self.modelJ.extract_current(I, False, False, 10, 20, 0, dt)
+        expected = I[int(10/dt)+10:]
         comparison = np.allclose(expected, out)
         self.assertTrue(comparison)
 
@@ -150,7 +149,7 @@ class TestModelPatchNernst(unittest.TestCase):
         dur2 = 10
         delay = 5
         I = np.ones((int((dur1+5*dur2+6*delay)/dt)))
-        I[:int(dur1/dt)+1] = 0
+        I[:int(dur1/dt)+10] = 0
         I[int(dur1/dt):int((dur1+dur2)/dt)] = 10
         I[int((dur1+dur2)/dt):int((dur1+dur2+delay)/dt)] = 0
         I[int((dur1+dur2+delay)/dt):int((dur1+dur2+2*delay)/dt)] = -5
@@ -159,8 +158,9 @@ class TestModelPatchNernst(unittest.TestCase):
             I[int(t_start/dt):int((t_start+dur2)/dt)] = 2
             I[int((t_start+dur2)/dt):int((t_start+dur2+delay)/dt)] = -5
             t_start += dur2 + delay
-        out = self.modelJ.extract_current(I, True, True, dur1, dur2, delay)
-        expected = (I[int(dur1/dt)+1:int((dur1+dur2)/dt)]
+        out = self.modelJ.extract_current(I, True, True, dur1, dur2, delay,
+                                          dt)
+        expected = (I[int(dur1/dt)+10:int((dur1+dur2)/dt)]
                     -8)/(self.modelJ.vclamp.amp2 - self.modelJ.E_rev)
         comparison = np.allclose(expected, out)
         self.assertTrue(comparison)
@@ -180,8 +180,9 @@ class TestModelPatchNernst(unittest.TestCase):
             I[int(t_start/dt):int((t_start+dur2)/dt)] = 2
             I[int((t_start+dur2)/dt):int((t_start+dur2+delay)/dt)] = -5
             t_start += dur2 + delay
-        out = self.modelJ.extract_current(I, False, True, dur1, dur2, delay)
-        expected = (I[int(dur1/dt)+1:int((dur1+dur2)/dt)]-8)
+        out = self.modelJ.extract_current(I, False, True, dur1, dur2, delay,
+                                          dt)
+        expected = (I[int(dur1/dt)+10:int((dur1+dur2)/dt)]-8)
         comparison = np.allclose(expected, out)
         self.assertTrue(comparison)
 

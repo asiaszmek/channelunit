@@ -9,6 +9,8 @@ from neuron import rxd
 import neuron
 from channelunit.capabilities import NModlChannel
 
+N = 4
+DT = 0.1
 membrane_shell_width = .1
 
 loc = os.path.dirname(os.path.abspath(__file__))
@@ -23,7 +25,7 @@ class ModelPatch(sciunit.Model):
                  cvode=True,
                  sim_dt=0.001):
         h.load_file("stdrun.hoc")
-        self.dt = 0.01
+        self.dt = DT
         self.compile_and_add(mechanisms_path, True)
         self.junction = liquid_junction_pot
         self.patch = h.Section(name="patch")
@@ -34,12 +36,12 @@ class ModelPatch(sciunit.Model):
         self.patch.e_pas = v_rest
         self.patch.g_pas = 1/R_m
         self.temperature = temp
-        self.v_low = 50
+        self.v_low = 29.5
         self.vclamp = h.SEClampOLS(self.patch(0.5))
         self.cvode = cvode
         if cvode:
             h.CVode()
-            h.CVode().atol(1e-5)
+            h.CVode().atol(1e-7)
         else:
             h.dt = sim_dt
         
@@ -72,7 +74,7 @@ class ModelPatch(sciunit.Model):
         pulse_amp = self.vclamp.amp2 - self.vclamp.amp1
         self.vclamp.dur3 = delay
         self.vclamp.amp3 = self.vclamp.amp1
-        v_sub = self.vclamp.amp1 - pulse_amp/4 - self.v_low - self.junction
+        v_sub = self.vclamp.amp1 - pulse_amp/4 - self.v_low 
         v_pulse = v_sub + pulse_amp/4 
         self.vclamp.amp4 = v_sub
         self.vclamp.dur4 = delay
@@ -98,9 +100,9 @@ class ModelPatch(sciunit.Model):
         self.vclamp.dur12 = delay
         return dur1 + 6*delay + 5*dur2
 
-    def run(self, t_stop):
+    def run(self, t_stop, dt=DT):
         current = h.Vector()
-        current.record(self.vclamp._ref_i, self.dt)
+        current.record(self.vclamp._ref_i, dt)
         if self.cvode:
             h.CVode().re_init()
         else:
@@ -108,6 +110,21 @@ class ModelPatch(sciunit.Model):
         h.tstop = t_stop
         h.run()
         return current.as_numpy()
+
+    @classmethod
+    def curr_stim_response(self, I, dur1, dur2, dt):
+        current = I[int(dur1/dt)+10:int((dur1+dur2)/dt)]
+        return current.copy()
+
+    @classmethod
+    def curr_leak_amp(self, I, dur1, dur2, delay, dt):
+        t_start = dur1 + dur2 + 2*delay
+        length = int((t_start+dur2)/dt) - int(t_start/dt) -10
+        pulse = np.zeros((length,))
+        for i in range(N):
+            pulse += I[int(t_start/dt)+10:int((t_start+dur2)/dt)].copy()
+            t_start += dur2 + delay
+        return pulse
 
 
 class ModelPatchWithChannel(ModelPatch, NModlChannel):
@@ -329,8 +346,8 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
             h.run()
             I = current.as_numpy()
             out = self.extract_current(I, chord_conductance, leak_subtraction,
-                                       delay, t_stop, interval)
-            beg = int(delay/self.dt)+1
+                                       delay, t_stop, interval, self.dt)
+            beg = int(delay/self.dt)+10
             end = int((delay+t_stop)/self.dt)
             if save_ca:
                 if not i:
@@ -473,7 +490,8 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
             ca_fname = "%s_calcium" % fname
             calcium_vals = []
             calcium = h.Vector()
-            calcium.record(self.ca[self.memb_shell].nodes[0]._ref_concentration, self.dt)
+            calcium.record(self.ca[self.memb_shell].nodes[0]._ref_concentration,
+                           self.dt)
         else:
             ca_fname = ""
 
@@ -517,9 +535,9 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
             I = current.as_numpy()
             out = self.extract_current(I, chord_conductance,
                                        leak_subtraction, delay, t_test,
-                                       0)
+                                       0, self.dt)
             current_values[v_hold] = out
-            beg = int(delay/self.dt)+1
+            beg = int(delay/self.dt)+10
             end = int((delay+t_test)/self.dt)
             if save_ca:
                 if not i:
@@ -604,16 +622,13 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
         return result
                 
     def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
-                        dur2, delay):
+                        dur2, delay, dt):
         #dt = self.dt
-        current = I[int(dur1/self.dt)+1:int((dur1+dur2)/self.dt)].copy()
+        current = self.curr_stim_response(I, dur1, dur2, dt)
+        
         #either step injection or the short pulse
         if leak_subtraction:
-            pulse = np.zeros(current.shape)
-            t_start = dur1 + dur2 + 2*delay
-            for i in range(4):
-                pulse += I[int(t_start/self.dt)+1:int((t_start+dur2)/self.dt)]
-                t_start += dur2 + delay
+            pulse = self.curr_leak_amp(I, dur1, dur2, delay, dt)
             current = current - pulse
 
         if chord_conductance:

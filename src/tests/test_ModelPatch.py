@@ -16,9 +16,12 @@ class TestSubtractPassiveProperties(unittest.TestCase):
         cls.dur1 = 10
         cls.dur2 = 20
         cls.delay = 30
-        cls.modelljp2.set_vclamp(cls.dur1, 10, cls.dur2, 90, True, cls.delay)
+        cls.modelljp2.set_vclamp(cls.dur1, 10, cls.dur2, 90, True,
+                                 cls.delay)
         cls.pulse = 20
-
+        t_stop = cls.dur1 + 6*cls.dur2 + 5*cls.delay
+        cls.current = cls.modelljp2.run(t_stop)
+       
     def test_set_vclamp_junction_amp1(self):
         self.assertEqual(self.modelljp1.vclamp.amp1,
                          10-self.modelljp1.junction)
@@ -61,7 +64,7 @@ class TestSubtractPassiveProperties(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_amp4(self):
         self.assertEqual(self.modelljp2.vclamp.amp4,
-                         10-2*self.modelljp2.junction-
+                         10-self.modelljp2.junction-
                          self.modelljp2.v_low-self.pulse)
 
     def test_set_vclamp_ls_junction_dur4(self):
@@ -70,7 +73,7 @@ class TestSubtractPassiveProperties(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_amp5(self):
         self.assertEqual(self.modelljp2.vclamp.amp5,
-                         10-2*self.modelljp2.junction-self.modelljp2.v_low)
+                         10-self.modelljp2.junction-self.modelljp2.v_low)
 
     def test_set_vclamp_ls_junction_dur5(self):
         self.assertEqual(self.modelljp2.vclamp.dur5,
@@ -79,7 +82,7 @@ class TestSubtractPassiveProperties(unittest.TestCase):
     def test_set_vclamp_ls_junction_amp6(self):
 
         self.assertEqual(self.modelljp2.vclamp.amp6,
-                         10-2*self.modelljp2.junction-self.modelljp2.v_low-
+                         10-self.modelljp2.junction-self.modelljp2.v_low-
                          self.pulse)
 
     def test_set_vclamp_ls_junction_dur6(self):
@@ -88,7 +91,7 @@ class TestSubtractPassiveProperties(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_amp7(self):
         self.assertEqual(self.modelljp2.vclamp.amp7,
-                         10-2*self.modelljp2.junction-self.modelljp2.v_low)
+                         10-self.modelljp2.junction-self.modelljp2.v_low)
 
     def test_set_vclamp_ls_junction_dur7(self):
         self.assertEqual(self.modelljp2.vclamp.dur7,
@@ -96,7 +99,7 @@ class TestSubtractPassiveProperties(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_amp8(self):
         self.assertEqual(self.modelljp2.vclamp.amp8,
-                         10-2*self.modelljp2.junction-self.modelljp2.v_low
+                         10-self.modelljp2.junction-self.modelljp2.v_low
                          -self.pulse)
 
     def test_set_vclamp_ls_junction_dur8(self):
@@ -105,14 +108,14 @@ class TestSubtractPassiveProperties(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_amp9(self):
         self.assertEqual(self.modelljp2.vclamp.amp9,
-                         10-2*self.modelljp2.junction-self.modelljp2.v_low)
+                         10-self.modelljp2.junction-self.modelljp2.v_low)
 
     def test_set_vclamp_ls_junction_dur9(self):
         self.assertEqual(self.modelljp2.vclamp.dur9,
                          20)
     def test_set_vclamp_ls_junction_amp10(self):
         self.assertEqual(self.modelljp2.vclamp.amp10,
-                         10-2*self.modelljp2.junction-self.modelljp2.v_low
+                         10-self.modelljp2.junction-self.modelljp2.v_low
                          -self.pulse)
 
     def test_set_vclamp_ls_junction_dur10(self):
@@ -121,7 +124,7 @@ class TestSubtractPassiveProperties(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_amp11(self):
         self.assertEqual(self.modelljp2.vclamp.amp11,
-                         10-2*self.modelljp2.junction-self.modelljp2.v_low)
+                         10-self.modelljp2.junction-self.modelljp2.v_low)
 
     def test_set_vclamp_ls_junction_dur11(self):
         self.assertEqual(self.modelljp2.vclamp.dur11,
@@ -129,7 +132,7 @@ class TestSubtractPassiveProperties(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_amp12(self):
         self.assertEqual(self.modelljp2.vclamp.amp12,
-                         10-2*self.modelljp2.junction-self.modelljp2.v_low
+                         10-self.modelljp2.junction-self.modelljp2.v_low
                          -self.pulse)
 
     def test_set_vclamp_ls_junction_dur12(self):
@@ -152,20 +155,52 @@ class TestSubtractPassiveProperties(unittest.TestCase):
         self.assertEqual(self.modelljp2.vclamp.amp11,
                          self.modelljp2.vclamp.amp10+self.pulse)
 
-    def test_leak_subtraction(self):
-        t_stop = self.dur1 + 6*self.dur2 +5*self.delay
-        current = self.modelljp2.run(t_stop)
+    def test_current_subtraction(self):
         dt = self.modelljp2.dt
-        passive = current[int(self.dur1/dt)+1: int((self.dur1+self.dur2)/dt)]
-        p_sum = np.zeros(passive.shape)
+        passive = self.current[int(self.dur1/dt)+10:
+                               int((self.dur1+self.dur2)/dt)].copy()
+        expected = self.modelljp2.curr_stim_response(self.current, self.dur1,
+                                                     self.dur2, dt)
+        self.assertTrue(np.allclose(passive, expected))
+
+    def test_pulse_sum(self):
+        dt = self.modelljp2.dt
+        length = int(self.dur2/self.modelljp2.dt)-10
+        p_sum = np.zeros((length,))
         t_start = self.dur1 + self.dur2 + 2*self.delay
         for i in range(4):
-            p_sum += current[int(t_start/dt)+1: int((t_start+self.dur2)/dt)]
+            p_sum += self.current[int(t_start/dt)+10:
+                                  int((t_start+self.dur2)/dt)]
             t_start += self.dur2 + self.delay
-        new_current = passive - p_sum
-        expected = np.zeros(new_current.shape)
-        print(new_current)
-        self.assertTrue(np.allclose(new_current, expected))
+        expected = self.modelljp2.curr_leak_amp(self.current, self.dur1,
+                                                self.dur2, self.delay, dt)
+        self.assertTrue(np.allclose(p_sum, expected))
+
+
+    def test_leak_substraction(self):
+        dt = self.modelljp2.dt
+        expected = self.current[int(self.dur1/dt)+10:
+                                int((self.dur1+self.dur2)/dt)].copy()
+        automatic_leak_subtraction = self.modelljp2.curr_leak_amp(self.current,
+                                                                  self.dur1,
+                                                                  self.dur2,
+                                                                  self.delay, dt)
+        difference = abs(expected - automatic_leak_subtraction)/expected
+        self.assertTrue(np.all(difference < 0.03))
+
+    def test_sum_amp(self):
+        out_1 = (self.modelljp2.vclamp.amp5 + self.modelljp2.vclamp.amp7
+                 + self.modelljp2.vclamp.amp9 + self.modelljp2.vclamp.amp11)
+        out_2 = 4*self.pulse
+        self.assertEqual(out_1-4*self.modelljp2.vclamp.amp10, out_2)
+
+    def test_sum_amp_2(self):
+        out_1 = (self.modelljp2.vclamp.amp5 + self.modelljp2.vclamp.amp7
+                 + self.modelljp2.vclamp.amp9 + self.modelljp2.vclamp.amp11)
+        out_2 = self.modelljp2.vclamp.amp2 - self.modelljp2.vclamp.amp1
+        self.assertEqual(out_1-4*self.modelljp2.vclamp.amp10, out_2)
+    
+
 
 if __name__ == "__main__":
     unittest.main()
