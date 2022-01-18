@@ -23,6 +23,7 @@ class ModelPatch(sciunit.Model):
                  cvode=True,
                  sim_dt=0.001):
         h.load_file("stdrun.hoc")
+        self.dt = 0.01
         self.compile_and_add(mechanisms_path, True)
         self.junction = liquid_junction_pot
         self.patch = h.Section(name="patch")
@@ -95,18 +96,18 @@ class ModelPatch(sciunit.Model):
         self.vclamp.dur11 = dur2
         self.vclamp.amp12 = v_sub
         self.vclamp.dur12 = delay
-        print(self.vclamp.amp1, self.vclamp.amp2, self.vclamp.amp3, self.vclamp.amp4, self.vclamp.amp5, self.vclamp.amp6,
-              self.vclamp.amp7, self.vclamp.amp8, self.vclamp.amp9, self.vclamp.amp10, self.vclamp.amp11,
-              self.vclamp.amp12, pulse_amp, pulse_amp/4) 
         return dur1 + 6*delay + 5*dur2
 
-    def run(t_stop):
+    def run(self, t_stop):
+        current = h.Vector()
+        current.record(self.vclamp._ref_i, self.dt)
         if self.cvode:
             h.CVode().re_init()
         else:
             h.init()
-        h.tstop = stim_stop
+        h.tstop = t_stop
         h.run()
+        return current.as_numpy()
 
 
 class ModelPatchWithChannel(ModelPatch, NModlChannel):
@@ -130,8 +131,7 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
         R_m: float 
             mebrane resistivity (in ohm*cm^2)
         """
-        
-        self.dt = 0.01
+
         self.channel_name = channel_name
         self.mod_path = path_to_mods
         self.compile_and_add(self.mod_path, recompile)
@@ -286,7 +286,8 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
             ca_fname = "%s_calcium" % fname
             calcium_vals = []
             calcium = h.Vector()
-            calcium.record(self.ca[self.memb_shell].nodes[0]._ref_concentration, self.dt)
+            calcium.record(self.ca[self.memb_shell].nodes[0]._ref_concentration,
+                           self.dt)
         else:
             ca_fname = ""
         h.celsius = self.temperature
