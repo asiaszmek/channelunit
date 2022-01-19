@@ -81,12 +81,15 @@ class SteadyStateTest(Test):
         pred_val = [predictions[v] for v in v_values]
         obs_val = [observations[v][0] for v in v_values]
         obs_std = [observations[v][1] for v in v_values]
+        channel_names_path = ""
+        for channel_name in model.channel_name:
+            channel_names_path += channel_name + "_"
         if self.base_directory:
             path = os.path.join(self.base_directory, "figs",
-                                model.channel_name)
+                                channel_names_path)
         else:
             path = os.path.join(model.base_directory, "figs",
-                                model.channel_name)
+                                channel_names_path)
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -97,7 +100,7 @@ class SteadyStateTest(Test):
         ax.set_xlabel("Voltage (mV)")
         ax.set_ylabel("Normalized current")
         ax.legend()
-        savefig_path = os.path.join(path, "%s_%s.png" % (model.channel_name,
+        savefig_path = os.path.join(path, "%s_%s.png" % (channel_names_path,
                                                          name))
         fig.savefig(savefig_path, dpi=self.dpi,
                     bbox_inches='tight')

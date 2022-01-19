@@ -131,7 +131,7 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
     _nai = 10  # mM
     _ki = 140  # mM
     _cai = 100e-6  # mM
-    def __init__(self, path_to_mods, channel_name, ion_name,
+    def __init__(self, path_to_mods: str, channel_name: str, ion_name: str,
                  external_conc=None, gbar_name="gbar", temp=22,
                  recompile=True, liquid_junction_pot=0,
                  cvode=True, R_m=20000, v_rest=-65, gbar_value=None,
@@ -149,7 +149,7 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
             mebrane resistivity (in ohm*cm^2)
         """
 
-        self.channel_name = channel_name
+        self.channel_name = [channel_name]
         self.mod_path = path_to_mods
         self.compile_and_add(self.mod_path, recompile)
         super(ModelPatchWithChannel, self).__init__(temp=temp, 
@@ -158,11 +158,11 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
                                                     cvode=cvode,
                                                     sim_dt=sim_dt,)
 
-        self.channel = self.patch.insert(self.channel_name)
+        self.channel = self.patch.insert(channel_name)
         self.base_directory = directory
         #set up channel conductance/permeability in case it is 0
         chan = self.patch.psection()["density_mechs"][channel_name]
-        self.gbar_name = gbar_name
+        self.gbar_name = {channel_name: gbar_name}
         self.ion_name = ion_name
         self._external_conc = external_conc
         if gbar_name not in chan.keys():
@@ -176,11 +176,15 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
                     gbar_value = 0.001
                 setattr(from_mech, gbar_name, gbar_value)
         self.ca = None
+        self.E_Ca_rev = None
+        self._Ca_ext = None
         
     @property
-    def gbar(self):
-        mech = self.patch.psection()["density_mechs"][self.channel_name]
-        values = mech[self.gbar_name]
+    def gbar(self, channel_name=None):
+        if channel_name is None:
+            channel_name=self.channel_name[0]
+        mech = self.patch.psection()["density_mechs"][channel_name]
+        values = mech[self.gbar_name[channel_name]]
         if len(values) == 1:
             return values[0]
         elif len(set(values)) == 1:
@@ -188,17 +192,19 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
         return values
 
     @gbar.setter
-    def gbar(self, value):
+    def gbar(self, value, channel_name=None):
+        if channel_name is None:
+            channel_name=self.channel_name[0]
         if not isinstance(value, list):
             value = [value]
         if len(value) == self.patch.nseg:
             for i, seg in enumerate(self.patch):
-                from_mech = getattr(seg, self.channel_name)
-                setattr(from_mech, self.gbar_name, value[i])
+                from_mech = getattr(seg, channel_name)
+                setattr(from_mech, self.gbar_name[channel_name], value[i])
         elif len(value) == 1:
             for i, seg in enumerate(self.patch):
-                from_mech = getattr(seg, self.channel_name)
-                setattr(from_mech, self.gbar_name, value[0])
+                from_mech = getattr(seg, channel_name)
+                setattr(from_mech, self.gbar_name[channel_name], value[0])
        
     def _find_E_rev_name(self):
         ions = list(self.patch.psection()["ions"].keys())
@@ -207,7 +213,7 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
                               (ion_name) + str(ions))
         return "e%s" % self.ion_name
 
-    def _find_E_rev_value(self, E_rev=None):
+    def calc_E_rev(self, E_rev=None, external=None):
         if self.ion_name.lower() == "k":
             internal = self._ki
             valence = 1
@@ -223,7 +229,9 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
         elif self._external_conc is not None:
             raise SystemExit("Unknown ion type %s. Only now na, k, ca and Ca"
                              % self.ion_name)
-        external = self._external_conc
+        
+        if external is None:
+            external = self._external_conc
         if external is None:
             if E_rev is None:
                 name = "e%s" % self.ion_name
@@ -238,10 +246,41 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
                 return E_rev
         assert internal > 0
         # convert to mV
-        conc_fact = np.log(self._external_conc/internal)
+        conc_fact = np.log(external/internal)
         E_rev = 1e3*R*(273.15+self.temperature)/(valence*F)*conc_fact
         return E_rev
-   
+
+    def generate_fname(self, suffix, stim_beg, stim_end, chord_conductance,
+                       electrode_current, ca_conc):
+        fname = suffix
+        if chord_conductance:
+            fname = "%s_%s" % (fname, "g")
+        else:
+            fname = "%s_%s" % (fname, "I")
+        if not electrode_current:
+            fname = "%s_%s" % (fname, "np_o")
+        for channel_name in self.channel_name:
+            fname = "%s_%s" % (fname, channel_name)
+        if self._external_conc is not None:
+            fname = "%s_%s_ext_%4.2f_mM" % (fname, self.ion_name,
+                                        self._external_conc)
+        elif self.E_rev is not None:
+            fname = "%s_E_%s_rev_%4.2f_mV" % (fname, self.ion_name,
+                                              self.E_rev)
+        if self._Ca_ext is not None:
+            fname = "%s_Ca_ext_%4.2f_mM" % (fname, self._Ca_ext)
+        elif self.E_Ca_rev is not None:
+            fname = "%s_E_Ca_rev_%4.2f_mV" % (fname, self._Ca_ext)
+
+        
+        fname = "%s_from_%4.2f_mV_to_%4.2f_mV" % (fname, stim_beg, stim_end)
+        
+        if self.cvode:
+            fname = "%s_cvode" % fname
+        if ca_conc:
+            fname = "%s_Ca_conc" % fname
+        return fname
+
     def get_activation_traces(self, stimulation_levels: list,
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
@@ -275,32 +314,21 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
           duration of the simulation
         """
         if save_traces:
-            if self._external_conc:
-                fname = "%s_%s_%s_ext_%4.2f_from_%4.2f_to_%4.2f"%("Activ_traces",
-                                                                  self.channel_name,
-                                                                  self.ion_name,
-                                                                  self._external_conc,
-                                                                  min(stimulation_levels),
-                                                                  max(stimulation_levels))
-            else:
-                fname = "%s_%s_%s_E_rev_%4.2f_from_%4.2f_to_%4.2f"%("Activ_traces",
-                                                                    self.channel_name,
-                                                                    self.ion_name,
-                                                                    self.E_rev,
-                                                                    min(stimulation_levels),
-                                                                    max(stimulation_levels))             
-            if chord_conductance:
-                fname = "%s_%s" % (fname, "g")
-            if not electrode_current:
-                fname = "%s_%s" % (fname, "imax_np")
-            if self.cvode:
-                fname = "%s_%s" % (fname, "cvode")
+            fname = self.generate_fname("Activation_traces",
+                                        min(stimulation_levels),
+                                        max(stimulation_levels),
+                                        chord_conductance,
+                                        electrode_current, False)
             output = []
             header = "time"
         if save_ca and self.ca is None:
             save_ca = False
         if save_ca:
-            ca_fname = "%s_calcium" % fname
+            ca_fname = self.generate_fname("Activation_traces",
+                                        min(stimulation_levels),
+                                        max(stimulation_levels),
+                                        chord_conductance,
+                                        electrode_current, True)
             calcium_vals = []
             calcium = h.Vector()
             calcium.record(self.ca[self.memb_shell].nodes[0]._ref_concentration,
@@ -462,32 +490,21 @@ class ModelPatchWithChannel(ModelPatch, NModlChannel):
           minus the ion's reversal potential.
         """
         if save_traces:
-            if self._external_conc:
-                fname = "%s_%s_%s_ext_%4.2f_from_%4.2f_to_%4.2f"%("Inactiv_traces",
-                                                                  self.channel_name,
-                                                                  self.ion_name,
-                                                                  self._external_conc,
-                                                                  min(stimulation_levels),
-                                                                  max(stimulation_levels))
-            else:
-                fname = "%s_%s_%s_E_rev_%4.2f_from_%4.2f_to_%4.2f"%("Inactiv_traces",
-                                                                    self.channel_name,
-                                                                    self.ion_name,
-                                                                    self.E_rev,
-                                                                    min(stimulation_levels),
-                                                                    max(stimulation_levels))
-            if chord_conductance:
-                fname = "%s_%s" % (fname, "g")
-            if not electrode_current:
-                fname = "%s_%s" % (fname, "imax_np")
-            if self.cvode:
-                fname = "%s_%s" % (fname, "cvode")
+            fname = self.generate_fname("Inactivation_traces",
+                                        min(stimulation_levels),
+                                        max(stimulation_levels),
+                                        chord_conductance,
+                                        electrode_current, False)
             output = []
             header = "time"
         if save_ca and self.ca is None:
             save_ca = False
         if save_ca:
-            ca_fname = "%s_calcium" % fname
+            ca_fname = self.generate_fname("Inactivation_traces",
+                                           min(stimulation_levels),
+                                           max(stimulation_levels),
+                                           chord_conductance,
+                                           electrode_current, True)
             calcium_vals = []
             calcium = h.Vector()
             calcium.record(self.ca[self.memb_shell].nodes[0]._ref_concentration,
@@ -689,7 +706,7 @@ class ModelPatchNernst(ModelPatchWithChannel):
                 raise SystemExit('Unable to proceed, if E_rev is unknown.')
         else:
             E_rev_name = self._find_E_rev_name()
-            self.E_rev = self._find_E_rev_value(E_rev)
+            self.E_rev = self.calc_E_rev(E_rev)
             setattr(self.patch,  E_rev_name, self.E_rev)
 
     
@@ -701,7 +718,7 @@ class ModelPatchNernst(ModelPatchWithChannel):
     def cai(self, value):
         self._cai = value
         if self.ion_name.lower() == "ca" and self._external_conc is not None:
-            self.E_rev = self._find_E_rev_value()
+            self.E_rev = self.calc_E_rev()
 
     @property
     def Cai(self):
@@ -711,7 +728,7 @@ class ModelPatchNernst(ModelPatchWithChannel):
     def Cai(self, value):
         self._cai = value
         if self.ion_name.lower() == "ca" and self._external_conc is not None:
-            self.E_rev = self._find_E_rev_value()
+            self.E_rev = self.calc_E_rev()
 
     @property
     def external_conc(self):
@@ -720,7 +737,7 @@ class ModelPatchNernst(ModelPatchWithChannel):
     @external_conc.setter
     def external_conc(self, value):
         self._external_conc = value
-        self.E_rev = self._find_E_rev_value()
+        self.E_rev = self.calc_E_rev()
     @property
     def ki(self):
         return self._ki
@@ -729,7 +746,7 @@ class ModelPatchNernst(ModelPatchWithChannel):
     def ki(self, value):
         self._ki = value
         if self.ion_name == "k" and self._external_conc is not None:
-            self.E_rev = self._find_E_rev_value()
+            self.E_rev = self.calc_E_rev()
 
     @property
     def nai(self):
@@ -739,23 +756,23 @@ class ModelPatchNernst(ModelPatchWithChannel):
     def nai(self, value):
         self._nai = value
         if self.ion_name == "na" and self._external_conc is not None:
-            self.E_rev = self._find_E_rev_value()
+            self.E_rev = self.calc_E_rev()
 
 
     
-class ModelPatchConcentration(ModelPatchWithChannel):
+class ModelPatchCaConcentration(ModelPatchWithChannel):
     def __init__(self, path_to_mods, channel_name, ion_name,
-                 external_conc=None, gbar_name="gbar", temp=22, recompile=True,
+                 Ca_ext, gbar_name="gbar", temp=22, recompile=True,
                  liquid_junction_pot=0, cvode=True, R_m=20000, v_rest=-65,
                  gbar_value=None, t_decay=20, buffer_capacity=18,
                  membrane_shell_width=membrane_shell_width):
         """
         Model class for testing calcium channels with 
         """
-        super(ModelPatchConcentration, self).__init__(path_to_mods,
+        super(ModelPatchCaConcentration, self).__init__(path_to_mods,
                                                       channel_name,
                                                       ion_name,
-                                                      external_conc=external_conc,
+                                                      external_conc=None,
                                                       gbar_name=gbar_name,
                                                       temp=temp,
                                                       recompile=recompile,
@@ -763,37 +780,40 @@ class ModelPatchConcentration(ModelPatchWithChannel):
                                                       cvode=cvode,
                                                       R_m=20000, v_rest=v_rest,
                                                       gbar_value=gbar_value)
+        self.E_rev = None
         self.t_decay = t_decay
         self.Kb = buffer_capacity
+        self._Ca_ext = Ca_ext
         self.memb_shell_width = membrane_shell_width
         self.geom = rxd.Shell(1- self.memb_shell_width, 1)
         self.memb_shell = rxd.Region(self.patch,
                                      geometry=self.geom,
                                      nrn_region="i",
                                      name="membrane_shell")
-        old_surface_area_function = self.geom.surface_areas1d
-        self.geom.surface_areas1d = lambda sec: old_surface_area_function(sec)/self.Kb
+        old_saf = self.geom.surface_areas1d
+        self.geom.surface_areas1d = lambda sec: old_saf(sec)/self.Kb
         if self.ion_name == "ca":
             self.ca = rxd.Species(self.memb_shell, d=0.2,
                                   name='ca', charge=2,
                                   initial=self._cai,
                                   atolscale=1e-9)
-            h.cao0_ca_ion = self._external_conc
-            self.E_rev = self._find_E_rev_value()
+            h.cao0_ca_ion = self._Ca_ext
+            self.E_Ca_rev = self.calc_E_rev(external=self.Ca_ext)
         elif self.ion_name == "Ca":
             self.ca = rxd.Species(self.memb_shell, d=0.2,
                                   name='Ca', charge=2,
                                   initial=self._cai,
                                   atolscale=1e-9)
-            self.E_rev = self._find_E_rev_value()
+            h.Cao0_Ca_ion = self._Ca_ext
+            self.E_Ca_rev = self.calc_E_rev(external=self._Ca_ext)
         elif self.ion_name == "Ba":
             self.ca = rxd.Species(self.memb_shell, d=0.2,
                                   name='Ca', charge=2,
                                   initial=0,
                                   atolscale=1e-9)
             self._cai = 0
-            self.E_rev = None
-            h.Cao0_Ca_ion = self._external_conc
+            self.E_Ca_rev = None
+            h.Cao0_Ca_ion = self._Ca_ext
             chan = self.patch.psection()["density_mechs"][channel_name]
             for i, seg in enumerate(self.patch):
                 from_mech = getattr(seg, channel_name)
@@ -805,8 +825,8 @@ class ModelPatchConcentration(ModelPatchWithChannel):
                                   initial=0,
                                   atolscale=1e-9)
             self._cai = 0
-            self.E_rev = None
-            h.cao0_ca_ion = self._external_conc
+            self.E_Ca_rev = None
+            h.cao0_ca_ion = self._Ca_ext
             chan = self.patch.psection()["density_mechs"][channel_name]
             for i, seg in enumerate(self.patch):
                 from_mech = getattr(seg, channel_name)
@@ -834,10 +854,10 @@ class ModelPatchConcentration(ModelPatchWithChannel):
         self._cai = value
         if self.ion_name.lower() == "ca":
             self.patch.cainf_cad = self._cai
-            self.E_rev = self._find_E_rev_value()
+            self.E_Ca_rev = self.calc_E_rev(external=self._Ca_ext)
         elif self.ion_name == "Ca":
             self.patch.cainf_Cad = self._cai
-            self.E_rev = self._find_E_rev_value()
+            self.E_Ca_rev = self.calc_E_rev(external=self._Ca_ext)
                              
     @property
     def Cai(self):
@@ -853,28 +873,28 @@ class ModelPatchConcentration(ModelPatchWithChannel):
         self._cai = value
         if self.ion_name.lower() == "ca":
             self.patch.cainf_cad = self._cai
-            self.E_rev = self._find_E_rev_value()
+            self.E_Ca_rev = self.calc_E_rev(external=self._Ca_ext)
         elif self.ion_name == "Ca":
             self.patch.cainf_Cad = self._cai
-            self.E_rev = self._find_E_rev_value()
+            self.E_Ca_rev = self.calc_E_rev(external=self._Ca_ext)
 
     @property
-    def external_conc(self):
-        return  self._external_conc
+    def Ca_ext(self):
+        return  self._Ca_ext
 
-    @external_conc.setter
-    def external_conc(self, value):
-        self._external_conc = value
+    @Ca_ext.setter
+    def Ca_ext(self, value):
+        self._Ca_ext = value
         if self.ca_ion == "ca":
-            h.cao0_ca_ion = self._external_conc
-            self.E_rev = self._find_E_rev_value()
+            h.cao0_ca_ion = self._Ca_ext
+            self.E_Ca_rev = self.calc_E_rev(external=self._Ca_ext)
         elif self.ca_ion == "Ca":
-            h.Cao0_Ca_ion = self._external_conc
-            self.E_rev = self._find_E_rev_value()
+            h.Cao0_Ca_ion = self._Ca_ext
+            self.E_Ca_rev = self.calc_E_rev(external=self._Ca_ext)
         elif self.ca_ion == "Ba":
-            h.Cao0_Ca_ion = self._external_conc
+            h.Cao0_Ca_ion = self._Ca_ext
         elif self.ca_ion == "ba":
-            h.cao0_ca_ion = self._external_conc
+            h.cao0_ca_ion = self._Ca_ext
         else:
             raise SystemExit("Unknown ion %s. I only know Ca and ca"
                              % self.ion_name )
@@ -898,49 +918,6 @@ class WholeCellAttributes:
     def R_in(self, value):
         self._set_g_pas(value)
 
-
-# class ModelCellAttachedPatch(ModelPatch, WholeCellAttributes):
-#     def __init__(self, path_to_mods, channel_name, ion_name,
-#                  external_conc=None, gbar_name="gbar", temp=22, recompile=True,
-#                  liquid_junction_pot=0, cvode=True, R_in=200e6, v_rest=-65,
-#                  E_rev=None):
-#         super(ModelCellAttachedPatch, self).__init__(path_to_mods,
-#                                                      channel_name,
-#                                                      ion_name,
-#                                                      external_conc=external_conc,
-#                                                      gbar_name=gbar_name, temp=temp,
-#                                                      recompile=recompile,
-#                                                      liquid_junction_pot=liquid_junction_pot,
-#                                                      cvode=cvode, R_m=20000, v_rest=v_rest,
-#                                                      E_rev=E_rev)
-#         self.soma = h.Section("soma")
-#         self.soma.insert("pas")
-#         self.soma.e_pas = v_rest
-#         self.soma.L = 10
-#         self.soma.diam = 10
-#         self.soma.Ra = 100
-#         self.patch.Ra = 100
-#         self._set_g_pas(R_in, [self.soma, self.patch])
-#         self.sections = [self.soma, self.patch]
-        
-#     @property
-#     def L(self):
-#         return self.soma.L
-
-#     @L.setter
-#     def L(self, value):
-#         self._L = value
-#         self.soma.L = self._L
-
-#     @property
-#     def diam(self):
-#         return self.soma.diam
-
-#     @diam.setter
-#     def diam(self, value):
-#         self._diam = value
-#         self.soma.diam = self._diam
-    
 
 class ModelWholeCellPatchNernst(ModelPatchNernst, WholeCellAttributes):
     """
@@ -987,7 +964,8 @@ class ModelWholeCellPatchNernst(ModelPatchNernst, WholeCellAttributes):
         self.patch.diam = self._diam
 
 
-class ModelWholeCellPatchConcentration(ModelPatchConcentration, WholeCellAttributes):
+class ModelWholeCellPatchConcentration(ModelPatchCaConcentration,
+                                       WholeCellAttributes):
     """
     R_in -- in ohms
     """
@@ -1031,4 +1009,5 @@ class ModelWholeCellPatchConcentration(ModelPatchConcentration, WholeCellAttribu
     def diam(self, value):
         self._diam = value
         self.patch.diam = self._diam
+
 

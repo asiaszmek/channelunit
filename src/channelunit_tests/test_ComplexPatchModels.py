@@ -7,7 +7,7 @@ import numpy as np
 from channelunit.model_patch import ModelPatchWithChannel
 from channelunit import ModelPatchNernst
 from channelunit import ModelWholeCellPatchNernst
-from channelunit import ModelPatchConcentration
+from channelunit import ModelPatchCaConcentration
 from channelunit import data_path
 
 
@@ -116,9 +116,9 @@ class TestModelPatchNernst(unittest.TestCase):
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         self.assertEqual(out.E_rev, new_E_rev)
 
-    def test_find_E_rev_value(self):
+    def testcalc_E_rev(self):
         out = ModelPatchNernst(channel_loc, "nap", "na", gbar_name="gnabar")
-        val = out._find_E_rev_value()
+        val = out.calc_E_rev()
         self.assertEqual(50, val)
     
     def test__find_E_rev_name(self):
@@ -349,19 +349,20 @@ class TestWholeCellPatchNernst(unittest.TestCase):
 class TestPatchWithCa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelcaghk = ModelPatchConcentration(channel_loc, "calHGHK","ca",
-                                                 external_conc=1.5)
-        cls.modelCaghk = ModelPatchConcentration(channel_loc, "CalHGHK","Ca",
-                                                 external_conc=1.5)
-        cls.modelca_eca = ModelPatchConcentration(channel_loc, "calH_eca","ca",
-                                                  external_conc=1.5,
-                                                  gbar_name="gcal")
-        cls.modelCa_eCa = ModelPatchConcentration(channel_loc, "CalH_eCa","Ca",
-                                                  external_conc=1.5, gbar_name="gCal")
+        cls.modelcaghk = ModelPatchCaConcentration(channel_loc, "calHGHK", "ca",
+                                                   1.5)
+        cls.modelCaghk = ModelPatchCaConcentration(channel_loc, "CalHGHK","Ca",
+                                                   1.5)
+        cls.modelca_eca = ModelPatchCaConcentration(channel_loc, "calH_eca",
+                                                    "ca",
+                                                    1.5,
+                                                    gbar_name="gcal")
+        cls.modelCa_eCa = ModelPatchCaConcentration(channel_loc, "CalH_eCa",
+                                                    "Ca", 1.5, gbar_name="gCal")
 
     def test_raises(self):
-        self.assertRaises(SystemExit, ModelPatchConcentration, channel_loc,
-                          "callHGHK","cal", external_conc=1.5)
+        self.assertRaises(SystemExit, ModelPatchCaConcentration, channel_loc,
+                          "callHGHK","cal", 1.5)
 
 
 
