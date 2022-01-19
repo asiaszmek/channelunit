@@ -17,7 +17,7 @@ setuptools.setup(
     },
     package_dir={"": "src"},
     packages=["channelunit", "channelunit.capabilities", "channelunit.tests",
-              "channelunit.tests", "channelunit.scores"],
+              "channelunit.tests", "channelunit.scores", "channelunit_tests"],
     include_package_data=True,
     package_data={
         'channelunit': [
