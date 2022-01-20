@@ -131,13 +131,14 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
     _nai = 10  # mM
     _ki = 140  # mM
     _cai = 100e-6  # mM
-    def __init__(self, path_to_mods: str, channel_names: list, ion_names: dict,
-                 external_conc: dict, gbar_name:dict, gbar_value=dict, temp=22,
-                 recompile=True, liquid_junction_pot=0,
-                 cvode=True, R_m=20000, v_rest=-65, directory="validation_results",
+    def __init__(self, path_to_mods: str, channel_names: list, ion_names: list,
+                 external_conc: dict, E_rev=None,
+                 gbar_names=None, gbar_values=None,
+                 temp=22, recompile=True, liquid_junction_pot=0, cvode=True,
+                 R_m=20000, v_rest=-65, directory="validation_results",
                  sim_dt=0.001):
         """
-        ion_name: str
+        ion_name: list
             most common ions are: na (sodium), k, ca (sometimes Ca, if 
             your model has different Ca pools). 
             if you specify nonspecific, you need to provide a value of E_rev
@@ -159,108 +160,103 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
                                                     sim_dt=sim_dt,)
 
         self.channels = []
+        self.gbar_names = {}
         self._external_conc = {"Ca": None}
         self.E_rev = {}
         self.base_directory = directory
+        self.ion_names = ion_names
         #set up channel conductance/permeability in case it is 0
         for channel in channel_names:
-            ion_name = ion_names[channel]
-            if ion_name not in external_conc:
-                ext_conc = None
+            if channel not in gbar_names:
+                gbar_name = "gbar"
             else:
-                ext_conc = external_conc[ion_name]
-            self.add_channel(channel, ion_name, ext_conc)
-            #self.set_E_rev(
-            
+                gbar_name = gbar_names[channel]
+            if channel not in gbar_values:
+                gbar_value = 0.001
+            else:
+                gbar_value = gbar_values[channel]
+
+            self.add_channel(channel, gbar_names, gbar_value)
+        for ion in ion_names:
+            if ion in external_conc:
+                e_conc = external_conc[ion]
+                if ion.lower() == "ca" or ion.lower() == "ba":
+                    self._external_conc["Ca"] = e_conc
+                else:
+                    self._external_conc[ion] = e_conc
+            else:
+                e_conc = None
+            if ion in E_rev:
+                e_rev = E_rev[ion]
+            else:
+                e_rev = None
+                
+            self.E_rev[ion] = self.calc_E_rev(ion, e_rev, external) 
+        self.ca = None
+        
+    def add_channel(self, channel_name, gbar_name, gbar_value):
+        self.channel_name.append(channel_name)
+        self.channel.append(self.patch.insert(channel_name))
         chan = self.patch.psection()["density_mechs"][channel_name]
-        self.gbar_name = gbar_name
-        self.ion_name = ion_name
-        self._external_conc = external_conc
         if gbar_name not in chan.keys():
             raise SystemExit('Unable to proceed, unknown %s conductance (gbar)'
                              % channel_name)
-
-        if chan[gbar_name][0] == 0 or gbar_value is not None:
+        self.gbar_names[channel_name] = gbar_name
+        if chan[gbar_name][0] == 0:
             for seg in self.patch:
                 from_mech = getattr(seg, channel_name)
-                if gbar_value is None:
-                    gbar_value = 0.001
                 setattr(from_mech, gbar_name, gbar_value)
-        self.ca = None
-        
-    def add_channel(self, channel_name, ion_name, external_conc):
-        self.channel_name.append(channel_name)
-        self.channel.append(self.patch.insert(channel_name))
-        if ion_name == self.ion_name:
-            if ion_name in ["Ca", "ca", "Ba", "ba"]:
-                assert self.Ca_ext == external_conc
-            else:
-                assert self._external_conc == external_conc
-        else:
-            pass
-    @property
-    def gbar(self, channel_name=None):
-        if channel_name is None:
-            channel_name=self.channel_name[0]
+
+
+    def get_gbar(self, channel_name):
         mech = self.patch.psection()["density_mechs"][channel_name]
-        values = mech[self.gbar_name[channel_name]]
+        values = mech[self.gbar_names[channel_name]]
         if len(values) == 1:
             return values[0]
         elif len(set(values)) == 1:
             return values[0]
         return values
 
-    @gbar.setter
-    def gbar(self, value, channel_name=None):
-        if channel_name is None:
-            channel_name=self.channel_name[0]
+
+    def set_gbar(self, channel_name, value):
         if not isinstance(value, list):
             value = [value]
         if len(value) == self.patch.nseg:
             for i, seg in enumerate(self.patch):
                 from_mech = getattr(seg, channel_name)
-                setattr(from_mech, self.gbar_name[channel_name], value[i])
+                setattr(from_mech, self.gbar_names[channel_name], value[i])
         elif len(value) == 1:
             for i, seg in enumerate(self.patch):
                 from_mech = getattr(seg, channel_name)
-                setattr(from_mech, self.gbar_name[channel_name], value[0])
+                setattr(from_mech, self.gbar_names[channel_name], value[0])
        
-    def _find_E_rev_name(self):
-        ions = list(self.patch.psection()["ions"].keys())
-        if self.ion_name not in ions:
-            raise SystemError("Could not find %s in patch. I have only" %
-                              (ion_name) + str(ions))
-        return "e%s" % self.ion_name
-
-    def calc_E_rev(self, ion_name, E_rev=None, external=None):
-        if self.ion_name.lower() == "k":
+    def calc_E_rev(self, ion_name, E_rev, external=None):
+        if ion_name.lower() == "k":
             internal = self._ki
             valence = 1
-        elif self.ion_name.lower() == "na":
+        elif ion_name.lower() == "na":
             internal = self._nai
             valence = 1
-        elif self.ion_name.lower() == "ca":
+        elif ion_name.lower() == "ca":
             internal = self._cai
             valence = 2
         elif E_rev is None:
             raise SystemExit("Unknown ion type %s. Only now na, k, ca and Ca"
-                              % self.ion_name)
-        elif self._external_conc is not None:
+                              % ion_name)
+        elif external is not None:
             raise SystemExit("Unknown ion type %s. Only now na, k, ca and Ca"
-                             % self.ion_name)
-        
-        if external is None:
-            external = self._external_conc
+                             % ion_name)
+
         if external is None:
             if E_rev is None:
-                name = "e%s" % self.ion_name
-                return self.patch.psection()["ions"][self.ion_name][name][0]
+                name = "e%s" % ion_name
+                return self.patch.psection()["ions"][ion_name][name][0]
             else:
                 return E_rev
         elif not isinstance(external, int) and not isinstance(external, float):
             if E_rev is None:
-                name = "e%s" % self.ion_name
-                return self.patch.psection()["ions"][self.ion_name][name][0]
+                name = "e%s" % ion_name
+                return self.patch.psection()["ions"][ion_name][name][0]
             else:
                 return E_rev
         assert internal > 0
@@ -280,18 +276,15 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
             fname = "%s_%s" % (fname, "np_o")
         for channel_name in self.channel_name:
             fname = "%s_%s" % (fname, channel_name)
-        if self._external_conc is not None:
-            fname = "%s_%s_ext_%4.2f_mM" % (fname, self.ion_name,
-                                        self._external_conc)
-        elif self.E_rev is not None:
-            fname = "%s_E_%s_rev_%4.2f_mV" % (fname, self.ion_name,
-                                              self.E_rev)
-        if self._Ca_ext is not None:
-            fname = "%s_Ca_ext_%4.2f_mM" % (fname, self._Ca_ext)
-        elif self.E_Ca_rev is not None:
-            fname = "%s_E_Ca_rev_%4.2f_mV" % (fname, self._Ca_ext)
-
-        
+        for ion_name in self._external_conc.keys():
+            if self._external_conc[ion_name] is not None:
+                fname = "%s_%s_ext_%4.2f_mM" % (fname, ion_name,
+                                                self._external_conc[ion_name])
+        for ion_name in self.E_rev:
+            if self.E_rev[ion_name] is not None:
+                fname = "%s_E_%s_rev_%4.2f_mV" % (fname, ion_name,
+                                                  self.E_rev[ion_name])
+      
         fname = "%s_from_%4.2f_mV_to_%4.2f_mV" % (fname, stim_beg, stim_end)
         
         if self.cvode:
@@ -362,21 +355,27 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
             leak_subtraction = True
         else:
             leak_subtraction = False
-            if self.ion_name == "na":
-                current.record(self.patch(0.5)._ref_ina, self.dt)
-            elif self.ion_name == "k":
-                current.record(self.patch(0.5)._ref_ik, self.dt)
-            elif self.ion_name == "ca":
-                current.record(self.patch(0.5)._ref_ica, self.dt)
-            elif self.ion_name == "Ca":
-                current.record(self.patch(0.5)._ref_iCa, self.dt)
-            elif self.ion_name == "ba":
-                current.record(self.patch(0.5)._ref_ica, self.dt)
-            elif self.ion_name == "Ba":
-                current.record(self.patch(0.5)._ref_iCa, self.dt)
-            else:
+            if len(self.ion_names) > 1:
                 current.record(self.vclamp._ref_i, self.dt)
                 leak_subtraction = True
+                chord_conductance = False
+            else:
+                if self.ion_names[0] == "na":
+                    current.record(self.patch(0.5)._ref_ina, self.dt)
+                elif self.ion_names[0] == "k":
+                    current.record(self.patch(0.5)._ref_ik, self.dt)
+                elif self.ion_names[0] == "ca":
+                    current.record(self.patch(0.5)._ref_ica, self.dt)
+                elif self.ion_names[0] == "Ca":
+                    current.record(self.patch(0.5)._ref_iCa, self.dt)
+                elif self.ion_names[0] == "ba":
+                    current.record(self.patch(0.5)._ref_ica, self.dt)
+                elif self.ion_names[0] == "Ba":
+                    current.record(self.patch(0.5)._ref_iCa, self.dt)
+                else:
+                    current.record(self.vclamp._ref_i, self.dt)
+                    leak_subtraction = True
+
         time = h.Vector()
         time.record(h._ref_t, self.dt)
         delay = 200
@@ -473,6 +472,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
                                               interval=interval,
                                               save_traces=save_traces,
                                               save_ca=save_ca)
+        
         max_current = self.get_max_of_dict(currents, self.ion_name,
                                            chord_conductance)
         result = self.normalize_to_one(max_current, normalization)
@@ -806,16 +806,16 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels):
         Model class for testing calcium channels with 
         """
         super(ModelPatchCaShell, self).__init__(path_to_mods,
-                                                      channel_name,
-                                                      ion_name,
-                                                      external_conc=None,
-                                                      gbar_name=gbar_name,
-                                                      temp=temp,
-                                                      recompile=recompile,
-                                                      liquid_junction_pot=liquid_junction_pot,
-                                                      cvode=cvode,
-                                                      R_m=20000, v_rest=v_rest,
-                                                      gbar_value=gbar_value)
+                                                channel_name,
+                                                ion_name,
+                                                external_conc=None,
+                                                gbar_name=gbar_name,
+                                                temp=temp,
+                                                recompile=recompile,
+                                                liquid_junction_pot=liquid_junction_pot,
+                                                cvode=cvode,
+                                                R_m=20000, v_rest=v_rest,
+                                                gbar_value=gbar_value)
         self._L = 10
         self._diam = 10
         self.patch.L = self._L
