@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-from .model_patch import ModelPatchNernst
-from .model_patch import ModelWholeCellPatchNernst
-from .model_patch import ModelPatchCaConcentration
-from .model_patch import ModelWholeCellPatchConcentration
+from .model_patch import ModelWholeCellPatch
+from .model_patch import ModelWholeCellPatchCaShell
 import os
 loc = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(loc, 'demo_CA1')

@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 from channelunit.tests import ActivationSteadyStateTest
-from channelunit import ModelWholeCellPatchConcentration
+from channelunit import ModelWholeCellPatchCaShell
 from channelunit import data_path
 
 
@@ -21,7 +21,7 @@ activation_loc_Cal_110_Ba = os.path.join(data_path, "data",
 class TestCaLChannelsLowBariumba(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelBa20_H = ModelWholeCellPatchConcentration(channel_loc,
+        cls.modelBa20_H = ModelWholeCellPatchCaShell(channel_loc,
                                                            "calHGHK",
                                                            "ba",
                                                            external_conc=20,
@@ -66,7 +66,7 @@ class TestCaLChannelsLowBariumBa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         
-        cls.modelBa20_HH = ModelWholeCellPatchConcentration(channel_loc,
+        cls.modelBa20_HH = ModelWholeCellPatchCaShell(channel_loc,
                                                            "CalHGHK",
                                                            "Ba",
                                                            external_conc=20,
@@ -112,12 +112,12 @@ class TestCaLChannelsLowBariumBa(unittest.TestCase):
 class TestCaLChannelsLowCalciumca(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelCa20_H = ModelWholeCellPatchConcentration(channel_loc,
-                                                           "calHGHK",
-                                                           "ca",
-                                                           external_conc=1.5,
-                                                           temp=22,
-                                                           liquid_junction_pot=0)
+        cls.modelCa20_H = ModelWholeCellPatchCaShell(channel_loc,
+                                                             "calHGHK",
+                                                             "ca",
+                                                             external_conc=1.5,
+                                                             temp=22,
+                                                             liquid_junction_pot=0)
         activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
                                      delimiter=",")
         cls.power = 1
@@ -125,12 +125,13 @@ class TestCaLChannelsLowCalciumca(unittest.TestCase):
         for val in activation_data:
             cls.activation_data[val[0]] = val[1:].tolist()
         cls.test_Ca20 = ActivationSteadyStateTest(cls.activation_data,
-                                                {"v_init": -90, "t_stop": 70,
-                                                 "electrode_current": True,
-                                                 "chord_conductance":False,
-                                                 "normalization": "save_sign"}, 1,
-                                                "ActvationSSTest",
-                                                save_figures=True)
+                                                  {"v_init": -90, "t_stop": 70,
+                                                   "electrode_current": True,
+                                                   "chord_conductance":False,
+                                                   "normalization":
+                                                   "save_sign"}, 1,
+                                                  "ActvationSSTest",
+                                                  save_figures=True)
         cls.act_results = cls.test_Ca20.run_model(cls.modelCa20_H,
                                                   cls.test_Ca20.stimulus_list,
                                                   cls.test_Ca20.v_init,
@@ -159,12 +160,12 @@ class TestCaLChannelsLowCalciumCa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         
-        cls.modelCa20_HH = ModelWholeCellPatchConcentration(channel_loc,
-                                                            "CalHGHK",
-                                                            "Ca",
-                                                            external_conc=1.5,
-                                                            temp=22,
-                                                            liquid_junction_pot=0)
+        cls.modelCa20_HH = ModelWholeCellPatchCaShell(channel_loc,
+                                                              "CalHGHK",
+                                                              "Ca",
+                                                              external_conc=1.5,
+                                                              temp=22,
+                                                              liquid_junction_pot=0)
 
         activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
                                      delimiter=",")
