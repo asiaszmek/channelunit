@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 from channelunit.tests import ActivationSteadyStateTest
-from channelunit import ModelWholeCellPatchCaShell
+from channelunit import ModelWholeCellPatchCaShellOneChannel
 from channelunit import data_path
 
 
@@ -21,12 +21,12 @@ activation_loc_Cal_110_Ba = os.path.join(data_path, "data",
 class TestCaLChannelsLowBariumba(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelBa20_H = ModelWholeCellPatchCaShell(channel_loc,
-                                                           "calHGHK",
-                                                           "ba",
-                                                           external_conc=20,
-                                                           temp=22,
-                                                           liquid_junction_pot=0)
+        cls.modelBa20_H = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+                                                               "calHGHK",
+                                                               "ba",
+                                                               external_conc=20,
+                                                               temp=22,
+                                                               liquid_junction_pot=0)
         activation_data = np.loadtxt(activation_loc_Cal_20_Ba, skiprows=1,
                                      delimiter=",")
         cls.power = 1
@@ -66,12 +66,12 @@ class TestCaLChannelsLowBariumBa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         
-        cls.modelBa20_HH = ModelWholeCellPatchCaShell(channel_loc,
-                                                           "CalHGHK",
-                                                           "Ba",
-                                                           external_conc=20,
-                                                           temp=22,
-                                                           liquid_junction_pot=0)
+        cls.modelBa20_HH = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+                                                      "CalHGHK",
+                                                      "Ba",
+                                                      external_conc=20,
+                                                      temp=22,
+                                                      liquid_junction_pot=0)
 
         activation_data = np.loadtxt(activation_loc_Cal_20_Ba, skiprows=1,
                                      delimiter=",")
@@ -112,12 +112,12 @@ class TestCaLChannelsLowBariumBa(unittest.TestCase):
 class TestCaLChannelsLowCalciumca(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelCa20_H = ModelWholeCellPatchCaShell(channel_loc,
-                                                             "calHGHK",
-                                                             "ca",
-                                                             external_conc=1.5,
-                                                             temp=22,
-                                                             liquid_junction_pot=0)
+        cls.modelCa20_H = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+                                                     "calHGHK",
+                                                     "ca",
+                                                     external_conc=1.5,
+                                                     temp=22,
+                                                     liquid_junction_pot=0)
         activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
                                      delimiter=",")
         cls.power = 1
@@ -160,12 +160,12 @@ class TestCaLChannelsLowCalciumCa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         
-        cls.modelCa20_HH = ModelWholeCellPatchCaShell(channel_loc,
-                                                              "CalHGHK",
-                                                              "Ca",
-                                                              external_conc=1.5,
-                                                              temp=22,
-                                                              liquid_junction_pot=0)
+        cls.modelCa20_HH = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+                                                                "CalHGHK",
+                                                                "Ca",
+                                                                external_conc=1.5,
+                                                                temp=22,
+                                                                liquid_junction_pot=0)
 
         activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
                                      delimiter=",")
