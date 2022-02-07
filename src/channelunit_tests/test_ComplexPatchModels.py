@@ -74,17 +74,20 @@ class TestModelPatchWithChannels(unittest.TestCase):
  
     def test_max_of_dict(self):
         dict1 = {1: np.array([1,3,4,1]), 2: np.array([2,2,2,1])}
-        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1, False, ["k"], False),
+        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1, False,
+                                                                ["k"], False),
                          {1: 4, 2:2})
 
     def test_max_of_dict_1(self):
         dict1 = {1: np.array([-1, -3, -4, -1]), 2: np.array([-2,-2,-2,-1])}
-        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1, False, ["na"], False),
+        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1, False,
+                                                                ["na"], False),
                          {1: -4, 2:-2})
     
     def test_max_of_dict_3(self):
         dict1 = {1: np.array([1,3,4,1]), 2: np.array([2,2,2,1])}
-        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1, True, ["na"], True),
+        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1, True,
+                                                                ["na"], True),
                          {1: 4, 2:2})
 
         
@@ -92,17 +95,29 @@ class TestModelWholeCell(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        cls.modelJ = ModelWholeCellPatch(channel_loc, ["nap"], ["na"], {"na": 110},
+        cls.modelJ = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+                                         {"na": 110},
                                          gbar_names={"nap": "gnabar"})
-        cls.modelNJ = ModelWholeCellPatch(channel_loc, ["nap"], ["na"], {"na": 110},
+        cls.modelNJ = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+                                          {"na": 110},
                                           gbar_names={"nap": "gnabar"},
                                           liquid_junction_pot=0)
     
     def test_reading_in_easy(self):
-        out = ModelWholeCellPatch(channel_loc, ["na3"], ["na"],{"na": 140})
+        out = ModelWholeCellPatch(channel_loc, ["na3"], ["na"], {"na": 140})
         self.assertTrue(np.isclose(67.12194015207108, out.E_rev["na"]))
 
+    def test_reading_in_easy_2(self):
+        out = ModelWholeCellPatch(channel_loc, ["na3"], ["na"], {"na": 140})
+        out.run(1)
+        self.assertTrue(np.isclose(67.12194015207108, out.patch.ena))
+        
     def test_reading_in_provide_E_rev(self):
+        out = ModelWholeCellPatch(channel_loc, ["na3"], ["na"], E_rev={"na": 40})
+        out.run(1)
+        self.assertEqual(40, out.patch.ena)
+
+    def test_reading_in_provide_E_rev_2(self):
         out = ModelWholeCellPatch(channel_loc, ["na3"], ["na"], E_rev={"na": 40})
         self.assertEqual(40, out.E_rev["na"])
 
@@ -123,8 +138,18 @@ class TestModelWholeCell(unittest.TestCase):
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         self.assertEqual(out.E_rev["na"], new_E_rev)
 
+    def test_setup_ext_conc_e_rev_2(self):
+        out = ModelWholeCellPatch(channel_loc, ["nax"], ["na"],
+                                  external_conc={"na": 140},
+                                  E_rev={"na": -30})
+        conc_fact = np.log(out.external_conc["na"]/out.nai)
+        new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
+        out.run(1)
+        self.assertEqual(out.patch.ena, new_E_rev)
+
     def testcalc_E_rev(self):
-        out = ModelWholeCellPatch(channel_loc, ["nap"], ["na"], gbar_names={"nap": "gnabar"})
+        out = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+                                  gbar_names={"nap": "gnabar"})
         val = out.calc_E_rev("na")
         self.assertEqual(50, val) 
 
@@ -201,13 +226,32 @@ class TestModelWholeCell(unittest.TestCase):
 
     def test_change_nai(self):
         self.modelJ.nai = 5
-        conc_fact = np.log(self.modelJ.external_conc["na"]/self.modelJ.nai)
+        conc_fact = np.log(self.modelJ.external_conc["na"]/5)
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         self.assertEqual(self.modelJ.E_rev["na"], new_E_rev)
 
+    def test_change_nai_2(self):
+        self.modelJ.nai = 5
+        conc_fact = np.log(self.modelJ.external_conc["na"]/5)
+        new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
+        self.assertEqual(self.modelJ.patch.ena, new_E_rev)
+
+    def test_change_nao(self):
+        self.modelNJ.set_external_conc("na", 100)
+        conc_fact = np.log(100/self.modelNJ.nai)
+        new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
+        self.assertEqual(self.modelNJ.E_rev["na"], new_E_rev)
+
+    def test_change_nai_2(self):
+        self.modelNJ.set_external_conc("na", 120)
+        conc_fact = np.log(120/self.modelNJ.nai)
+        new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
+        self.assertEqual(self.modelNJ.patch.ena, new_E_rev)
+
 
     def test_setup_gbar_custom_value(self):
-        out = ModelWholeCellPatch(channel_loc, ["nap"], ["na"], gbar_names={"nap": "gnabar"},
+        out = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+                                  gbar_names={"nap": "gnabar"},
                                   gbar_values={"nap": 1}, E_rev={"na": 50})
         self.assertEqual(1,
                          out.patch.psection()["density_mechs"]["nap"]["gnabar"][0])

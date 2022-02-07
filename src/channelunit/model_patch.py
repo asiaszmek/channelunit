@@ -193,6 +193,14 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
                 e_rev = None
                 
             self.E_rev[ion] = self.calc_E_rev(ion, e_rev, e_conc)
+            if ion == "k":
+                self.patch.ek = self.E_rev[ion]
+            elif ion == "na":
+                self.patch.ena = self.E_rev[ion]
+            elif ion == "ca":
+                self.patch.eca = self.E_rev[ion]
+            elif ion == "Ca":
+                self.patch.eCa = self.E_rev[ion]
         self.ca = None
         
     def add_channel(self, channel_name, gbar_name, gbar_value):
@@ -715,9 +723,11 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
     def cai(self, value):
         self._cai = value
         if self.external_conc["ca"] is not None:
-            self.E_rev["ca"] = self.calc_E_rev("ca", self.external_conc["ca"])
+            self.E_rev["ca"] = self.calc_E_rev("ca", None,
+                                               self.external_conc["ca"])
         elif self.external_conc["Ca"] is not None:
-            self.E_rev["Ca"] = self.calc_E_rev("Ca", self.external_conc["Ca"])
+            self.E_rev["Ca"] = self.calc_E_rev("Ca", None,
+                                               self.external_conc["Ca"])
 
     @property
     def Cai(self):
@@ -728,16 +738,29 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
         self._cai = value
         if self.ion_name.lower() == "ca":
             if self.external_conc["ca"] is not None:
-                self.E_rev = self.calc_E_rev("ca", self.external_conc["ca"])
+                self.E_rev["ca"] = self.calc_E_rev("ca", None,
+                                                   self.external_conc["ca"])
+                self.patch.eca = self.E_rev["ca"]
             elif self.external_conc["Ca"] is not None:
-                self.E_rev = self.calc_E_rev("Ca", self.external_conc["Ca"])
+                self.E_rev["Ca"] = self.calc_E_rev("Ca", None,
+                                                   self.external_conc["Ca"])
+                self.patch.eCa = self.E_rev["Ca"]
 
     def get_external_conc(self, ion):
         return self.external_conc[ion]
 
     def set_external_conc(self, ion, value):
         self.external_conc[ion] = value
-        self.E_rev[ion] = self.calc_E_rev(ion, self.external_conc[ion])
+        self.E_rev[ion] = self.calc_E_rev(ion, None,
+                                          self.external_conc[ion])
+        if ion == "k":
+            self.patch.ek = self.E_rev[ion]
+        elif ion == "na":
+            self.patch.ena = self.E_rev[ion]
+        elif ion == "ca":
+            self.patch.eca = self.E_rev[ion]
+        elif ion == "Ca":
+            self.patch.eCa = self.E_rev[ion]  
 
     @property
     def ki(self):
@@ -747,7 +770,9 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
     def ki(self, value):
         self._ki = value
         if self.external_conc["k"] is not None:
-            self.E_rev["k"] = self.calc_E_rev("k", self.external_conc["k"])
+            self.E_rev["k"] = self.calc_E_rev("k", None,
+                                              self.external_conc["k"])
+            self.patch.ek = self.E_rev["k"]
 
     @property
     def nai(self):
@@ -757,7 +782,11 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
     def nai(self, value):
         self._nai = value
         if self.external_conc["na"] is not None:
-            self.E_rev["na"] = self.calc_E_rev("na", self.external_conc["na"])
+            self.E_rev["na"] = self.calc_E_rev("na", None,
+                                               self.external_conc["na"])
+
+            self.patch.ena = self.E_rev["na"]
+
 
 class WholeCellAttributes:
     
@@ -897,12 +926,12 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
         self._cai = value
         if self.ion_name.lower() == "ca":
             self.patch.cainf_cad = self._cai
-            self.E_Ca_rev = self.calc_E_rev("ca",
-                                            external=self.external_conc["Ca"])
+            self.patch.eca = self.calc_E_rev("ca",
+                                             external=self.external_conc["Ca"])
         elif self.ion_name == "Ca":
             self.patch.cainf_Cad = self._cai
-            self.E_Ca_rev = self.calc_E_rev("ca",
-                                            external=self.external_conc["Ca"])
+            self.patch.eCa = self.calc_E_rev("ca",
+                                             external=self.external_conc["Ca"])
                              
     @property
     def Cai(self):
@@ -918,11 +947,11 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
         self._cai = value
         if self.ion_name.lower() == "ca":
             self.patch.cainf_cad = self._cai
-            self.E_Ca_rev = self.calc_E_rev("ca",
+            self.patch.eca = self.calc_E_rev("ca",
                                             external=self.external_conc["Ca"])
         elif self.ion_name == "Ca":
             self.patch.cainf_Cad = self._cai
-            self.E_Ca_rev = self.calc_E_rev("ca",
+            self.patch.eCa = self.calc_E_rev("ca",
                                             external=self.external_conc["Ca"])
 
     @property
@@ -934,11 +963,11 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
         self._Ca_ext = value
         if self.ca_ion == "ca":
             h.cao0_ca_ion = self._Ca_ext
-            self.E_Ca_rev = self.calc_E_rev("ca",
+            self.patch.eca = self.calc_E_rev("ca",
                                             external=self.external_conc["Ca"])
         elif self.ca_ion == "Ca":
             h.Cao0_Ca_ion = self._Ca_ext
-            self.E_Ca_rev = self.calc_E_rev("ca",
+            self.patch.eCa = self.calc_E_rev("ca",
                                             external=self.external_conc["Ca"])
         elif self.ca_ion == "Ba":
             h.Cao0_Ca_ion = self.external_conc["Ca"]
