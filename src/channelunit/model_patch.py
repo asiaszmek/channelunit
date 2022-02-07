@@ -102,10 +102,12 @@ class ModelPatch(sciunit.Model):
     def run(self, t_stop, dt=DT):
         current = h.Vector()
         current.record(self.vclamp._ref_i, dt)
+        h.finitialize(self.patch.e_pas)
         if self.cvode:
             h.CVode().re_init()
         else:
-            h.init()
+            h.fcurrent()
+        h.frecord_init()
         h.tstop = t_stop
         h.run()
         return current.as_numpy()
@@ -389,10 +391,12 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
             stim_stop = self.set_vclamp(delay, v_hold, t_stop, level,
                                         leak_subtraction,
                                         delay=interval)
+            h.finitialize(v_hold)
             if self.cvode:
                 h.CVode().re_init()
             else:
-                h.init()
+                h.fcurrent()
+            h.frecord_init()
             h.tstop = stim_stop
             h.run()
             I = current.as_numpy()
@@ -552,10 +556,12 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
             t_stop = self.set_vclamp(delay, v_hold, t_test, v_test,
                                      leak_subtraction,
                                      delay=interval)
+            h.finitialize(v_hold)
             if self.cvode:
                 h.CVode().re_init()
             else:
-                h.init()
+                h.fcurrent()
+            h.frecord_init()
             h.tstop = t_stop
             h.run()
             I = current.as_numpy()
