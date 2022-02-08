@@ -21,16 +21,21 @@ class TestModelPatchWithChannels(unittest.TestCase):
                                             {"na": 110},
                                             gbar_names={"nap": "gnabar"},
                                             liquid_junction_pot=10)
-        
-       
-        cls.modelJ2 = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
-                                             {"na": 110},
-                                             gbar_names={"nap": "gnabar"},
-                                             liquid_junction_pot=10)
 
         cls.modelNJ = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
                                              {"na": 110},
                                              gbar_names={"nap": "gnabar"},
+                                             liquid_junction_pot=0)
+
+        cls.modelK = ModelPatchWithChannels(channel_loc, ["kad"], ["k"],
+                                            {"k": 2.5},
+                                            liquid_junction_pot=0)
+
+        cls.modelca = ModelPatchWithChannels(channel_loc, ["CalH_eCa"], ["Ca"],
+                                             {"Ca": 2},
+                                             gbar_names={"CalH_eCa":
+                                                         "gCalbar"},
+                                             gbar_values={"CalH_eCa":0.001},
                                              liquid_junction_pot=0)
 
     def test_reading_in_no_gbar(self):
@@ -207,7 +212,8 @@ class TestModelPatchWithChannels(unittest.TestCase):
         self.assertEqual(40, out.patch.ena)
 
     def test_reading_in_provide_E_rev_2(self):
-        out = ModelPatchWithChannels(channel_loc, ["na3"], ["na"], E_rev={"na": 40})
+        out = ModelPatchWithChannels(channel_loc, ["na3"], ["na"],
+                                     E_rev={"na": 40})
         self.assertEqual(40, out.E_rev["na"])
 
     def test_no_E_rev_name(self):
@@ -216,21 +222,21 @@ class TestModelPatchWithChannels(unittest.TestCase):
 
     def test_no_E_rev_name_provide_E_rev(self):
         out = ModelPatchWithChannels(channel_loc, ["hd"], ["nonspecific"],
-                                  E_rev={"nonspecific": -30})
+                                     E_rev={"nonspecific": -30})
         self.assertEqual(-30, out.E_rev["nonspecific"])
 
     def test_setup_ext_conc_e_rev(self):
         out = ModelPatchWithChannels(channel_loc, ["nax"], ["na"],
-                                  external_conc={"na": 140},
-                                  E_rev={"na": -30})
+                                     external_conc={"na": 140},
+                                     E_rev={"na": -30})
         conc_fact = np.log(out.external_conc["na"]/out.nai)
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         self.assertEqual(out.E_rev["na"], new_E_rev)
 
     def test_setup_ext_conc_e_rev_2(self):
         out = ModelPatchWithChannels(channel_loc, ["nax"], ["na"],
-                                  external_conc={"na": 140},
-                                  E_rev={"na": -30})
+                                     external_conc={"na": 140},
+                                     E_rev={"na": -30})
         conc_fact = np.log(out.external_conc["na"]/out.nai)
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         out.run(1)
@@ -238,7 +244,7 @@ class TestModelPatchWithChannels(unittest.TestCase):
 
     def test_calc_E_rev(self):
         out = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
-                                  gbar_names={"nap": "gnabar"})
+                                     gbar_names={"nap": "gnabar"})
         val = out.calc_E_rev("na")
         self.assertEqual(50, val) 
 

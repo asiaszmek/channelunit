@@ -57,7 +57,8 @@ class TestModelWholeCell(unittest.TestCase):
         self.assertEqual(self.model_init.temperature, 35)
 
     def test_E_rev(self):
-        conc_fact = np.log(self.model_init.external_conc["na"]/self.model_init.nai)
+        conc_fact = np.log(self.model_init.external_conc["na"]
+                           /self.model_init.nai)
         new_E_rev = 1e3*R*(273.15+self.model_init.temperature)/(1*F)*conc_fact
         self.assertEqual(new_E_rev, self.model_init.E_rev["na"])
 
