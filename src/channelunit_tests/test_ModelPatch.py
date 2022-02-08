@@ -21,7 +21,7 @@ class TestSubtractPassiveProperties(unittest.TestCase):
         cls.pulse = 20
         t_stop = cls.dur1 + 6*cls.dur2 + 5*cls.delay
         cls.current = cls.modelljp2.run(t_stop)
-       
+
     def test_set_vclamp_junction_amp1(self):
         self.assertEqual(self.modelljp1.vclamp.amp1,
                          10-self.modelljp1.junction)
@@ -184,7 +184,8 @@ class TestSubtractPassiveProperties(unittest.TestCase):
         automatic_leak_subtraction = self.modelljp2.curr_leak_amp(self.current,
                                                                   self.dur1,
                                                                   self.dur2,
-                                                                  self.delay, dt)
+                                                                  self.delay,
+                                                                  dt)
         difference = abs(expected - automatic_leak_subtraction)/expected
         self.assertTrue(np.all(difference < 0.03))
 
@@ -199,7 +200,46 @@ class TestSubtractPassiveProperties(unittest.TestCase):
                  + self.modelljp2.vclamp.amp9 + self.modelljp2.vclamp.amp11)
         out_2 = self.modelljp2.vclamp.amp2 - self.modelljp2.vclamp.amp1
         self.assertEqual(out_1-4*self.modelljp2.vclamp.amp10, out_2)
-    
+
+    def test_init_default_1(self):
+        self.assertEqual(self.modelljp1.temperature, 22)
+
+    def test_init_default_pas_1(self):
+        self.assertTrue(np.isclose(self.modelljp1.patch.g_pas,
+                                   1/20000))
+
+    def test_init_default_pas_2(self):
+        self.assertTrue(np.isclose(self.modelljp1.patch.e_pas,
+                                   -65))
+
+    def test_init_default_cvode(self):
+        self.assertTrue(self.modelljp1.cvode)
+
+
+class TestNonDefaultInit(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ND = ModelPatch(temp=37, R_m=50000, v_rest=-80,
+                            liquid_junction_pot=1, cvode=False,
+                            sim_dt=0.01)
+
+    def test_non_default_temp(self):
+        self.assertEqual(self.ND.temperature, 37)
+
+    def test_non_default_R_m(self):
+        self.assertTrue(np.isclose(self.ND.patch.g_pas, 1/50000))
+
+    def test_non_default_V_rest(self):
+        self.assertEqual(self.ND.patch.e_pas, -80)
+
+    def test_non_default_ljp(self):
+        self.assertEqual(self.ND.junction, 1)
+
+    def test_non_default_dt(self):
+        self.assertEqual(self.ND.sim_dt, 0.01)
+
+    def test_non_default_dt(self):
+        self.assertFalse(self.ND.cvode)
 
 
 if __name__ == "__main__":

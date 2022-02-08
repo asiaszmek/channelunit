@@ -37,12 +37,14 @@ class ModelPatch(sciunit.Model):
         self.temperature = temp
         self.v_low = 29.5
         self.vclamp = h.SEClampOLS(self.patch(0.5))
-        self.cvode = cvode
-        if cvode:
+        if cvode is True:
+            self.cvode = True
             h.CVode()
             h.CVode().atol(1e-7)
         else:
-            h.dt = sim_dt
+            self.sim_dt = sim_dt
+            h.dt = self.sim_dt
+            self.cvode = False
         
     def compile_and_add(self, path, recompile):
         working_dir = os.getcwd()
