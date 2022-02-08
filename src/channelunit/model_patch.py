@@ -9,12 +9,16 @@ from neuron import rxd
 import neuron
 from channelunit.capabilities import NModlChannel
 
+
+loc = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(loc, 'demo_CA1')
+mechanisms_path = os.path.join(loc, 'mechanisms')
+channel_loc = os.path.join(data_path, "ion_channels")
+
+
 N = 4
 DT = 0.1
 memb_shell_width = .1
-
-loc = os.path.dirname(os.path.abspath(__file__))
-mechanisms_path = os.path.join(loc, 'mechanisms')
 
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
@@ -385,14 +389,17 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
                                         electrode_current, True)
             calcium_vals = []
             calcium = h.Vector()
-            calcium.record(self.ca[self.memb_shell].nodes[0]._ref_concentration,
+            cal_ref = self.ca[self.memb_shell].nodes[0]._ref_concentration
+            calcium.record(cal_ref,
                            self.dt)
         else:
             ca_fname = ""
         h.celsius = self.temperature
         current_vals = {}
-        current, leak_subtraction, chord_conductance = self._record_current(electrode_current,
-                                                                            chord_conductance)
+        current,\
+            leak_subtraction,\
+            chord_conductance = self._record_current(electrode_current,
+                                                     chord_conductance)
         time = h.Vector()
         time.record(h._ref_t, self.dt)
         delay = 200
@@ -558,8 +565,10 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
         delay = 200
         stim_start = int(delay/self.dt)
         current_values = {}
-        current, leak_subtraction, chord_conductance = self._record_current(electrode_current,
-                                                                            chord_conductance)
+        current,\
+            leak_subtraction,\
+            chord_conductance = self._record_current(electrode_current,
+                                                     chord_conductance)
         time = h.Vector()
         time.record(h._ref_t, self.dt)
         for i, v_hold in enumerate(stimulation_levels):
@@ -786,12 +795,10 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
         if self.external_conc["na"] is not None:
             self.E_rev["na"] = self.calc_E_rev("na", None,
                                                self.external_conc["na"])
-
             self.patch.ena = self.E_rev["na"]
 
 
 class WholeCellAttributes:
-    
     def _set_g_pas(self, R_in, sec_list):
         self._R_in = R_in
         area = 0
@@ -807,7 +814,7 @@ class WholeCellAttributes:
 
     @R_in.setter
     def R_in(self, value):
-        self._set_g_pas(value)
+        self._set_g_pas(value, [self.patch])
 
     @property
     def L(self):
@@ -817,6 +824,7 @@ class WholeCellAttributes:
     def L(self, value):
         self._L = value
         self.patch.L = self._L
+        self._set_g_pas(self.R_in, [self.patch])
 
     @property
     def diam(self):
@@ -826,8 +834,9 @@ class WholeCellAttributes:
     def diam(self, value):
         self._diam = value
         self.patch.diam = self._diam
+        self._set_g_pas(self.R_in,  [self.patch])
 
-    
+
 class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
                  external_conc: dict, gbar_names={}, temp=22, recompile=True,
