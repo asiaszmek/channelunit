@@ -499,9 +499,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
                                               save_traces=save_traces,
                                               save_ca=save_ca)
         
-        max_current = self.get_max_of_dict(currents, electrode_current,
-                                           self.ion_names,
-                                           chord_conductance)
+        max_current = self.get_max_of_dict(currents)
         result = self.normalize_to_one(max_current, normalization)
         if power != 1:
             for key in result.keys():
@@ -667,9 +665,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
                                                 interval,
                                                 save_traces=save_traces,
                                                 save_ca=save_ca)
-        max_current = self.get_max_of_dict(currents, electrode_current,
-                                           self.ion_names,
-                                           chord_conductance)
+        max_current = self.get_max_of_dict(currents)
         result = self.normalize_to_one(max_current, normalization)
         if power != 1:
             for key in result.keys():
@@ -691,7 +687,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
         return current
 
     @staticmethod
-    def normalize_to_one(current, normalization="to_one"):
+    def normalize_to_one(current, normalization="save_sign"):
         """
         normalization: "to_one" or "save_sign"
         """
@@ -707,22 +703,14 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
         return new_current
 
     @staticmethod
-    def get_max_of_dict(current, electrode_current, ion_names, chord_conductance):
+    def get_max_of_dict(current):
         new_current = {}
         for key in current.keys():
             #inward currents are negative
-            if electrode_current: #electrode current
-                new_current[key] = current[key].max()
+            if max(current[key]) < max(abs(current[key])):
+                new_current[key] = current[key].min()                
             else:
-                if ion_names[0] in ["Ca", "ca", "Ba", "ba", "na"]:
-                    if not chord_conductance:
-                        new_current[key] = current[key].min()
-                    else:
-                        new_current[key] = current[key].max()
-                elif ion_names[0] == "k":
-                    new_current[key] = current[key].max()
-                else:
-                    new_current[key] = abs(current[key]).max()
+                new_current[key] = current[key].max()
         return new_current
 
     

@@ -86,21 +86,18 @@ class TestModelPatchWithChannels(unittest.TestCase):
  
     def test_max_of_dict(self):
         dict1 = {1: np.array([1,3,4,1]), 2: np.array([2,2,2,1])}
-        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1, False,
-                                                                ["k"], False),
+        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1),
                          {1: 4, 2:2})
 
     def test_max_of_dict_1(self):
         dict1 = {1: np.array([-1, -3, -4, -1]), 2: np.array([-2,-2,-2,-1])}
-        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1, False,
-                                                                ["na"], False),
+        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1),
                          {1: -4, 2:-2})
     
     def test_max_of_dict_3(self):
-        dict1 = {1: np.array([1,3,4,1]), 2: np.array([2,2,2,1])}
-        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1, True,
-                                                                ["na"], True),
-                         {1: 4, 2:2})
+        dict1 = {1: np.array([1,3,4,1]), 2: np.array([-2,-2,-2,1])}
+        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1),
+                         {1: 4, 2:-2})
   
     def test_extract_current_chord_conductance(self):
         dt = 0.01
