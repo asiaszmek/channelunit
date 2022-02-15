@@ -1039,8 +1039,10 @@ class ModelWholeCellPatch(ModelPatchWithChannels, WholeCellAttributes):
 
 
 class ModelWholeCellPatchOneChannel(ModelWholeCellPatch):
-    def __init__(self, path_to_mods: str, channel_name: str, ion_name: str, external_conc=None,
-                 gbar_name="gbar", temp=22, recompile=True, L=10, diam=10, Ra=100,
+    def __init__(self, path_to_mods: str, channel_name: str,
+                 ion_name: str, external_conc=None,
+                 gbar_name="gbar", temp=22, recompile=True,
+                 L=10, diam=10, Ra=100,
                  liquid_junction_pot=0, cvode=True,  R_in=200e6,
                  v_rest=-65, E_rev=None, gbar_value=0.001):
         channel_names = [channel_name]

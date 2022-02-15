@@ -37,7 +37,22 @@ class TestModelPatchWithChannels(unittest.TestCase):
                                                          "gCalbar"},
                                              gbar_values={"CalH_eCa":0.001},
                                              liquid_junction_pot=0)
+        cls.modelmoreions = ModelPatchWithChannels(channel_loc,
+                                                   ["nax", "kap"],
+                                                   ["na", "k"],
+                                                   E_rev={"na": 40})
 
+    def test_more_than_one_channel(self):
+        self.assertEqual(sorted(["nax", "kap"]),
+                         sorted(self.modelmoreions.channel_names))
+
+    def test_more_than_one_channel_2(self):
+        self.assertEqual(sorted(["na", "k"]),
+                         sorted(self.modelmoreions.ion_names))
+
+    def test_more_than_one_channel_3(self):
+        self.assertEqual({"na": 40, "k": -77},
+                         self.modelmoreions.E_rev)
     def test_reading_in_no_gbar(self):
         self.assertRaises(SystemExit,  ModelPatchWithChannels,
                           channel_loc, ["na3"], ["na"],
