@@ -20,7 +20,7 @@ class TestModelPatchWithChannels(unittest.TestCase):
         cls.modelJ = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
                                             {"na": 110},
                                             gbar_names={"nap": "gnabar"},
-                                            liquid_junction_pot=10)
+                                            liquid_junction_pot=10, cm=3)
 
         cls.modelNJ = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
                                              {"na": 110},
@@ -41,6 +41,9 @@ class TestModelPatchWithChannels(unittest.TestCase):
                                                    ["nax", "kap"],
                                                    ["na", "k"],
                                                    E_rev={"na": 40})
+    def test_cm(self):
+        cm = self.modelJ.patch.cm
+        self.assertEqual(cm, 3)
 
     def test_more_than_one_channel(self):
         self.assertEqual(sorted(["nax", "kap"]),
@@ -80,14 +83,14 @@ class TestModelPatchWithChannels(unittest.TestCase):
         out = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
                                      external_conc={"na": 110},
                                      gbar_names={"nap": "gnabar"},
-                                     R_m=50000)
+                                     Rm=50000)
         self.assertEqual(out.patch.g_pas, 1/50000)
 
     def test_gbar_1(self):
         out = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
                                      external_conc= {"na": 110},
                                      gbar_names={"nap": "gnabar"},
-                                     R_m=50000,
+                                     Rm=50000,
                                      gbar_values={"nap": 1})
         self.assertEqual(1, out.get_gbar("nap"))
 
@@ -95,7 +98,7 @@ class TestModelPatchWithChannels(unittest.TestCase):
         out = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
                                      external_conc={"na": 110},
                                      gbar_names={"nap": "gnabar"},
-                                     R_m=50000, gbar_values={"nap": 1})
+                                     Rm=50000, gbar_values={"nap": 1})
         out.set_gbar("nap", 0.2)
         self.assertEqual(0.2, out.get_gbar("nap"))
  
@@ -259,6 +262,24 @@ class TestModelPatchWithChannels(unittest.TestCase):
                                      gbar_names={"nap": "gnabar"})
         val = out.calc_E_rev("na")
         self.assertEqual(50, val) 
+
+
+class TestAddSingleChannel(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.out = out = ModelPatchWithChannels(channel_loc, ["nax"], ["na"],
+                                            {"na": 110})
+        cls.out.add_channel("nap", "gnabar", .02)
+        
+    def test_add_channel_1(self):
+        self.assertEqual(["nax", "nap"], self.out.channel_names)
+
+    def test_add_channel_2(self):
+        self.assertEqual("gnabar", self.out.gbar_names["nap"])
+
+    def test_add_channel_3(self):
+        self.assertEqual([0.02],
+                        self.out.patch.psection()["density_mechs"]["nap"]["gnabar"])
 
 
 class TestCapabilites(unittest.TestCase):

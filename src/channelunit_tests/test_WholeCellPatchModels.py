@@ -20,7 +20,7 @@ class TestModelWholeCell(unittest.TestCase):
     def setUpClass(cls):
         cls.model = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
                                         {"na": 110},
-                                        gbar_names={"nap": "gnabar"})
+                                        gbar_names={"nap": "gnabar"}, cap=1)
         cls.model_init = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
                                              external_conc={"na": 110},
                                              gbar_names={"nap": "gnabar"},
@@ -28,7 +28,16 @@ class TestModelWholeCell(unittest.TestCase):
                                              liquid_junction_pot=4,
                                              cvode=False,
                                              v_rest=-90,
-                                             E_rev={"na": 15}, R_in=2e9)
+                                             E_rev={"na": 15}, Rin=2e9, cm=2)
+
+    def test_cap_init(self):
+        area = self.model.area([self.model.patch])*1e-8
+        expected = 1/area*1e5
+        self.assertEqual(self.model.cm, expected)
+
+    def test_cm_init(self):
+        self.assertEqual(2, self.model_init.patch.cm)
+        
     def test_setup_gbar_custom_value(self):
         out = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
                                   gbar_names={"nap": "gnabar"},
@@ -38,7 +47,7 @@ class TestModelWholeCell(unittest.TestCase):
                                   liquid_junction_pot=4,
                                   cvode=False,
                                   v_rest=-90,
-                                  E_rev={"na": 15}, R_in=2e9)
+                                  E_rev={"na": 15}, Rin=2e9)
         self.assertEqual(1,
                          out.patch.psection()["density_mechs"]["nap"]["gnabar"][0])
 
@@ -71,12 +80,20 @@ class TestModelWholeCell(unittest.TestCase):
     def test_init_v_rest(self):
         self.assertEqual(self.model_init.patch.e_pas, -90)
     
-    def test_set_R_in(self):
+    def test_set_Rin(self):
         area = 0
         for seg in self.model_init.patch:
-            area += seg.area()*1e-4
-        self.assertEqual(self.model_init.patch.g_pas, 1/(area)/2*1e-9)
+            area += seg.area()*1e-8
+        self.assertTrue(np.isclose(self.model_init.patch.g_pas, 1/(area)/2*1e-9))
 
+    def test_setup_cap(self):
+        out = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+                                  {"na": 110},
+                                  gbar_names={"nap": "gnabar"})
+        out.cap = 2
+        area = out.area([out.patch])*1e-8
+        self.assertEqual(out.patch.cm, 2/area*1e5)
+    
 
 class TestPatchWithCa(unittest.TestCase):
     @classmethod

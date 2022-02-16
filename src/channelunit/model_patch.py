@@ -24,7 +24,7 @@ F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
 
 class ModelPatch(sciunit.Model):
-    def __init__(self, temp=22, R_m=20000,
+    def __init__(self, temp=22, Rm=20000, cm=1,
                  v_rest=-65, liquid_junction_pot=0,
                  cvode=True, sim_dt=0.001):
         h.load_file("stdrun.hoc")
@@ -37,7 +37,8 @@ class ModelPatch(sciunit.Model):
         self.patch.diam = 1
         self.patch.insert("pas")
         self.patch.e_pas = v_rest
-        self.patch.g_pas = 1/R_m
+        self.patch.g_pas = 1/Rm
+        self.patch.cm = cm # uF/cm2
         self.temperature = temp
         self.v_low = 29.5
         self.vclamp = h.SEClampOLS(self.patch(0.5))
@@ -133,6 +134,23 @@ class ModelPatch(sciunit.Model):
             t_start += dur2 + delay
         return pulse
 
+    @property
+    def cm(self):
+        return self.patch.cm
+
+    @cm.setter
+    def cm(self, value):
+        self.patch.cm = value
+
+    @property
+    def Rm(self):
+        return 1/self.patch.g_pas
+
+    @Rm.setter
+    def Rm(self, value):
+        assert value > 0
+        self.patch.g_pas = 1/value
+
 
 class ModelPatchWithChannels(ModelPatch, NModlChannel):
     _nai = 10  # mM
@@ -142,7 +160,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
                  external_conc={}, E_rev={},
                  gbar_names={}, gbar_values={},
                  temp=22, recompile=True, liquid_junction_pot=0, cvode=True,
-                 R_m=20000, v_rest=-65, directory="validation_results",
+                 Rm=20000, cm=1, v_rest=-65, directory="validation_results",
                  sim_dt=0.001):
         """
         ion_name: list
@@ -153,7 +171,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
             specified with a lowercase or an uppercase letter, because 
             the name of the reversal potential variable is constructed
             based on the ion name (na -> ena, k -> ek, ca -> eca, Ca -> eCa).
-        R_m: float 
+        Rm: float 
             mebrane resistivity (in ohm*cm^2)
         """
 
@@ -161,10 +179,11 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
         self.mod_path = path_to_mods
         self.compile_and_add(self.mod_path, recompile)
         super(ModelPatchWithChannels, self).__init__(temp=temp, 
-                                                    R_m=R_m, v_rest=v_rest,
-                                                    liquid_junction_pot=liquid_junction_pot,
-                                                    cvode=cvode,
-                                                    sim_dt=sim_dt,)
+                                                     Rm=Rm, cm=cm,
+                                                     v_rest=v_rest,
+                                                     liquid_junction_pot=liquid_junction_pot,
+                                                     cvode=cvode,
+                                                     sim_dt=sim_dt,)
 
         self.channels = []
         self.gbar_names = {}
@@ -184,6 +203,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
                 gbar_value = gbar_values[channel]
 
             self.add_channel(channel, gbar_name, gbar_value)
+
         for ion in ion_names:
             if ion in external_conc:
                 e_conc = external_conc[ion]
@@ -787,22 +807,42 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
 
 
 class WholeCellAttributes:
-    def _set_g_pas(self, R_in, sec_list):
-        self._R_in = R_in
+
+    def area(self, sec_list):
         area = 0
         for sec in sec_list:
             for seg in sec:
-                area += seg.area()*1e-4 #  in cm2
-        for sec in sec_list:
-            sec.g_pas = 1/(self._R_in*area)  # in mho/cm2
-            
-    @property
-    def R_in(self):
-        return self._R_in
+                area += seg.area()
+        return area
 
-    @R_in.setter
-    def R_in(self, value):
+    def _set_g_pas(self, Rin, sec_list):
+        self._Rin = Rin
+        area = self.area(sec_list)*1e-8 #in cm2
+        for sec in sec_list:
+            sec.g_pas = 1/(self._Rin*area)  # in mho/cm2
+
+    def _set_cap(self, cap, sec_list):
+        self._cap = cap
+        area = self.area(sec_list)*1e-8 #in cm2        
+        for sec in sec_list:
+            sec.cm = self.cap/area*1e5
+        #in uF/cm2, starting from nF, 1E-9F/1E-8cm2=1E-1 F/cm2=1e5 1E-6F/cm2=10 uF/cm2
+        
+    @property
+    def Rin(self):
+        return self._Rin
+
+    @Rin.setter
+    def Rin(self, value):
         self._set_g_pas(value, [self.patch])
+
+    @property
+    def cap(self):
+        return self._cap
+    
+    @cap.setter
+    def cap(self, value):
+        self._set_cap(value, [self.patch])
 
     @property
     def L(self):
@@ -812,7 +852,8 @@ class WholeCellAttributes:
     def L(self, value):
         self._L = value
         self.patch.L = self._L
-        self._set_g_pas(self.R_in, [self.patch])
+        self._set_g_pas(self.Rin, [self.patch])
+        self._set_cap(value, [self.patch])
 
     @property
     def diam(self):
@@ -822,37 +863,114 @@ class WholeCellAttributes:
     def diam(self, value):
         self._diam = value
         self.patch.diam = self._diam
-        self._set_g_pas(self.R_in,  [self.patch])
+        self._set_g_pas(self.Rin,  [self.patch])
+        self._set_cap(value, [self.patch])
 
 
-class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
+class ModelWholeCellPatch(ModelPatchWithChannels, WholeCellAttributes):
+    """
+    Rin -- in ohms
+    """
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
-                 external_conc: dict, gbar_names={}, temp=22, recompile=True,
-                 liquid_junction_pot=0, cvode=True, R_in=200e6, v_rest=-65,
-                 gbar_values={}, t_decay=20, L=10, diam=10, Ra=100,
-                 buffer_capacity=18,
-                 membrane_shell_width=memb_shell_width):
-        """
-        Model class for testing calcium channels with 
-        """
-        super(ModelWholeCellPatchCaShell, self).__init__(path_to_mods,
-                                                channel_names,
-                                                ion_names,
-                                                external_conc=external_conc,
-                                                gbar_names=gbar_names,
-                                                temp=temp,
-                                                recompile=recompile,
-                                                liquid_junction_pot=liquid_junction_pot,
-                                                cvode=cvode,
-                                                R_m=20000, v_rest=v_rest,
-                                                gbar_values=gbar_values)
+                 external_conc={}, gbar_names={},
+                 temp=22, recompile=True, L=10, diam=10, Ra=100,
+                 liquid_junction_pot=0, cvode=True,  Rin=200e6, cap=None, cm=1,
+                 v_rest=-65, E_rev={}, gbar_values={}):
+
+        super(ModelWholeCellPatch, self).__init__(path_to_mods,
+                                                  channel_names,
+                                                  ion_names,
+                                                  external_conc=external_conc,
+                                                  gbar_names=gbar_names,
+                                                  temp=temp, recompile=recompile,
+                                                  liquid_junction_pot=liquid_junction_pot,
+                                                  cvode=cvode, Rm=20000, cm=cm, v_rest=v_rest,
+                                                  E_rev=E_rev, gbar_values=gbar_values)
         self._L = L
         self._diam = diam
         self.patch.L = self._L
         self.patch.Ra = Ra
         self.patch.diam = self._diam
-        self._set_g_pas(R_in, [self.patch])
+        self._set_g_pas(Rin, [self.patch])
+        if cap is None:
+            area = self.area([self.patch])*10
+            cap = cm*area #should be in nF
+            self._cap = cap
+        else:
+            self._set_cap(cap, [self.patch])
 
+
+
+class ModelWholeCellPatchOneChannel(ModelWholeCellPatch):
+    def __init__(self, path_to_mods: str, channel_name: str,
+                 ion_name: str, external_conc=None,
+                 gbar_name="gbar", temp=22, recompile=True,
+                 L=10, diam=10, Ra=100,
+                 liquid_junction_pot=0, cvode=True,  Rin=200e6,
+                 cap=None, cm=1,
+                 v_rest=-65, E_rev=None, gbar_value=0.001):
+        channel_names = [channel_name]
+        ion_names = [ion_name]
+        if external_conc is not None:
+            ext_conc_dict = {ion_name: external_conc}
+        else:
+            ext_conc_dict = {}
+        gbar_names = {channel_name: gbar_name}
+        gbar_values = {channel_name: gbar_value}
+        E_rev = {channel_name: E_rev}
+        super(ModelWholeCellPatchOneChannel, self).__init__(path_to_mods,
+                                                            channel_names,
+                                                            ion_names,
+                                                            external_conc = ext_conc_dict,
+                                                            gbar_names=gbar_names,
+                                                            gbar_values=gbar_values,
+                                                            E_rev=E_rev, temp=temp,
+                                                            recompile=recompile,
+                                                            liquid_junction_pot=liquid_junction_pot,
+                                                            cvode=cvode, v_rest=v_rest, Rin=Rin, cap=cap,
+                                                            cm=cm, L=L, diam=diam, Ra=Ra)
+        
+
+
+class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
+    def __init__(self, path_to_mods, channel_names: list, ion_names: list,
+                 external_conc: dict, E_rev={}, gbar_names={}, temp=22, recompile=True,
+                 liquid_junction_pot=0, cvode=True, Rin=200e6, cap=None, cm=1,
+                 v_rest=-65,
+                 gbar_values={}, t_decay=20, L=10, diam=10, Ra=100,
+                 buffer_capacity=18,
+                 membrane_shell_width=memb_shell_width):
+        """
+        Model class for testing calcium channels with 
+        cap -- nF, cell capacitance 
+        cm -- membrane capacitance 1 uF/cm2
+        """
+            
+        super(ModelWholeCellPatchCaShell, self).__init__(path_to_mods,
+                                                         channel_names,
+                                                         ion_names,
+                                                         external_conc=external_conc,
+                                                         E_rev=E_rev,
+                                                         gbar_names=gbar_names,
+                                                         temp=temp,
+                                                         recompile=recompile,
+                                                         liquid_junction_pot=liquid_junction_pot,
+                                                         cvode=cvode,
+                                                         Rm=20000, cm=cm,
+                                                         v_rest=v_rest,
+                                                         gbar_values=gbar_values)
+        self._L = L
+        self._diam = diam
+        self.patch.L = self._L
+        self.patch.Ra = Ra
+        self.patch.diam = self._diam
+        self._set_g_pas(Rin, [self.patch])
+        if cap is None:
+            area = self.area([self.patch])*10
+            cap = cm*area #should be in nF
+            self._cap = cap
+        else:
+            self._set_cap(cap, [self.patch])
         self.t_decay = t_decay
         self.Kb = buffer_capacity
         self.memb_shell_width = membrane_shell_width
@@ -978,8 +1096,8 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
 
 class ModelWholeCellPatchCaShellOneChannel(ModelWholeCellPatchCaShell):
     def __init__(self, path_to_mods: str, channel_name: str, ion_name: str, external_conc,
-                 gbar_name="gbar", temp=22, recompile=True, L=10, diam=10, Ra=100,
-                 liquid_junction_pot=0, cvode=True,  R_in=200e6,
+                 E_rev={}, gbar_name="gbar", temp=22, recompile=True, L=10, diam=10, Ra=100,
+                 liquid_junction_pot=0, cvode=True,  Rin=200e6, cap=None, cm=1,
                  v_rest=-65, gbar_value=0.001,
                  t_decay=20,
                  buffer_capacity=18,
@@ -992,77 +1110,50 @@ class ModelWholeCellPatchCaShellOneChannel(ModelWholeCellPatchCaShell):
             raise SystemError("Ca external conc needs to be specified")
         gbar_names = {channel_name: gbar_name}
         gbar_values = {channel_name: gbar_value}
-
         super(ModelWholeCellPatchCaShellOneChannel, self).__init__(path_to_mods,
                                                                    channel_names,
                                                                    ion_names,
                                                                    external_conc = ext_conc_dict,
+                                                                   E_rev=E_rev,
                                                                    gbar_names=gbar_names,
                                                                    gbar_values=gbar_values,
                                                                    temp=temp,
                                                                    recompile=recompile,
                                                                    liquid_junction_pot=liquid_junction_pot,
-                                                                   cvode=cvode, v_rest=v_rest, R_in=R_in,
+                                                                   cvode=cvode, v_rest=v_rest, Rin=Rin,
+                                                                   cap=cap, cm=cm,
                                                                    t_decay=t_decay, L=L, diam=diam, Ra=Ra,
                                                                    buffer_capacity=buffer_capacity,
                                                                    membrane_shell_width=membrane_shell_width)
-        
 
 
-
-
-class ModelWholeCellPatch(ModelPatchWithChannels, WholeCellAttributes):
-    """
-    R_in -- in ohms
-    """
+class ModelOocyte(ModelWholeCellPatch):
+    #parameters from  PMID: 20737886 DOI: 10.1016/0012-1606(81)90417-6 
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
                  external_conc={}, gbar_names={},
-                 temp=22, recompile=True, L=10, diam=10, Ra=100,
-                 liquid_junction_pot=0, cvode=True,  R_in=200e6,
-                 v_rest=-65, E_rev={}, gbar_values={}):
-
-        super(ModelWholeCellPatch, self).__init__(path_to_mods,
-                                                  channel_names,
-                                                  ion_names,
-                                                  external_conc=external_conc,
-                                                  gbar_names=gbar_names,
-                                                  temp=temp, recompile=recompile,
-                                                  liquid_junction_pot=liquid_junction_pot,
-                                                  cvode=cvode, R_m=20000, v_rest=v_rest,
-                                                  E_rev=E_rev, gbar_values=gbar_values)
-        self._L = L
-        self._diam = diam
-        self.patch.L = self._L
-        self.patch.Ra = Ra
-        self.patch.diam = self._diam
-        self._set_g_pas(R_in, [self.patch])
+                 temp=22, recompile=True, liquid_junction_pot=0, cvode=True,
+                 E_rev={}, gbar_values={}):
+        super(ModelOocyte, self).__init__(path_to_mods, channel_names, ion_names,
+                                          external_conc=external_conc,
+                                          gbar_names=gbar_names,
+                                          temp=22, recompile=True, L=1.3e3, diam=1.3e3, Ra=100,
+                                          liquid_junction_pot=0, cvode=True,
+                                          Rin=1.86e6, cap=None, cm=12,
+                                          v_rest=-50, E_rev=E_rev, gbar_values=gbar_values)
 
 
-class ModelWholeCellPatchOneChannel(ModelWholeCellPatch):
-    def __init__(self, path_to_mods: str, channel_name: str,
-                 ion_name: str, external_conc=None,
-                 gbar_name="gbar", temp=22, recompile=True,
-                 L=10, diam=10, Ra=100,
-                 liquid_junction_pot=0, cvode=True,  R_in=200e6,
-                 v_rest=-65, E_rev=None, gbar_value=0.001):
-        channel_names = [channel_name]
-        ion_names = [ion_name]
-        if external_conc is not None:
-            ext_conc_dict = {ion_name: external_conc}
-        else:
-            ext_conc_dict = {}
-        gbar_names = {channel_name: gbar_name}
-        gbar_values = {channel_name: gbar_value}
-        E_rev = {channel_name: E_rev}
-        super(ModelWholeCellPatchOneChannel, self).__init__(path_to_mods,
-                                                            channel_names,
-                                                            ion_names,
-                                                            external_conc = ext_conc_dict,
-                                                            gbar_names=gbar_names,
-                                                            gbar_values=gbar_values,
-                                                            E_rev=E_rev, temp=temp,
-                                                            recompile=recompile,
-                                                            liquid_junction_pot=liquid_junction_pot,
-                                                            cvode=cvode, v_rest=v_rest, R_in=R_in,
-                                                            L=L, diam=diam, Ra=Ra)
-        
+class ModelOocyteCa(ModelWholeCellPatchCaShell):
+    #parameters from  PMID: 20737886 DOI: 10.1016/0012-1606(81)90417-6 (electric)
+    #Ca params from https://doi.org/10.1016/j.ydbio.2005.10.034
+    def __init__(self, path_to_mods, channel_names: list, ion_names: list,
+                 external_conc={}, E_rev={}, gbar_names={},
+                 temp=22, recompile=True, liquid_junction_pot=0, cvode=True,
+                 gbar_values={}):
+        super(ModelOocyteCa, self).__init__(path_to_mods, channel_names, ion_names,
+                                            external_conc=external_conc,
+                                            E_rev=E_rev, gbar_names=gbar_names,
+                                            temp=22, recompile=True, L=1.3e3, diam=1.3e3, Ra=100,
+                                            liquid_junction_pot=0, cvode=True,
+                                            Rin=1.86e6, cap=None, cm=12,
+                                            v_rest=-50,  gbar_values=gbar_values,
+                                            t_decay=8e3)
