@@ -25,7 +25,7 @@ class TestModelWholeCell(unittest.TestCase):
                                              external_conc={"na": 110},
                                              gbar_names={"nap": "gnabar"},
                                              temp=35, recompile=False,
-                                             liquid_junction_pot=4,
+                                             ljp=4,
                                              cvode=False,
                                              v_rest=-90,
                                              E_rev={"na": 15}, Rin=2e9, cm=2)
@@ -44,7 +44,7 @@ class TestModelWholeCell(unittest.TestCase):
                                   gbar_values={"nap": 1},
                                   external_conc={"na": 110},
                                   temp=35, recompile=False,
-                                  liquid_junction_pot=4,
+                                  ljp=4,
                                   cvode=False,
                                   v_rest=-90,
                                   E_rev={"na": 15}, Rin=2e9)

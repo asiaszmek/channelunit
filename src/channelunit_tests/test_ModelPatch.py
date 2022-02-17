@@ -8,8 +8,8 @@ from channelunit.model_patch import ModelPatch
 class TestVclamp(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelljp1 = ModelPatch(liquid_junction_pot=10)
-        cls.modelljp2 = ModelPatch(liquid_junction_pot=10, cm=2)
+        cls.modelljp1 = ModelPatch(ljp=10)
+        cls.modelljp2 = ModelPatch(ljp=10, cm=2)
         cls.model =  ModelPatch()
         cls.modelljp1.set_vclamp(10, 10, 100, 100, False)
         cls.dur1 = 10
@@ -185,7 +185,7 @@ class TestVclamp(unittest.TestCase):
 class TestSubtractPassiveProperties(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelljp2 = ModelPatch(liquid_junction_pot=10, cm=2)
+        cls.modelljp2 = ModelPatch(ljp=10, cm=2)
         cls.dur1 = 10
         cls.dur2 = 20
         cls.delay = 30
@@ -249,7 +249,7 @@ class TestNonDefaultInit(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.ND = ModelPatch(temp=37, Rm=50000, v_rest=-80,
-                            liquid_junction_pot=1, cvode=False,
+                            ljp=1, cvode=False,
                             sim_dt=0.01)
 
     def test_non_default_temp(self):

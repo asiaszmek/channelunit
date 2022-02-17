@@ -29,7 +29,7 @@ class TestProximalKA(unittest.TestCase):
                                                      "k",
                                                      external_conc=2.5,
                                                      temp=22,
-                                                     liquid_junction_pot=0,
+                                                     ljp=0,
                                                      v_rest=-65)
         activation_data = np.loadtxt(activation_loc_K_A_d, skiprows=1,
                                      delimiter=",")
@@ -86,7 +86,7 @@ class TestDistalKA(unittest.TestCase):
                                                      "k",
                                                      external_conc=2.5,
                                                      temp=22,
-                                                     liquid_junction_pot=0)
+                                                     ljp=0)
 
         activation_data = np.loadtxt(activation_loc_K_A_p, skiprows=1,
                                      delimiter=",")

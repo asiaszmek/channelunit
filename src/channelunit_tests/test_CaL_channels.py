@@ -26,7 +26,7 @@ class TestCaLChannelsLowBariumba(unittest.TestCase):
                                                                "ba",
                                                                external_conc=20,
                                                                temp=22,
-                                                               liquid_junction_pot=0)
+                                                               ljp=0)
         activation_data = np.loadtxt(activation_loc_Cal_20_Ba, skiprows=1,
                                      delimiter=",")
         cls.power = 1
@@ -71,7 +71,7 @@ class TestCaLChannelsLowBariumBa(unittest.TestCase):
                                                       "Ba",
                                                       external_conc=20,
                                                       temp=22,
-                                                      liquid_junction_pot=0)
+                                                      ljp=0)
 
         activation_data = np.loadtxt(activation_loc_Cal_20_Ba, skiprows=1,
                                      delimiter=",")
@@ -117,7 +117,7 @@ class TestCaLChannelsLowCalciumca(unittest.TestCase):
                                                      "ca",
                                                      external_conc=1.5,
                                                      temp=22,
-                                                     liquid_junction_pot=0)
+                                                     ljp=0)
         activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
                                      delimiter=",")
         cls.power = 1
@@ -165,7 +165,7 @@ class TestCaLChannelsLowCalciumCa(unittest.TestCase):
                                                                 "Ca",
                                                                 external_conc=1.5,
                                                                 temp=22,
-                                                                liquid_junction_pot=0)
+                                                                ljp=0)
 
         activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
                                      delimiter=",")

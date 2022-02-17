@@ -70,7 +70,7 @@ class TestActivationSteadyState(unittest.TestCase):
         E_rev = 8.314*(273.15+22)/96485*np.log(110/15)
         cls.model = ModelWholeCellPatchOneChannel(channel_loc, "na3", "na",
                                      external_conc=110, temp=22,
-                                     liquid_junction_pot=0)
+                                     ljp=0)
         activation_data = np.loadtxt(activation_loc, skiprows=1,
                                      delimiter=",")
         cls.power = 1
@@ -154,7 +154,7 @@ class TestInactivationSteadyState(unittest.TestCase):
         cls.model = ModelWholeCellPatchOneChannel(channel_loc, "na3", "na",
                                                   external_conc=110,
                                                   temp=22,
-                                                  liquid_junction_pot=0)
+                                                  ljp=0)
         inactivation_data = np.loadtxt(inactivation_loc, skiprows=1,
                                        delimiter=",")
         cls.inactivation_data = dict(val.tolist() for val in inactivation_data)

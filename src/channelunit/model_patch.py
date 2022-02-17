@@ -25,12 +25,12 @@ R = 8.314462618  # J mol^-1 K^-1
 
 class ModelPatch(sciunit.Model):
     def __init__(self, temp=22, Rm=20000, cm=1,
-                 v_rest=-65, liquid_junction_pot=0,
+                 v_rest=-65, ljp=0,
                  cvode=True, sim_dt=0.001):
         h.load_file("stdrun.hoc")
         self.dt = DT
         self.compile_and_add(mechanisms_path, True)
-        self.junction = liquid_junction_pot
+        self.junction = ljp
         self.patch = h.Section(name="patch")
         self.patch.L = 1
         self.patch.Ra = 100
@@ -159,7 +159,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
     def __init__(self, path_to_mods: str, channel_names: list, ion_names: list,
                  external_conc={}, E_rev={},
                  gbar_names={}, gbar_values={},
-                 temp=22, recompile=True, liquid_junction_pot=0, cvode=True,
+                 temp=22, recompile=True, ljp=0, cvode=True,
                  Rm=20000, cm=1, v_rest=-65, directory="validation_results",
                  sim_dt=0.001):
         """
@@ -181,7 +181,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
         super(ModelPatchWithChannels, self).__init__(temp=temp, 
                                                      Rm=Rm, cm=cm,
                                                      v_rest=v_rest,
-                                                     liquid_junction_pot=liquid_junction_pot,
+                                                     ljp=ljp,
                                                      cvode=cvode,
                                                      sim_dt=sim_dt,)
 
@@ -874,7 +874,7 @@ class ModelWholeCellPatch(ModelPatchWithChannels, WholeCellAttributes):
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
                  external_conc={}, gbar_names={},
                  temp=22, recompile=True, L=10, diam=10, Ra=100,
-                 liquid_junction_pot=0, cvode=True,  Rin=200e6, cap=None, cm=1,
+                 ljp=0, cvode=True,  Rin=200e6, cap=None, cm=1,
                  v_rest=-65, E_rev={}, gbar_values={}):
 
         super(ModelWholeCellPatch, self).__init__(path_to_mods,
@@ -882,10 +882,13 @@ class ModelWholeCellPatch(ModelPatchWithChannels, WholeCellAttributes):
                                                   ion_names,
                                                   external_conc=external_conc,
                                                   gbar_names=gbar_names,
-                                                  temp=temp, recompile=recompile,
-                                                  liquid_junction_pot=liquid_junction_pot,
-                                                  cvode=cvode, Rm=20000, cm=cm, v_rest=v_rest,
-                                                  E_rev=E_rev, gbar_values=gbar_values)
+                                                  temp=temp,
+                                                  recompile=recompile,
+                                                  ljp=ljp,
+                                                  cvode=cvode, Rm=20000,
+                                                  cm=cm, v_rest=v_rest,
+                                                  E_rev=E_rev,
+                                                  gbar_values=gbar_values)
         self._L = L
         self._diam = diam
         self.patch.L = self._L
@@ -906,7 +909,7 @@ class ModelWholeCellPatchOneChannel(ModelWholeCellPatch):
                  ion_name: str, external_conc=None,
                  gbar_name="gbar", temp=22, recompile=True,
                  L=10, diam=10, Ra=100,
-                 liquid_junction_pot=0, cvode=True,  Rin=200e6,
+                 ljp=0, cvode=True,  Rin=200e6,
                  cap=None, cm=1,
                  v_rest=-65, E_rev=None, gbar_value=0.001):
         channel_names = [channel_name]
@@ -921,21 +924,25 @@ class ModelWholeCellPatchOneChannel(ModelWholeCellPatch):
         super(ModelWholeCellPatchOneChannel, self).__init__(path_to_mods,
                                                             channel_names,
                                                             ion_names,
-                                                            external_conc = ext_conc_dict,
+                                                            external_conc=ext_conc_dict,
                                                             gbar_names=gbar_names,
                                                             gbar_values=gbar_values,
-                                                            E_rev=E_rev, temp=temp,
+                                                            E_rev=E_rev,
+                                                            temp=temp,
                                                             recompile=recompile,
-                                                            liquid_junction_pot=liquid_junction_pot,
-                                                            cvode=cvode, v_rest=v_rest, Rin=Rin, cap=cap,
-                                                            cm=cm, L=L, diam=diam, Ra=Ra)
+                                                            ljp=ljp,
+                                                            cvode=cvode,
+                                                            v_rest=v_rest,
+                                                            Rin=Rin, cap=cap,
+                                                            cm=cm, L=L,
+                                                            diam=diam, Ra=Ra)
         
 
 
 class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
                  external_conc: dict, E_rev={}, gbar_names={}, temp=22, recompile=True,
-                 liquid_junction_pot=0, cvode=True, Rin=200e6, cap=None, cm=1,
+                 ljp=0, cvode=True, Rin=200e6, cap=None, cm=1,
                  v_rest=-65,
                  gbar_values={}, t_decay=20, L=10, diam=10, Ra=100,
                  buffer_capacity=18,
@@ -954,7 +961,7 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
                                                          gbar_names=gbar_names,
                                                          temp=temp,
                                                          recompile=recompile,
-                                                         liquid_junction_pot=liquid_junction_pot,
+                                                         ljp=ljp,
                                                          cvode=cvode,
                                                          Rm=20000, cm=cm,
                                                          v_rest=v_rest,
@@ -1097,7 +1104,7 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
 class ModelWholeCellPatchCaShellOneChannel(ModelWholeCellPatchCaShell):
     def __init__(self, path_to_mods: str, channel_name: str, ion_name: str, external_conc,
                  E_rev={}, gbar_name="gbar", temp=22, recompile=True, L=10, diam=10, Ra=100,
-                 liquid_junction_pot=0, cvode=True,  Rin=200e6, cap=None, cm=1,
+                 ljp=0, cvode=True,  Rin=200e6, cap=None, cm=1,
                  v_rest=-65, gbar_value=0.001,
                  t_decay=20,
                  buffer_capacity=18,
@@ -1119,7 +1126,7 @@ class ModelWholeCellPatchCaShellOneChannel(ModelWholeCellPatchCaShell):
                                                                    gbar_values=gbar_values,
                                                                    temp=temp,
                                                                    recompile=recompile,
-                                                                   liquid_junction_pot=liquid_junction_pot,
+                                                                   ljp=ljp,
                                                                    cvode=cvode, v_rest=v_rest, Rin=Rin,
                                                                    cap=cap, cm=cm,
                                                                    t_decay=t_decay, L=L, diam=diam, Ra=Ra,
@@ -1131,29 +1138,35 @@ class ModelOocyte(ModelWholeCellPatch):
     #parameters from  PMID: 20737886 DOI: 10.1016/0012-1606(81)90417-6 
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
                  external_conc={}, gbar_names={},
-                 temp=22, recompile=True, liquid_junction_pot=0, cvode=True,
+                 temp=22, recompile=True, ljp=0, cvode=True,
                  E_rev={}, gbar_values={}):
-        super(ModelOocyte, self).__init__(path_to_mods, channel_names, ion_names,
+        super(ModelOocyte, self).__init__(path_to_mods, channel_names,
+                                          ion_names,
                                           external_conc=external_conc,
                                           gbar_names=gbar_names,
-                                          temp=22, recompile=True, L=1.3e3, diam=1.3e3, Ra=100,
-                                          liquid_junction_pot=0, cvode=True,
+                                          temp=22, recompile=True, L=1.3e3,
+                                          diam=1.3e3, Ra=100,
+                                          ljp=0, cvode=True,
                                           Rin=1.86e6, cap=None, cm=12,
-                                          v_rest=-50, E_rev=E_rev, gbar_values=gbar_values)
+                                          v_rest=-50, E_rev=E_rev,
+                                          gbar_values=gbar_values)
 
 
 class ModelOocyteCa(ModelWholeCellPatchCaShell):
-    #parameters from  PMID: 20737886 DOI: 10.1016/0012-1606(81)90417-6 (electric)
+    #parameters from  PMID: 20737886 DOI: 10.1016/0012-1606(81)90417-6
+    # (electric)
     #Ca params from https://doi.org/10.1016/j.ydbio.2005.10.034
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
                  external_conc={}, E_rev={}, gbar_names={},
-                 temp=22, recompile=True, liquid_junction_pot=0, cvode=True,
+                 temp=22, recompile=True, ljp=0, cvode=True,
                  gbar_values={}):
-        super(ModelOocyteCa, self).__init__(path_to_mods, channel_names, ion_names,
+        super(ModelOocyteCa, self).__init__(path_to_mods, channel_names,
+                                            ion_names,
                                             external_conc=external_conc,
                                             E_rev=E_rev, gbar_names=gbar_names,
-                                            temp=22, recompile=True, L=1.3e3, diam=1.3e3, Ra=100,
-                                            liquid_junction_pot=0, cvode=True,
+                                            temp=22, recompile=True,
+                                            L=1.3e3, diam=1.3e3, Ra=100,
+                                            ljp=0, cvode=True,
                                             Rin=1.86e6, cap=None, cm=12,
-                                            v_rest=-50,  gbar_values=gbar_values,
+                                            v_rest=-50, gbar_values=gbar_values,
                                             t_decay=8e3)

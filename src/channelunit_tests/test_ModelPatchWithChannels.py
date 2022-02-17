@@ -20,23 +20,23 @@ class TestModelPatchWithChannels(unittest.TestCase):
         cls.modelJ = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
                                             {"na": 110},
                                             gbar_names={"nap": "gnabar"},
-                                            liquid_junction_pot=10, cm=3)
+                                            ljp=10, cm=3)
 
         cls.modelNJ = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
                                              {"na": 110},
                                              gbar_names={"nap": "gnabar"},
-                                             liquid_junction_pot=0)
+                                             ljp=0)
 
         cls.modelK = ModelPatchWithChannels(channel_loc, ["kad"], ["k"],
                                             {"k": 2.5},
-                                            liquid_junction_pot=0)
+                                            ljp=0)
 
         cls.modelca = ModelPatchWithChannels(channel_loc, ["CalH_eCa"], ["Ca"],
                                              {"Ca": 2},
                                              gbar_names={"CalH_eCa":
                                                          "gCalbar"},
                                              gbar_values={"CalH_eCa":0.001},
-                                             liquid_junction_pot=0)
+                                             ljp=0)
         cls.modelmoreions = ModelPatchWithChannels(channel_loc,
                                                    ["nax", "kap"],
                                                    ["na", "k"],
