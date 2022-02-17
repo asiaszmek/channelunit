@@ -743,7 +743,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
         self._cai = value
         if self.external_conc["ca"] is not None:
             self.E_rev["ca"] = self.calc_E_rev("ca", None,
-                                               self.external_conc["ca"])
+                                               self.external_conc["Ca"])
         elif self.external_conc["Ca"] is not None:
             self.E_rev["Ca"] = self.calc_E_rev("Ca", None,
                                                self.external_conc["Ca"])
@@ -758,7 +758,7 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
         if self.ion_name.lower() == "ca":
             if self.external_conc["ca"] is not None:
                 self.E_rev["ca"] = self.calc_E_rev("ca", None,
-                                                   self.external_conc["ca"])
+                                                   self.external_conc["Ca"])
                 self.patch.eca = self.E_rev["ca"]
             elif self.external_conc["Ca"] is not None:
                 self.E_rev["Ca"] = self.calc_E_rev("Ca", None,
@@ -1022,7 +1022,7 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
                                   initial=0,
                                   atolscale=1e-9)
             self._cai = 0
-            self.E_rev["Ca"] = None
+            self.E_rev["ca"] = None
             h.cao0_ca_ion = self.external_conc["Ca"]
             for channel_name in self.channel_names:
                 chan = self.patch.psection()["density_mechs"][channel_name]
@@ -1054,7 +1054,7 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
                                              external=self.external_conc["Ca"])
         elif self.ion_name == "Ca":
             self.patch.cainf_Cad = self._cai
-            self.patch.eCa = self.calc_E_rev("ca",
+            self.patch.eCa = self.calc_E_rev("Ca",
                                              external=self.external_conc["Ca"])
                              
     @property
@@ -1075,7 +1075,7 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
                                             external=self.external_conc["Ca"])
         elif self.ion_name == "Ca":
             self.patch.cainf_Cad = self._cai
-            self.patch.eCa = self.calc_E_rev("ca",
+            self.patch.eCa = self.calc_E_rev("Ca",
                                             external=self.external_conc["Ca"])
 
     @property
@@ -1091,7 +1091,7 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
                                             external=self.external_conc["Ca"])
         elif self.ca_ion == "Ca":
             h.Cao0_Ca_ion = self._Ca_ext
-            self.patch.eCa = self.calc_E_rev("ca",
+            self.patch.eCa = self.calc_E_rev("Ca",
                                             external=self.external_conc["Ca"])
         elif self.ca_ion == "Ba":
             h.Cao0_Ca_ion = self.external_conc["Ca"]
