@@ -817,16 +817,17 @@ class WholeCellAttributes:
 
     def _set_g_pas(self, Rin, sec_list):
         self._Rin = Rin
-        area = self.area(sec_list)*1e-8 #in cm2
+        area = self.area(sec_list)*1e-8 # in cm2
         for sec in sec_list:
             sec.g_pas = 1/(self._Rin*area)  # in mho/cm2
 
-    def _set_cap(self, cap, sec_list):
+    def set_cap(self, cap, sec_list):
         self._cap = cap
         area = self.area(sec_list)*1e-8 #in cm2        
         for sec in sec_list:
             sec.cm = self.cap/area*1e5
-        #in uF/cm2, starting from nF, 1E-9F/1E-8cm2=1E-1 F/cm2=1e5 1E-6F/cm2=10 uF/cm2
+        # in uF/cm2, starting from nF, 1E-9F/1E-8cm2=1E-1
+        # F/cm2=1e5 1E-6F/cm2=10 uF/cm2
         
     @property
     def Rin(self):
@@ -842,7 +843,7 @@ class WholeCellAttributes:
     
     @cap.setter
     def cap(self, value):
-        self._set_cap(value, [self.patch])
+        self.set_cap(value, [self.patch])
 
     @property
     def L(self):
@@ -853,7 +854,6 @@ class WholeCellAttributes:
         self._L = value
         self.patch.L = self._L
         self._set_g_pas(self.Rin, [self.patch])
-        self._set_cap(value, [self.patch])
 
     @property
     def diam(self):
@@ -864,7 +864,6 @@ class WholeCellAttributes:
         self._diam = value
         self.patch.diam = self._diam
         self._set_g_pas(self.Rin,  [self.patch])
-        self._set_cap(value, [self.patch])
 
 
 class ModelWholeCellPatch(ModelPatchWithChannels, WholeCellAttributes):
@@ -900,7 +899,7 @@ class ModelWholeCellPatch(ModelPatchWithChannels, WholeCellAttributes):
             cap = cm*area #should be in nF
             self._cap = cap
         else:
-            self._set_cap(cap, [self.patch])
+            self.set_cap(cap, [self.patch])
 
 
 
@@ -977,7 +976,7 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
             cap = cm*area #should be in nF
             self._cap = cap
         else:
-            self._set_cap(cap, [self.patch])
+            self.set_cap(cap, [self.patch])
         self.t_decay = t_decay
         self.Kb = buffer_capacity
         self.memb_shell_width = membrane_shell_width

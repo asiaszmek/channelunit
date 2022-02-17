@@ -5,6 +5,7 @@ import numpy as np
 
 
 from channelunit import ModelWholeCellPatch
+from channelunit import ModelWholeCellPatchOneChannel
 from channelunit import ModelWholeCellPatchCaShell
 from channelunit import ModelWholeCellPatchCaShellOneChannel
 from channelunit import data_path
@@ -20,7 +21,7 @@ class TestModelWholeCell(unittest.TestCase):
     def setUpClass(cls):
         cls.model = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
                                         {"na": 110},
-                                        gbar_names={"nap": "gnabar"}, cap=1)
+                                        gbar_names={"nap": "gnabar"}, cap=1, cm=2)
         cls.model_init = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
                                              external_conc={"na": 110},
                                              gbar_names={"nap": "gnabar"},
@@ -95,6 +96,45 @@ class TestModelWholeCell(unittest.TestCase):
         self.assertEqual(out.patch.cm, 2/area*1e5)
     
 
+class TestChangeL(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.model = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+                                        {"na": 110},
+                                        gbar_names={"nap": "gnabar"}, cap=1, cm=2)
+        cls.old_gpas = cls.model.patch.g_pas
+        cls.model.L = 100
+
+    def test_changing_L(self):
+        self.assertEqual(self.model.L, 100)
+
+
+    def test_same_diam(self):
+        self.assertEqual(self.model.diam, 10)
+
+    def test_changing_g_pas(self):
+        self.assertTrue(np.isclose(self.model.patch.g_pas, self.old_gpas/10))
+
+
+class TestChangeDiam(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.model = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+                                        {"na": 110},
+                                        gbar_names={"nap": "gnabar"}, cap=1, cm=2)
+        cls.old_gpas = cls.model.patch.g_pas
+        cls.model.diam = 100
+
+    def test_changing_diam(self):
+        self.assertEqual(self.model.diam, 100)
+
+    def test_same_L(self):
+        self.assertEqual(self.model.L, 10)
+
+    def test_changing_g_pas(self):
+        self.assertEqual(self.model.patch.g_pas, self.old_gpas/10)
+
+        
 class TestPatchWithCa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -119,6 +159,29 @@ class TestPatchWithCa(unittest.TestCase):
                           channel_loc,
                           "callHGHK", "cal", 1.5)
 
+
+class TestModelWholeCellPatchOneChannel(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.model = ModelWholeCellPatchOneChannel(channel_loc,
+                                                  "nap", "na", external_conc=110,
+                                                  gbar_name="gnabar")
+
+    def test_channel_names(self):
+        self.assertEqual(self.model.channel_names, ["nap"])
+
+    def test_channels(self):
+        keys = self.model.patch.psection()["density_mechs"]
+        self.assertEqual(sorted(keys), ["nap", "pas"])
+
+    def test_ion_names(self):
+        self.assertEqual(["na"], self.model.ion_names)
+
+    def test_ext_conc(self):
+        self.assertEqual(self.model.external_conc, {"na": 110, "Ca": None})
+
+    def test_gbar_name(self):
+        self.assertEqual(self.model.gbar_names, {"nap": "gnabar"}) 
 
 
 if __name__ == "__main__":
