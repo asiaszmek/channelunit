@@ -23,7 +23,7 @@ memb_shell_width = .1
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
 
-class ModelPatch(sciunit.Model):
+class MembranePatch(sciunit.Model):
     def __init__(self, temp=22, Rm=20000, cm=1,
                  v_rest=-65, ljp=0,
                  cvode=True, sim_dt=0.001):
@@ -152,7 +152,7 @@ class ModelPatch(sciunit.Model):
         self.patch.g_pas = 1/value
 
 
-class ModelPatchWithChannels(ModelPatch, NModlChannel):
+class ModelPatch(MembranePatch, NModlChannel):
     _nai = 10  # mM
     _ki = 140  # mM
     _cai = 100e-6  # mM
@@ -178,12 +178,12 @@ class ModelPatchWithChannels(ModelPatch, NModlChannel):
         self.channel_names = []
         self.mod_path = path_to_mods
         self.compile_and_add(self.mod_path, recompile)
-        super(ModelPatchWithChannels, self).__init__(temp=temp, 
-                                                     Rm=Rm, cm=cm,
-                                                     v_rest=v_rest,
-                                                     ljp=ljp,
-                                                     cvode=cvode,
-                                                     sim_dt=sim_dt,)
+        super(ModelPatch, self).__init__(temp=temp, 
+                                         Rm=Rm, cm=cm,
+                                         v_rest=v_rest,
+                                         ljp=ljp,
+                                         cvode=cvode,
+                                         sim_dt=sim_dt,)
 
         self.channels = []
         self.gbar_names = {}
@@ -866,7 +866,7 @@ class WholeCellAttributes:
         self._set_g_pas(self.Rin,  [self.patch])
 
 
-class ModelWholeCellPatch(ModelPatchWithChannels, WholeCellAttributes):
+class ModelWholeCellPatch(ModelPatch, WholeCellAttributes):
     """
     Rin -- in ohms
     """
@@ -903,7 +903,7 @@ class ModelWholeCellPatch(ModelPatchWithChannels, WholeCellAttributes):
 
 
 
-class ModelWholeCellPatchOneChannel(ModelWholeCellPatch):
+class ModelWholeCellPatchSingleChan(ModelWholeCellPatch):
     def __init__(self, path_to_mods: str, channel_name: str,
                  ion_name: str, external_conc=None,
                  gbar_name="gbar", temp=22, recompile=True,
@@ -920,7 +920,7 @@ class ModelWholeCellPatchOneChannel(ModelWholeCellPatch):
         gbar_names = {channel_name: gbar_name}
         gbar_values = {channel_name: gbar_value}
         E_rev = {channel_name: E_rev}
-        super(ModelWholeCellPatchOneChannel, self).__init__(path_to_mods,
+        super(ModelWholeCellPatchSingleChan, self).__init__(path_to_mods,
                                                             channel_names,
                                                             ion_names,
                                                             external_conc=ext_conc_dict,
@@ -938,7 +938,7 @@ class ModelWholeCellPatchOneChannel(ModelWholeCellPatch):
         
 
 
-class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
+class ModelWholeCellPatchCa(ModelPatch, WholeCellAttributes):
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
                  external_conc: dict, E_rev={}, gbar_names={}, temp=22, recompile=True,
                  ljp=0, cvode=True, Rin=200e6, cap=None, cm=1,
@@ -952,7 +952,7 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
         cm -- membrane capacitance 1 uF/cm2
         """
             
-        super(ModelWholeCellPatchCaShell, self).__init__(path_to_mods,
+        super(ModelWholeCellPatchCa, self).__init__(path_to_mods,
                                                          channel_names,
                                                          ion_names,
                                                          external_conc=external_conc,
@@ -1100,9 +1100,11 @@ class ModelWholeCellPatchCaShell(ModelPatchWithChannels, WholeCellAttributes):
             raise SystemExit("Unknown ion %s. I only know Ca and ca"
                              % self.ion_name )
 
-class ModelWholeCellPatchCaShellOneChannel(ModelWholeCellPatchCaShell):
-    def __init__(self, path_to_mods: str, channel_name: str, ion_name: str, external_conc,
-                 E_rev={}, gbar_name="gbar", temp=22, recompile=True, L=10, diam=10, Ra=100,
+class ModelWholeCellPatchCaSingleChan(ModelWholeCellPatchCa):
+    def __init__(self, path_to_mods: str, channel_name: str, ion_name: str,
+                 external_conc,
+                 E_rev={}, gbar_name="gbar", temp=22, recompile=True, L=10,
+                 diam=10, Ra=100,
                  ljp=0, cvode=True,  Rin=200e6, cap=None, cm=1,
                  v_rest=-65, gbar_value=0.001,
                  t_decay=20,
@@ -1116,21 +1118,25 @@ class ModelWholeCellPatchCaShellOneChannel(ModelWholeCellPatchCaShell):
             raise SystemError("Ca external conc needs to be specified")
         gbar_names = {channel_name: gbar_name}
         gbar_values = {channel_name: gbar_value}
-        super(ModelWholeCellPatchCaShellOneChannel, self).__init__(path_to_mods,
-                                                                   channel_names,
-                                                                   ion_names,
-                                                                   external_conc = ext_conc_dict,
-                                                                   E_rev=E_rev,
-                                                                   gbar_names=gbar_names,
-                                                                   gbar_values=gbar_values,
-                                                                   temp=temp,
-                                                                   recompile=recompile,
-                                                                   ljp=ljp,
-                                                                   cvode=cvode, v_rest=v_rest, Rin=Rin,
-                                                                   cap=cap, cm=cm,
-                                                                   t_decay=t_decay, L=L, diam=diam, Ra=Ra,
-                                                                   buffer_capacity=buffer_capacity,
-                                                                   membrane_shell_width=membrane_shell_width)
+        super(ModelWholeCellPatchCaSingleChan, self).__init__(path_to_mods,
+                                                              channel_names,
+                                                              ion_names,
+                                                              external_conc=ext_conc_dict,
+                                                              E_rev=E_rev,
+                                                              gbar_names=gbar_names,
+                                                              gbar_values=gbar_values,
+                                                              temp=temp,
+                                                              recompile=recompile,
+                                                              ljp=ljp,
+                                                              cvode=cvode,
+                                                              v_rest=v_rest,
+                                                              Rin=Rin,
+                                                              cap=cap, cm=cm,
+                                                              t_decay=t_decay,
+                                                              L=L, diam=diam,
+                                                              Ra=Ra,
+                                                              buffer_capacity=buffer_capacity,
+                                                              membrane_shell_width=membrane_shell_width)
 
 
 class ModelOocyte(ModelWholeCellPatch):
@@ -1151,7 +1157,7 @@ class ModelOocyte(ModelWholeCellPatch):
                                           gbar_values=gbar_values)
 
 
-class ModelOocyteCa(ModelWholeCellPatchCaShell):
+class ModelOocyteCa(ModelWholeCellPatchCa):
     #parameters from  PMID: 20737886 DOI: 10.1016/0012-1606(81)90417-6
     # (electric)
     #Ca params from https://doi.org/10.1016/j.ydbio.2005.10.034
@@ -1169,3 +1175,11 @@ class ModelOocyteCa(ModelWholeCellPatchCaShell):
                                             Rin=1.86e6, cap=None, cm=12,
                                             v_rest=-50, gbar_values=gbar_values,
                                             t_decay=8e3)
+
+
+class GiantExcisedPatch(ModelPatch):
+    pass
+
+
+class GiantExcisedPatchCa(ModelPatchCa):
+    pass

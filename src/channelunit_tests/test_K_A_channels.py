@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 from channelunit.tests import ActivationSteadyStateTest
-from channelunit import ModelWholeCellPatchOneChannel
+from channelunit import ModelWholeCellPatchSingleChan
 from channelunit import data_path
 
 
@@ -24,7 +24,7 @@ inactivation_loc_K_A = os.path.join(data_path, "data",
 class TestProximalKA(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelKad = ModelWholeCellPatchOneChannel(channel_loc,
+        cls.modelKad = ModelWholeCellPatchSingleChan(channel_loc,
                                                      "kad",
                                                      "k",
                                                      external_conc=2.5,
@@ -81,7 +81,7 @@ class TestDistalKA(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         
-        cls.modelKap = ModelWholeCellPatchOneChannel(channel_loc,
+        cls.modelKap = ModelWholeCellPatchSingleChan(channel_loc,
                                                      "kap",
                                                      "k",
                                                      external_conc=2.5,

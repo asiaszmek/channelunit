@@ -5,9 +5,9 @@ import numpy as np
 
 
 from channelunit import ModelWholeCellPatch
-from channelunit import ModelWholeCellPatchOneChannel
-from channelunit import ModelWholeCellPatchCaShell
-from channelunit import ModelWholeCellPatchCaShellOneChannel
+from channelunit import ModelWholeCellPatchSingleChan
+from channelunit import ModelWholeCellPatchCa
+from channelunit import ModelWholeCellPatchCaSingleChan
 from channelunit import data_path
 
 channel_loc = os.path.join(data_path, "ion_channels")
@@ -138,32 +138,32 @@ class TestChangeDiam(unittest.TestCase):
 class TestPatchWithCa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelcaghk = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+        cls.modelcaghk = ModelWholeCellPatchCaSingleChan(channel_loc,
                                                               "calHGHK", "ca",
                                                               1.5)
-        cls.modelCaghk = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+        cls.modelCaghk = ModelWholeCellPatchCaSingleChan(channel_loc,
                                                               "CalHGHK","Ca",
                                                               1.5)
-        cls.modelca_eca = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+        cls.modelca_eca = ModelWholeCellPatchCaSingleChan(channel_loc,
                                                                "calH_eca",
                                                                "ca",
                                                                1.5,
                                                                gbar_name="gcal")
-        cls.modelCa_eCa = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+        cls.modelCa_eCa = ModelWholeCellPatchCaSingleChan(channel_loc,
                                                                "CalH_eCa",
                                                                "Ca", 1.5,
                                                                gbar_name="gCal")
 
     def test_raises(self):
-        self.assertRaises(SystemExit, ModelWholeCellPatchCaShellOneChannel,
+        self.assertRaises(SystemExit, ModelWholeCellPatchCaSingleChan,
                           channel_loc,
                           "callHGHK", "cal", 1.5)
 
 
-class TestModelWholeCellPatchOneChannel(unittest.TestCase):
+class TestModelWholeCellPatchSingleChan(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.model = ModelWholeCellPatchOneChannel(channel_loc,
+        cls.model = ModelWholeCellPatchSingleChan(channel_loc,
                                                   "nap", "na", external_conc=110,
                                                   gbar_name="gnabar")
 

@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from channelunit.model_patch import ModelPatchWithChannels
+from channelunit.model_patch import ModelPatch
 from channelunit import data_path
 
 loc = os.path.dirname(os.path.abspath(__file__))
@@ -14,30 +14,30 @@ DT = 0.1
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
 
-class TestModelPatchWithChannels(unittest.TestCase):
+class TestModelPatch(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelJ = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
+        cls.modelJ = ModelPatch(channel_loc, ["nap"], ["na"],
                                             {"na": 110},
                                             gbar_names={"nap": "gnabar"},
                                             ljp=10, cm=3)
 
-        cls.modelNJ = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
+        cls.modelNJ = ModelPatch(channel_loc, ["nap"], ["na"],
                                              {"na": 110},
                                              gbar_names={"nap": "gnabar"},
                                              ljp=0)
 
-        cls.modelK = ModelPatchWithChannels(channel_loc, ["kad"], ["k"],
+        cls.modelK = ModelPatch(channel_loc, ["kad"], ["k"],
                                             {"k": 2.5},
                                             ljp=0)
 
-        cls.modelca = ModelPatchWithChannels(channel_loc, ["CalH_eCa"], ["Ca"],
+        cls.modelca = ModelPatch(channel_loc, ["CalH_eCa"], ["Ca"],
                                              {"Ca": 2},
                                              gbar_names={"CalH_eCa":
                                                          "gCalbar"},
                                              gbar_values={"CalH_eCa":0.001},
                                              ljp=0)
-        cls.modelmoreions = ModelPatchWithChannels(channel_loc,
+        cls.modelmoreions = ModelPatch(channel_loc,
                                                    ["nax", "kap"],
                                                    ["na", "k"],
                                                    E_rev={"na": 40})
@@ -57,37 +57,37 @@ class TestModelPatchWithChannels(unittest.TestCase):
         self.assertEqual({"na": 40, "k": -77},
                          self.modelmoreions.E_rev)
     def test_reading_in_no_gbar(self):
-        self.assertRaises(SystemExit,  ModelPatchWithChannels,
+        self.assertRaises(SystemExit,  ModelPatch,
                           channel_loc, ["na3"], ["na"],
                           gbar_names={"na3": "gbar1"})
 
     def test_setup_gbar(self):
-        out = ModelPatchWithChannels(channel_loc, ["nax"], ["na"])
+        out = ModelPatch(channel_loc, ["nax"], ["na"])
         gbar = out.patch.psection()["density_mechs"]["nax"]["gbar"]
         self.assertEqual(0.001, gbar[0])
 
     def test_setup_gbar_custom(self):
-        out = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
+        out = ModelPatch(channel_loc, ["nap"], ["na"],
                                      gbar_names={"nap": "gnabar"})
         gbar = out.patch.psection()["density_mechs"]["nap"]["gnabar"]
         self.assertEqual(0.001, gbar[0])
 
     def test_setup_gbar_custom_value(self):
-        out = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
+        out = ModelPatch(channel_loc, ["nap"], ["na"],
                                      gbar_names={"nap": "gnabar"},
                                      gbar_values={"nap": 1})
         gbar = out.patch.psection()["density_mechs"]["nap"]["gnabar"]
         self.assertEqual(1, gbar[0])
         
     def test_Rm(self):
-        out = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
+        out = ModelPatch(channel_loc, ["nap"], ["na"],
                                      external_conc={"na": 110},
                                      gbar_names={"nap": "gnabar"},
                                      Rm=50000)
         self.assertEqual(out.patch.g_pas, 1/50000)
 
     def test_gbar_1(self):
-        out = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
+        out = ModelPatch(channel_loc, ["nap"], ["na"],
                                      external_conc= {"na": 110},
                                      gbar_names={"nap": "gnabar"},
                                      Rm=50000,
@@ -95,7 +95,7 @@ class TestModelPatchWithChannels(unittest.TestCase):
         self.assertEqual(1, out.get_gbar("nap"))
 
     def test_gbar_2(self):
-        out = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
+        out = ModelPatch(channel_loc, ["nap"], ["na"],
                                      external_conc={"na": 110},
                                      gbar_names={"nap": "gnabar"},
                                      Rm=50000, gbar_values={"nap": 1})
@@ -104,17 +104,17 @@ class TestModelPatchWithChannels(unittest.TestCase):
  
     def test_max_of_dict(self):
         dict1 = {1: np.array([1,3,4,1]), 2: np.array([2,2,2,1])}
-        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1),
+        self.assertEqual(ModelPatch.get_max_of_dict(dict1),
                          {1: 4, 2:2})
 
     def test_max_of_dict_1(self):
         dict1 = {1: np.array([-1, -3, -4, -1]), 2: np.array([-2,-2,-2,-1])}
-        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1),
+        self.assertEqual(ModelPatch.get_max_of_dict(dict1),
                          {1: -4, 2:-2})
     
     def test_max_of_dict_3(self):
         dict1 = {1: np.array([1,3,4,1]), 2: np.array([-2,-2,-2,1])}
-        self.assertEqual(ModelPatchWithChannels.get_max_of_dict(dict1),
+        self.assertEqual(ModelPatch.get_max_of_dict(dict1),
                          {1: 4, 2:-2})
   
     def test_extract_current_chord_conductance(self):
@@ -213,35 +213,35 @@ class TestModelPatchWithChannels(unittest.TestCase):
         self.assertEqual(self.modelNJ.patch.ena, new_E_rev)
 
     def test_reading_in_easy(self):
-        out = ModelPatchWithChannels(channel_loc, ["na3"], ["na"], {"na": 140})
+        out = ModelPatch(channel_loc, ["na3"], ["na"], {"na": 140})
         self.assertTrue(np.isclose(67.12194015207108, out.E_rev["na"]))
 
     def test_reading_in_easy_2(self):
-        out = ModelPatchWithChannels(channel_loc, ["na3"], ["na"], {"na": 140})
+        out = ModelPatch(channel_loc, ["na3"], ["na"], {"na": 140})
         out.run(1)
         self.assertTrue(np.isclose(67.12194015207108, out.patch.ena))
         
     def test_reading_in_provide_E_rev(self):
-        out = ModelPatchWithChannels(channel_loc, ["na3"], ["na"], E_rev={"na": 40})
+        out = ModelPatch(channel_loc, ["na3"], ["na"], E_rev={"na": 40})
         out.run(1)
         self.assertEqual(40, out.patch.ena)
 
     def test_reading_in_provide_E_rev_2(self):
-        out = ModelPatchWithChannels(channel_loc, ["na3"], ["na"],
+        out = ModelPatch(channel_loc, ["na3"], ["na"],
                                      E_rev={"na": 40})
         self.assertEqual(40, out.E_rev["na"])
 
     def test_no_E_rev_name(self):
-        self.assertRaises(SystemExit,  ModelPatchWithChannels,
+        self.assertRaises(SystemExit,  ModelPatch,
                           channel_loc, ["hd"], ["nonspecific"])
 
     def test_no_E_rev_name_provide_E_rev(self):
-        out = ModelPatchWithChannels(channel_loc, ["hd"], ["nonspecific"],
+        out = ModelPatch(channel_loc, ["hd"], ["nonspecific"],
                                      E_rev={"nonspecific": -30})
         self.assertEqual(-30, out.E_rev["nonspecific"])
 
     def test_setup_ext_conc_e_rev(self):
-        out = ModelPatchWithChannels(channel_loc, ["nax"], ["na"],
+        out = ModelPatch(channel_loc, ["nax"], ["na"],
                                      external_conc={"na": 140},
                                      E_rev={"na": -30})
         conc_fact = np.log(out.external_conc["na"]/out.nai)
@@ -249,7 +249,7 @@ class TestModelPatchWithChannels(unittest.TestCase):
         self.assertEqual(out.E_rev["na"], new_E_rev)
 
     def test_setup_ext_conc_e_rev_2(self):
-        out = ModelPatchWithChannels(channel_loc, ["nax"], ["na"],
+        out = ModelPatch(channel_loc, ["nax"], ["na"],
                                      external_conc={"na": 140},
                                      E_rev={"na": -30})
         conc_fact = np.log(out.external_conc["na"]/out.nai)
@@ -258,7 +258,7 @@ class TestModelPatchWithChannels(unittest.TestCase):
         self.assertEqual(out.patch.ena, new_E_rev)
 
     def test_calc_E_rev(self):
-        out = ModelPatchWithChannels(channel_loc, ["nap"], ["na"],
+        out = ModelPatch(channel_loc, ["nap"], ["na"],
                                      gbar_names={"nap": "gnabar"})
         val = out.calc_E_rev("na")
         self.assertEqual(50, val) 
@@ -267,7 +267,7 @@ class TestModelPatchWithChannels(unittest.TestCase):
 class TestAddSingleChannel(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.out = out = ModelPatchWithChannels(channel_loc, ["nax"], ["na"],
+        cls.out = out = ModelPatch(channel_loc, ["nax"], ["na"],
                                             {"na": 110})
         cls.out.add_channel("nap", "gnabar", .02)
         
@@ -285,7 +285,7 @@ class TestAddSingleChannel(unittest.TestCase):
 class TestCapabilites(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelY = ModelPatchWithChannels(channel_loc, ["na3"], ["na"],
+        cls.modelY = ModelPatch(channel_loc, ["na3"], ["na"],
                                             gbar_names={"na3": "gbar"},
                                             E_rev={"na": 40},
                                             cvode=True)
@@ -304,7 +304,7 @@ class TestCapabilites(unittest.TestCase):
             cls.stim_levels_inact, -5, 20, 1, chord_conductance=False,
             electrode_current=True)
 
-        cls.modelN = ModelPatchWithChannels(channel_loc, ["na3"], ["na"],
+        cls.modelN = ModelPatch(channel_loc, ["na3"], ["na"],
                                             gbar_names={"na3": "gbar"},
                                             E_rev={"na": 40},
                                             cvode=False)

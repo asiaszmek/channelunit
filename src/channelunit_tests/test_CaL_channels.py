@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 from channelunit.tests import ActivationSteadyStateTest
-from channelunit import ModelWholeCellPatchCaShellOneChannel
+from channelunit import ModelWholeCellPatchCaSingleChan
 from channelunit import data_path
 
 
@@ -21,7 +21,7 @@ activation_loc_Cal_110_Ba = os.path.join(data_path, "data",
 class TestCaLChannelsLowBariumba(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelBa20_H = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+        cls.modelBa20_H = ModelWholeCellPatchCaSingleChan(channel_loc,
                                                                "calHGHK",
                                                                "ba",
                                                                external_conc=20,
@@ -66,7 +66,7 @@ class TestCaLChannelsLowBariumBa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         
-        cls.modelBa20_HH = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+        cls.modelBa20_HH = ModelWholeCellPatchCaSingleChan(channel_loc,
                                                       "CalHGHK",
                                                       "Ba",
                                                       external_conc=20,
@@ -112,7 +112,7 @@ class TestCaLChannelsLowBariumBa(unittest.TestCase):
 class TestCaLChannelsLowCalciumca(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelCa20_H = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+        cls.modelCa20_H = ModelWholeCellPatchCaSingleChan(channel_loc,
                                                      "calHGHK",
                                                      "ca",
                                                      external_conc=1.5,
@@ -160,7 +160,7 @@ class TestCaLChannelsLowCalciumCa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         
-        cls.modelCa20_HH = ModelWholeCellPatchCaShellOneChannel(channel_loc,
+        cls.modelCa20_HH = ModelWholeCellPatchCaSingleChan(channel_loc,
                                                                 "CalHGHK",
                                                                 "Ca",
                                                                 external_conc=1.5,

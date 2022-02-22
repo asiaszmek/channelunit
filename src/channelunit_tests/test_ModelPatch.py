@@ -3,14 +3,14 @@ import unittest
 
 import numpy as np
 
-from channelunit.model_patch import ModelPatch
+from channelunit.model_patch import MembranePatch
 
 class TestVclamp(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelljp1 = ModelPatch(ljp=10)
-        cls.modelljp2 = ModelPatch(ljp=10, cm=2)
-        cls.model =  ModelPatch()
+        cls.modelljp1 = MembranePatch(ljp=10)
+        cls.modelljp2 = MembranePatch(ljp=10, cm=2)
+        cls.model =  MembranePatch()
         cls.modelljp1.set_vclamp(10, 10, 100, 100, False)
         cls.dur1 = 10
         cls.dur2 = 20
@@ -43,7 +43,7 @@ class TestVclamp(unittest.TestCase):
         self.assertEqual(2, self.modelljp1.patch.cm)
 
     def test_Rm_setter(self):
-        out = ModelPatch()
+        out = MembranePatch()
         out.Rm = 10e3
         self.assertTrue(np.isclose(out.patch.g_pas, 1/10e3))
 
@@ -185,7 +185,7 @@ class TestVclamp(unittest.TestCase):
 class TestSubtractPassiveProperties(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelljp2 = ModelPatch(ljp=10, cm=2)
+        cls.modelljp2 = MembranePatch(ljp=10, cm=2)
         cls.dur1 = 10
         cls.dur2 = 20
         cls.delay = 30
@@ -248,9 +248,9 @@ class TestSubtractPassiveProperties(unittest.TestCase):
 class TestNonDefaultInit(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ND = ModelPatch(temp=37, Rm=50000, v_rest=-80,
-                            ljp=1, cvode=False,
-                            sim_dt=0.01)
+        cls.ND = MembranePatch(temp=37, Rm=50000, v_rest=-80,
+                               ljp=1, cvode=False,
+                               sim_dt=0.01)
 
     def test_non_default_temp(self):
         self.assertEqual(self.ND.temperature, 37)
