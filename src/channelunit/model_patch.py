@@ -806,6 +806,145 @@ class ModelPatch(MembranePatch, NModlChannel):
             self.patch.ena = self.E_rev["na"]
 
 
+class ModelPatchCa(ModelPatch):
+    def __init__(self, path_to_mods: str, channel_names: list, ion_names: list,
+                 external_conc={}, E_rev={},
+                 gbar_names={}, gbar_values={},
+                 temp=22, recompile=True, ljp=0, cvode=True,
+                 Rm=20000, cm=1, v_rest=-65, directory="validation_results",
+                 sim_dt=0.001, t_decay=20, L=10, diam=10, Ra=100,
+                 buffer_capacity=18,
+                 membrane_shell_width=memb_shell_width):
+        super(ModelPatchCa, self).__init__(path_to_mods, channel_names, ion_names,
+                                           external_conc=external_conc, E_rev=E_rev,
+                                           gbar_names=gbar_names, gbar_values=gbar_values,
+                                           temp=temp, recompile=recompile, ljp=ljp,
+                                           cvode=cvode, Rm=Rm, cm=cm, v_rest=v_rest,
+                                           directory=directory, sim_dt=sim_dt)
+
+        self.t_decay = t_decay
+        self.Kb = buffer_capacity
+        self.memb_shell_width = membrane_shell_width
+        self.geom = rxd.Shell(1- self.memb_shell_width, 1)
+        self.memb_shell = rxd.Region(self.patch,
+                                     geometry=self.geom,
+                                     nrn_region="i",
+                                     name="membrane_shell")
+        old_saf = self.geom.surface_areas1d
+        self.geom.surface_areas1d = lambda sec: old_saf(sec)/self.Kb
+        if "ca" in self.ion_names:
+            self.ca = rxd.Species(self.memb_shell, d=0.2,
+                                  name='ca', charge=2,
+                                  initial=self._cai,
+                                  atolscale=1e-9)
+            h.cao0_ca_ion = self.external_conc["Ca"]
+
+        elif "Ca" in self.ion_names:
+            self.ca = rxd.Species(self.memb_shell, d=0.2,
+                                  name='Ca', charge=2,
+                                  initial=self._cai,
+                                  atolscale=1e-9)
+            h.Cao0_Ca_ion = self.external_conc["Ca"]
+            
+        elif "Ba" in self.ion_names:
+            self.ca = rxd.Species(self.memb_shell, d=0.2,
+                                  name='Ca', charge=2,
+                                  initial=0,
+                                  atolscale=1e-9)
+            self._cai = 0
+            self.E_rev["Ca"] = None
+            h.Cao0_Ca_ion = self.external_conc["Ca"]
+            for channel_name in self.channel_names:
+                chan = self.patch.psection()["density_mechs"][channel_name]
+                for i, seg in enumerate(self.patch):
+                    from_mech = getattr(seg, channel_name)
+                    gbar_val = 2*chan[self.gbar_names[channel_name]][i]
+                    setattr(from_mech, self.gbar_names[channel_name], gbar_val)
+        elif "ba" in self.ion_names:
+            self.ca = rxd.Species(self.memb_shell, d=0.2,
+                                  name='ca', charge=2,
+                                  initial=0,
+                                  atolscale=1e-9)
+            self._cai = 0
+            self.E_rev["ca"] = None
+            h.cao0_ca_ion = self.external_conc["Ca"]
+            for channel_name in self.channel_names:
+                chan = self.patch.psection()["density_mechs"][channel_name]
+                for i, seg in enumerate(self.patch):
+                    from_mech = getattr(seg, channel_name)
+                    gbar_val = 2*chan[self.gbar_names[channel_name]][i]
+                    setattr(from_mech, self.gbar_names[channel_name], gbar_val)
+
+        self.decay_eq = (self._cai - self.ca)/self.t_decay
+        self.ca_decay = rxd.Rate(self.ca, self.decay_eq)
+
+    @property
+    def cai(self):
+        if self.ion_name == "ca":
+            return self.patch.cainf_cad
+        elif self.ion_name == "Ca":
+            return self.patch.cainf_Cad
+        elif self.ion_name == "ba":
+            return 0
+        elif self.ion_name == "Ba":
+            return 0
+
+    @cai.setter
+    def cai(self, value):
+        self._cai = value
+        if self.ion_name.lower() == "ca":
+            self.patch.cainf_cad = self._cai
+            self.patch.eca = self.calc_E_rev("ca",
+                                             external=self.external_conc["Ca"])
+        elif self.ion_name == "Ca":
+            self.patch.cainf_Cad = self._cai
+            self.patch.eCa = self.calc_E_rev("Ca",
+                                             external=self.external_conc["Ca"])
+                             
+    @property
+    def Cai(self):
+        if self.ion_name == "ca":
+            return self.patch.cainf_cad
+        elif self.ion_name == "Ca":
+            return self.patch.cainf_cad
+        else:
+            return 0
+
+    @cai.setter
+    def Cai(self, value):
+        self._cai = value
+        if self.ion_name.lower() == "ca":
+            self.patch.cainf_cad = self._cai
+            self.patch.eca = self.calc_E_rev("ca",
+                                            external=self.external_conc["Ca"])
+        elif self.ion_name == "Ca":
+            self.patch.cainf_Cad = self._cai
+            self.patch.eCa = self.calc_E_rev("Ca",
+                                            external=self.external_conc["Ca"])
+
+    @property
+    def Ca_ext(self):
+        return  self.external_conc["Ca"]
+
+    @Ca_ext.setter
+    def Ca_ext(self, value):
+        self._Ca_ext = value
+        if self.ca_ion == "ca":
+            h.cao0_ca_ion = self._Ca_ext
+            self.patch.eca = self.calc_E_rev("ca",
+                                            external=self.external_conc["Ca"])
+        elif self.ca_ion == "Ca":
+            h.Cao0_Ca_ion = self._Ca_ext
+            self.patch.eCa = self.calc_E_rev("Ca",
+                                            external=self.external_conc["Ca"])
+        elif self.ca_ion == "Ba":
+            h.Cao0_Ca_ion = self.external_conc["Ca"]
+        elif self.ca_ion == "ba":
+            h.cao0_ca_ion = self.external_conc["Ca"]
+        else:
+            raise SystemExit("Unknown ion %s. I only know Ca and ca"
+                             % self.ion_name )
+        
 class WholeCellAttributes:
 
     def area(self, sec_list):
@@ -938,7 +1077,7 @@ class ModelWholeCellPatchSingleChan(ModelWholeCellPatch):
         
 
 
-class ModelWholeCellPatchCa(ModelPatch, WholeCellAttributes):
+class ModelWholeCellPatchCa(ModelPatchCa, WholeCellAttributes):
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
                  external_conc: dict, E_rev={}, gbar_names={}, temp=22, recompile=True,
                  ljp=0, cvode=True, Rin=200e6, cap=None, cm=1,
@@ -953,18 +1092,21 @@ class ModelWholeCellPatchCa(ModelPatch, WholeCellAttributes):
         """
             
         super(ModelWholeCellPatchCa, self).__init__(path_to_mods,
-                                                         channel_names,
-                                                         ion_names,
-                                                         external_conc=external_conc,
-                                                         E_rev=E_rev,
-                                                         gbar_names=gbar_names,
-                                                         temp=temp,
-                                                         recompile=recompile,
-                                                         ljp=ljp,
-                                                         cvode=cvode,
-                                                         Rm=20000, cm=cm,
-                                                         v_rest=v_rest,
-                                                         gbar_values=gbar_values)
+                                                    channel_names,
+                                                    ion_names,
+                                                    external_conc=external_conc,
+                                                    E_rev=E_rev,
+                                                    gbar_names=gbar_names,
+                                                    temp=temp,
+                                                    recompile=recompile,
+                                                    ljp=ljp,
+                                                    cvode=cvode,
+                                                    Rm=20000, cm=cm,
+                                                    v_rest=v_rest,
+                                                    gbar_values=gbar_values,
+                                                    t_decay=t_decay, Ra=Ra,
+                                                    buffer_capacity=buffer_capacity,
+                                                    membrane_shell_width=membrane_shell_width)
         self._L = L
         self._diam = diam
         self.patch.L = self._L
@@ -977,128 +1119,7 @@ class ModelWholeCellPatchCa(ModelPatch, WholeCellAttributes):
             self._cap = cap
         else:
             self.set_cap(cap, [self.patch])
-        self.t_decay = t_decay
-        self.Kb = buffer_capacity
-        self.memb_shell_width = membrane_shell_width
-        self.geom = rxd.Shell(1- self.memb_shell_width, 1)
-        self.memb_shell = rxd.Region(self.patch,
-                                     geometry=self.geom,
-                                     nrn_region="i",
-                                     name="membrane_shell")
-        old_saf = self.geom.surface_areas1d
-        self.geom.surface_areas1d = lambda sec: old_saf(sec)/self.Kb
-        if "ca" in self.ion_names:
-            self.ca = rxd.Species(self.memb_shell, d=0.2,
-                                  name='ca', charge=2,
-                                  initial=self._cai,
-                                  atolscale=1e-9)
-            h.cao0_ca_ion = self.external_conc["Ca"]
 
-        elif "Ca" in self.ion_names:
-            self.ca = rxd.Species(self.memb_shell, d=0.2,
-                                  name='Ca', charge=2,
-                                  initial=self._cai,
-                                  atolscale=1e-9)
-            h.Cao0_Ca_ion = self.external_conc["Ca"]
-            
-        elif "Ba" in self.ion_names:
-            self.ca = rxd.Species(self.memb_shell, d=0.2,
-                                  name='Ca', charge=2,
-                                  initial=0,
-                                  atolscale=1e-9)
-            self._cai = 0
-            self.E_rev["Ca"] = None
-            h.Cao0_Ca_ion = self.external_conc["Ca"]
-            for channel_name in self.channel_names:
-                chan = self.patch.psection()["density_mechs"][channel_name]
-                for i, seg in enumerate(self.patch):
-                    from_mech = getattr(seg, channel_name)
-                    gbar_val = 2*chan[self.gbar_names[channel_name]][i]
-                    setattr(from_mech, self.gbar_names[channel_name], gbar_val)
-        elif "ba" in self.ion_names:
-            self.ca = rxd.Species(self.memb_shell, d=0.2,
-                                  name='ca', charge=2,
-                                  initial=0,
-                                  atolscale=1e-9)
-            self._cai = 0
-            self.E_rev["ca"] = None
-            h.cao0_ca_ion = self.external_conc["Ca"]
-            for channel_name in self.channel_names:
-                chan = self.patch.psection()["density_mechs"][channel_name]
-                for i, seg in enumerate(self.patch):
-                    from_mech = getattr(seg, channel_name)
-                    gbar_val = 2*chan[self.gbar_names[channel_name]][i]
-                    setattr(from_mech, self.gbar_names[channel_name], gbar_val)
-
-        self.decay_eq = (self._cai - self.ca)/self.t_decay
-        self.ca_decay = rxd.Rate(self.ca, self.decay_eq)
-
-    @property
-    def cai(self):
-        if self.ion_name == "ca":
-            return self.patch.cainf_cad
-        elif self.ion_name == "Ca":
-            return self.patch.cainf_Cad
-        elif self.ion_name == "ba":
-            return 0
-        elif self.ion_name == "Ba":
-            return 0
-
-    @cai.setter
-    def cai(self, value):
-        self._cai = value
-        if self.ion_name.lower() == "ca":
-            self.patch.cainf_cad = self._cai
-            self.patch.eca = self.calc_E_rev("ca",
-                                             external=self.external_conc["Ca"])
-        elif self.ion_name == "Ca":
-            self.patch.cainf_Cad = self._cai
-            self.patch.eCa = self.calc_E_rev("Ca",
-                                             external=self.external_conc["Ca"])
-                             
-    @property
-    def Cai(self):
-        if self.ion_name == "ca":
-            return self.patch.cainf_cad
-        elif self.ion_name == "Ca":
-            return self.patch.cainf_cad
-        else:
-            return 0
-
-    @cai.setter
-    def Cai(self, value):
-        self._cai = value
-        if self.ion_name.lower() == "ca":
-            self.patch.cainf_cad = self._cai
-            self.patch.eca = self.calc_E_rev("ca",
-                                            external=self.external_conc["Ca"])
-        elif self.ion_name == "Ca":
-            self.patch.cainf_Cad = self._cai
-            self.patch.eCa = self.calc_E_rev("Ca",
-                                            external=self.external_conc["Ca"])
-
-    @property
-    def Ca_ext(self):
-        return  self.external_conc["Ca"]
-
-    @Ca_ext.setter
-    def Ca_ext(self, value):
-        self._Ca_ext = value
-        if self.ca_ion == "ca":
-            h.cao0_ca_ion = self._Ca_ext
-            self.patch.eca = self.calc_E_rev("ca",
-                                            external=self.external_conc["Ca"])
-        elif self.ca_ion == "Ca":
-            h.Cao0_Ca_ion = self._Ca_ext
-            self.patch.eCa = self.calc_E_rev("Ca",
-                                            external=self.external_conc["Ca"])
-        elif self.ca_ion == "Ba":
-            h.Cao0_Ca_ion = self.external_conc["Ca"]
-        elif self.ca_ion == "ba":
-            h.cao0_ca_ion = self.external_conc["Ca"]
-        else:
-            raise SystemExit("Unknown ion %s. I only know Ca and ca"
-                             % self.ion_name )
 
 class ModelWholeCellPatchCaSingleChan(ModelWholeCellPatchCa):
     def __init__(self, path_to_mods: str, channel_name: str, ion_name: str,
