@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-from .model_patches import ModelWholeCellPatch
-from .model_patches import ModelWholeCellPatchCa
-from .model_patches import ModelWholeCellPatchSingleChan
-from .model_patches import ModelWholeCellPatchCaSingleChan
-from .model_patches import ModelGiantExcisedPatch
-from .model_patches import ModelGiantExcisedPatchCa
-from .model_patches import ModelOocytePatch
-from .model_patches import ModelOocytePatchCa
+from .patch_models import ModelWholeCellPatch
+from .patch_models import ModelWholeCellPatchCa
+from .patch_models import ModelWholeCellPatchSingleChan
+from .patch_models import ModelWholeCellPatchCaSingleChan
+from .patch_models import ModelGiantExcisedPatch
+from .patch_models import ModelGiantExcisedPatchCa
+from .patch_models import ModelOocytePatch
+from .patch_models import ModelOocytePatchCa
 
 
 import os
