@@ -39,11 +39,11 @@ class ModelWholeCellPatch(ModelPatch, WholeCellAttributes):
             self._cap = cap
         else:
             self.set_cap(cap, [self.patch])
-        if R_in is None:
+        if Rin is None:
             area = self.area([self.patch])*1e-8
-            self.R_in = area * Rm
+            self._Rin = area * Rm
         else:
-            self._set_g_pas(R_in, [self.patch])
+            self._set_g_pas(Rin, [self.patch])
         self.vclamp.rs = 10
 
 class ModelWholeCellPatchSingleChan(ModelWholeCellPatch):
@@ -124,11 +124,11 @@ class ModelWholeCellPatchCa(ModelPatchCa, WholeCellAttributes):
             self._cap = cap
         else:
             self.set_cap(cap, [self.patch])
-        if R_in is None:
+        if Rin is None:
             area = self.area([self.patch])*1e-8
-            self.R_in = area * Rm
+            self._Rin = area * Rm
         else:
-            self._set_g_pas(R_in, [self.patch])
+            self._set_g_pas(Rin, [self.patch])
 
 
 class ModelWholeCellPatchCaSingleChan(ModelWholeCellPatchCa):
