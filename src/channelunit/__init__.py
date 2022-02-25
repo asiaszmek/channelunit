@@ -5,8 +5,10 @@ from .patch_models import ModelWholeCellPatchSingleChan
 from .patch_models import ModelWholeCellPatchCaSingleChan
 from .patch_models import ModelGiantExcisedPatch
 from .patch_models import ModelGiantExcisedPatchCa
-from .patch_models import ModelOocytePatch
-from .patch_models import ModelOocytePatchCa
+from .patch_models import ModelCellAttachedPatch
+from .patch_models import ModelCellAttachedPatchCa
+from .patch_models import ModelOocyte
+from .patch_models import ModelOocyteCa
 
 
 import os
