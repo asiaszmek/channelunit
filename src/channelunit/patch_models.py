@@ -328,3 +328,43 @@ class ModelCellAttachedPatchCa(ModelWholeCellPatchCa):
                                                         membrane_shell_width=0.1)
 
         self.vclamp.rs = 10e3
+
+
+class CaConcClamp(ModelGiantExcisedPatch):
+    def __init__(self, path_to_mods, channel_names: list, ion_names: list,
+                 external_conc={}, internal_conc={}, gbar_names={},
+                 temp=22, recompile=True, ljp=0, cvode=True,
+                 E_rev={}, gbar_values={}):
+        super(CaConcClamp, self).__init__(path_to_mods,
+                                          channel_names, ion_names,
+                                          external_conc=external_conc,
+                                          internal_conc=internal_conc,
+                                          gbar_names=gbar_names,
+                                          temp=temp,
+                                          recompile=recompile,
+                                          ljp=ljp, cvode=cvode,
+                                          E_rev=E_rev,
+                                          gbar_values=gbar_values)
+        self.memb_shell_width = membrane_shell_width
+        self.geom = rxd.Shell(1- self.memb_shell_width, 1)
+        self.memb_shell = rxd.Region(self.patch,
+                                     geometry=self.geom,
+                                     nrn_region="i",
+                                     name="membrane_shell")
+        for ion in internal_conc.keys():
+            if ion == "Ca":
+                self._cai = internal_conc[ion]
+                self.ca = rxd.Species(self.memb_shell, d=0.2,
+                                  name='Ca', charge=2,
+                                  initial=self._cai,
+                                  atolscale=1e-9)
+            elif ion == "ca":
+                self._cai = internal_conc[ion]
+                self.ca = rxd.Species(self.memb_shell, d=0.2,
+                                  name='ca', charge=2,
+                                  initial=self._cai,
+                                  atolscale=1e-9)
+            elif ion == "k":
+                self.ki = internal_conc[ion]
+            elif ion == "na":
+                self.nai = internal_conc[ion]

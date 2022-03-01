@@ -9,6 +9,7 @@ from .patch_models import ModelCellAttachedPatch
 from .patch_models import ModelCellAttachedPatchCa
 from .patch_models import ModelOocyte
 from .patch_models import ModelOocyteCa
+from .patch_models import CaConcClamp
 
 
 import os
