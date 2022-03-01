@@ -9,9 +9,15 @@ memb_shell_width = .1
 class TestVclamp(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelljp1 = MembranePatch(ljp=10)
-        cls.modelljp2 = MembranePatch(ljp=10, cm=2)
-        cls.model =  MembranePatch()
+        cls.modelljp1 = MembranePatch(temp=22, Rm=20000, cm=1,
+                                      v_rest=-65, ljp=10,
+                                      cvode=True, sim_dt=0.001)
+        cls.modelljp2 = MembranePatch(temp=22, Rm=20000, cm=2,
+                                      v_rest=-65, ljp=10,
+                                      cvode=True, sim_dt=0.001)
+        cls.model = MembranePatch(temp=22, Rm=20000, cm=1,
+                                  v_rest=-65, ljp=0,
+                                  cvode=True, sim_dt=0.001)
         cls.modelljp1.set_vclamp(10, 10, 100, 100, False)
         cls.dur1 = 10
         cls.dur2 = 20
@@ -44,7 +50,9 @@ class TestVclamp(unittest.TestCase):
         self.assertEqual(2, self.modelljp1.patch.cm)
 
     def test_Rm_setter(self):
-        out = MembranePatch()
+        out = MembranePatch(temp=22, Rm=20000, cm=1,
+                            v_rest=-65, ljp=0,
+                            cvode=True, sim_dt=0.001)
         out.Rm = 10e3
         self.assertTrue(np.isclose(out.patch.g_pas, 1/10e3))
 
@@ -186,7 +194,9 @@ class TestVclamp(unittest.TestCase):
 class TestSubtractPassiveProperties(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelljp2 = MembranePatch(ljp=10, cm=2)
+        cls.modelljp2 = MembranePatch(temp=22, Rm=20000, cm=2,
+                                      v_rest=-65, ljp=10,
+                                      cvode=True, sim_dt=0.001)
         cls.dur1 = 10
         cls.dur2 = 20
         cls.delay = 30
@@ -243,34 +253,7 @@ class TestSubtractPassiveProperties(unittest.TestCase):
                  + self.modelljp2.vclamp.amp9 + self.modelljp2.vclamp.amp11)
         out_2 = self.modelljp2.vclamp.amp2 - self.modelljp2.vclamp.amp1
         self.assertEqual(out_1-4*self.modelljp2.vclamp.amp10, out_2)
-
-
-        
-class TestNonDefaultInit(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.ND = MembranePatch(temp=37, Rm=50000, v_rest=-80,
-                               ljp=1, cvode=False,
-                               sim_dt=0.01)
-
-    def test_non_default_temp(self):
-        self.assertEqual(self.ND.temperature, 37)
-
-    def test_non_default_Rm(self):
-        self.assertTrue(np.isclose(self.ND.patch.g_pas, 1/50000))
-
-    def test_non_default_V_rest(self):
-        self.assertEqual(self.ND.patch.e_pas, -80)
-
-    def test_non_default_ljp(self):
-        self.assertEqual(self.ND.junction, 1)
-
-    def test_non_default_dt(self):
-        self.assertEqual(self.ND.sim_dt, 0.01)
-
-    def test_non_default_dt(self):
-        self.assertFalse(self.ND.cvode)
-
+      
 
 if __name__ == "__main__":
     unittest.main()

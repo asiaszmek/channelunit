@@ -18,29 +18,53 @@ class TestModelPatch(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.modelJ = ModelPatch(channel_loc, ["nap"], ["na"],
-                                            {"na": 110},
-                                            gbar_names={"nap": "gnabar"},
-                                            ljp=10, cm=3)
+                                {"na": 110},
+                                gbar_names={"nap": "gnabar"},
+                                internal_conc={},
+                                ljp=10, cm=3, E_rev={},
+                                gbar_values={},
+                                temp=22, recompile=True, cvode=True,
+                                Rm=20000, v_rest=-65,
+                                directory="validation_results",
+                                sim_dt=0.01)
 
         cls.modelNJ = ModelPatch(channel_loc, ["nap"], ["na"],
-                                             {"na": 110},
-                                             gbar_names={"nap": "gnabar"},
-                                             ljp=0)
-
+                                 {"na": 110}, internal_conc={},
+                                 gbar_names={"nap": "gnabar"},
+                                 ljp=0, E_rev={}, gbar_values={},
+                                 temp=22, recompile=True, cvode=True,
+                                 Rm=20000, v_rest=-65, cm=1,
+                                 directory="validation_results",
+                                 sim_dt=0.01)
+        
         cls.modelK = ModelPatch(channel_loc, ["kad"], ["k"],
-                                            {"k": 2.5},
-                                            ljp=0)
+                                external_conc={"k": 2.5}, ljp=0, E_rev={},
+                                internal_conc={}, gbar_names={}, gbar_values={},
+                                temp=22, recompile=True, cvode=True,
+                                Rm=20000, v_rest=-65, cm=1,
+                                directory="validation_results",
+                                sim_dt=0.01)
 
         cls.modelca = ModelPatch(channel_loc, ["CalH_eCa"], ["Ca"],
-                                             {"Ca": 2},
-                                             gbar_names={"CalH_eCa":
-                                                         "gCalbar"},
-                                             gbar_values={"CalH_eCa":0.001},
-                                             ljp=0)
+                                 external_conc={"Ca": 2},
+                                 internal_conc={"Ca": 100e-6},
+                                 gbar_names={"CalH_eCa":
+                                             "gCalbar"},
+                                 gbar_values={"CalH_eCa":0.001}, E_rev={},
+                                 ljp=0,temp=22, recompile=True, cvode=True,
+                                 Rm=20000, v_rest=-65, cm=1,
+                                 directory="validation_results",
+                                 sim_dt=0.01)
         cls.modelmoreions = ModelPatch(channel_loc,
-                                                   ["nax", "kap"],
-                                                   ["na", "k"],
-                                                   E_rev={"na": 40})
+                                       ["nax", "kap"],
+                                       ["na", "k"],
+                                       E_rev={"na": 40}, external_conc={},
+                                       gbar_values={}, gbar_names={}, 
+                                       internal_conc={}, ljp=0, temp=22,
+                                       recompile=True, cvode=True,
+                                       Rm=20000, v_rest=-65, cm=1,
+                                       directory="validation_results",
+                                       sim_dt=0.01)
     def test_cm(self):
         cm = self.modelJ.patch.cm
         self.assertEqual(cm, 3)
@@ -58,47 +82,66 @@ class TestModelPatch(unittest.TestCase):
                          self.modelmoreions.E_rev)
     def test_reading_in_no_gbar(self):
         self.assertRaises(SystemExit,  ModelPatch,
-                          channel_loc, ["na3"], ["na"],
-                          gbar_names={"na3": "gbar1"})
+                          channel_loc, ["na3"], ["na"], external_conc={},
+                          internal_conc={}, E_rev={}, gbar_values={}, 
+                          gbar_names={"na3": "gbar1"}, temp=22, ljp=0,
+                          recompile=True, cvode=True, Rm=20000, cm=1,
+                          v_rest=-65, directory="", sim_dt=0.01)
 
     def test_setup_gbar(self):
-        out = ModelPatch(channel_loc, ["nax"], ["na"])
+        out = ModelPatch(channel_loc, ["nax"], ["na"], external_conc={},
+                         internal_conc={}, E_rev={}, gbar_names={},
+                         gbar_values={}, temp=22, recompile=True,
+                         ljp=0, cvode=True, Rm=20000, cm=1, v_rest=-65,
+                         directory="", sim_dt=0.01)
         gbar = out.patch.psection()["density_mechs"]["nax"]["gbar"]
         self.assertEqual(0.001, gbar[0])
 
     def test_setup_gbar_custom(self):
         out = ModelPatch(channel_loc, ["nap"], ["na"],
-                                     gbar_names={"nap": "gnabar"})
+                         gbar_names={"nap": "gnabar"}, external_conc={},
+                         internal_conc={}, E_rev={},
+                         gbar_values={}, temp=22, recompile=True,
+                         ljp=0, cvode=True, Rm=20000, cm=1, v_rest=-65,
+                         directory="", sim_dt=0.01)
         gbar = out.patch.psection()["density_mechs"]["nap"]["gnabar"]
         self.assertEqual(0.001, gbar[0])
 
     def test_setup_gbar_custom_value(self):
         out = ModelPatch(channel_loc, ["nap"], ["na"],
-                                     gbar_names={"nap": "gnabar"},
-                                     gbar_values={"nap": 1})
+                         gbar_names={"nap": "gnabar"},
+                         gbar_values={"nap": 1},  external_conc={},
+                         internal_conc={}, E_rev={}, temp=22, recompile=True,
+                         ljp=0, cvode=True, Rm=20000, cm=1, v_rest=-65,
+                         directory="", sim_dt=0.01)
         gbar = out.patch.psection()["density_mechs"]["nap"]["gnabar"]
         self.assertEqual(1, gbar[0])
         
     def test_Rm(self):
         out = ModelPatch(channel_loc, ["nap"], ["na"],
-                                     external_conc={"na": 110},
-                                     gbar_names={"nap": "gnabar"},
-                                     Rm=50000)
+                         external_conc={"na": 110},
+                         gbar_names={"nap": "gnabar"},
+                         Rm=50000, internal_conc={}, gbar_values={}, temp=22,
+                         recompile=True, ljp=0, cm=1, v_rest=-65, E_rev={},
+                         directory="", sim_dt=0.01, cvode=True)
         self.assertEqual(out.patch.g_pas, 1/50000)
 
     def test_gbar_1(self):
         out = ModelPatch(channel_loc, ["nap"], ["na"],
-                                     external_conc= {"na": 110},
-                                     gbar_names={"nap": "gnabar"},
-                                     Rm=50000,
-                                     gbar_values={"nap": 1})
+                         external_conc= {"na": 110}, internal_conc={},
+                         gbar_names={"nap": "gnabar"}, E_rev={}, cvode=True,
+                         Rm=50000, gbar_values={"nap": 1}, temp=22,
+                         recompile=True, ljp=0, cm=1, v_rest=-65,
+                         directory="", sim_dt=0.01)
         self.assertEqual(1, out.get_gbar("nap"))
 
     def test_gbar_2(self):
         out = ModelPatch(channel_loc, ["nap"], ["na"],
-                                     external_conc={"na": 110},
-                                     gbar_names={"nap": "gnabar"},
-                                     Rm=50000, gbar_values={"nap": 1})
+                         external_conc={"na": 110},
+                         gbar_names={"nap": "gnabar"},
+                         Rm=50000, gbar_values={"nap": 1}, internal_conc={},
+                         E_rev={}, temp=22, recompile=True, ljp=0, cvode=True,
+                         cm=1, v_rest=-65, directory="", sim_dt=0.01)
         out.set_gbar("nap", 0.2)
         self.assertEqual(0.2, out.get_gbar("nap"))
  
@@ -213,45 +256,71 @@ class TestModelPatch(unittest.TestCase):
         self.assertEqual(self.modelNJ.patch.ena, new_E_rev)
 
     def test_reading_in_easy(self):
-        out = ModelPatch(channel_loc, ["na3"], ["na"], {"na": 140})
+        out = ModelPatch(channel_loc, ["na3"], ["na"],
+                         external_conc={"na": 140}, internal_conc={},
+                         gbar_values={}, gbar_names={}, temp=22, E_rev={},
+                         recompile=True, ljp=0, cvode=True, Rm=20000, cm=1,
+                         v_rest=-65, directory="", sim_dt=0.01)
         self.assertTrue(np.isclose(67.12194015207108, out.E_rev["na"]))
 
     def test_reading_in_easy_2(self):
-        out = ModelPatch(channel_loc, ["na3"], ["na"], {"na": 140})
+        out = ModelPatch(channel_loc, ["na3"], ["na"],
+                         external_conc={"na": 140}, internal_conc={},
+                         gbar_values={}, gbar_names={}, temp=22, E_rev={},
+                         recompile=True, ljp=0, cvode=True, Rm=20000, cm=1,
+                         v_rest=-65, directory="", sim_dt=0.01)
         out.run(1)
         self.assertTrue(np.isclose(67.12194015207108, out.patch.ena))
         
     def test_reading_in_provide_E_rev(self):
-        out = ModelPatch(channel_loc, ["na3"], ["na"], E_rev={"na": 40})
+        out = ModelPatch(channel_loc, ["na3"], ["na"], E_rev={"na": 40},
+                         external_conc={}, internal_conc={}, gbar_names={},
+                         gbar_values={}, temp=22, recompile=True, ljp=0,
+                         cvode=True, Rm=20000, cm=1, v_rest=-65,
+                         directory="", sim_dt=0.001)
         out.run(1)
         self.assertEqual(40, out.patch.ena)
 
     def test_reading_in_provide_E_rev_2(self):
         out = ModelPatch(channel_loc, ["na3"], ["na"],
-                                     E_rev={"na": 40})
+                         E_rev={"na": 40}, external_conc={}, internal_conc={},
+                         gbar_values={}, gbar_names={}, temp=22,
+                         recompile=True, ljp=0, cvode=True, Rm=20000, cm=1,
+                         v_rest=-65, directory="", sim_dt=0.01)
         self.assertEqual(40, out.E_rev["na"])
 
     def test_no_E_rev_name(self):
         self.assertRaises(SystemExit,  ModelPatch,
-                          channel_loc, ["hd"], ["nonspecific"])
+                          channel_loc, ["hd"], ["nonspecific"], {},
+                          {}, {}, {}, {}, 22, True, 0, True, 20000, 1, -65,
+                          "", 0.001)
 
     def test_no_E_rev_name_provide_E_rev(self):
         out = ModelPatch(channel_loc, ["hd"], ["nonspecific"],
-                                     E_rev={"nonspecific": -30})
+                         E_rev={"nonspecific": -30}, external_conc={},
+                         internal_conc={}, gbar_names={}, gbar_values={},
+                         temp=22, recompile=True, ljp=0, cvode=True, Rm=20000,
+                         cm=1, v_rest=-65, directory="", sim_dt=0.001)
         self.assertEqual(-30, out.E_rev["nonspecific"])
 
     def test_setup_ext_conc_e_rev(self):
         out = ModelPatch(channel_loc, ["nax"], ["na"],
-                                     external_conc={"na": 140},
-                                     E_rev={"na": -30})
+                         external_conc={"na": 140},
+                         E_rev={"na": -30},
+                         internal_conc={}, gbar_names={}, gbar_values={},
+                         temp=22, recompile=True, ljp=0, cvode=True, Rm=20000,
+                         cm=1, v_rest=-65, directory="", sim_dt=0.001)
         conc_fact = np.log(out.external_conc["na"]/out.nai)
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         self.assertEqual(out.E_rev["na"], new_E_rev)
 
     def test_setup_ext_conc_e_rev_2(self):
         out = ModelPatch(channel_loc, ["nax"], ["na"],
-                                     external_conc={"na": 140},
-                                     E_rev={"na": -30})
+                         external_conc={"na": 140},
+                         E_rev={"na": -30}, internal_conc={}, gbar_names={},
+                         gbar_values={},
+                         temp=22, recompile=True, ljp=0, cvode=True, Rm=20000,
+                         cm=1, v_rest=-65, directory="", sim_dt=0.001)
         conc_fact = np.log(out.external_conc["na"]/out.nai)
         new_E_rev = 1e3*R*(273.15+22)/(1*F)*conc_fact
         out.run(1)
@@ -259,7 +328,11 @@ class TestModelPatch(unittest.TestCase):
 
     def test_calc_E_rev(self):
         out = ModelPatch(channel_loc, ["nap"], ["na"],
-                                     gbar_names={"nap": "gnabar"})
+                         gbar_names={"nap": "gnabar"},
+                         external_conc={}, internal_conc={},
+                         E_rev={}, gbar_values={}, temp=22, recompile=True,
+                         ljp=0, cvode=True, Rm=20000, cm=1, v_rest=-65,
+                         directory="", sim_dt=0.01)
         val = out.calc_E_rev("na")
         self.assertEqual(50, val) 
 
@@ -267,8 +340,12 @@ class TestModelPatch(unittest.TestCase):
 class TestAddSingleChannel(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.out = out = ModelPatch(channel_loc, ["nax"], ["na"],
-                                            {"na": 110})
+        cls.out = ModelPatch(channel_loc, ["nax"], ["na"],
+                             external_conc={"na": 110},
+                             internal_conc={}, E_rev={}, gbar_names={},
+                             gbar_values={}, temp=22, recompile=True,
+                             ljp=0, cvode=True, Rm=20000, cm=1,
+                             v_rest=-65, directory="", sim_dt=0.01)
         cls.out.add_channel("nap", "gnabar", .02)
         
     def test_add_channel_1(self):
@@ -286,9 +363,12 @@ class TestCapabilites(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.modelY = ModelPatch(channel_loc, ["na3"], ["na"],
-                                            gbar_names={"na3": "gbar"},
-                                            E_rev={"na": 40},
-                                            cvode=True)
+                                gbar_names={"na3": "gbar"},
+                                E_rev={"na": 40},
+                                cvode=True, external_conc={},
+                                internal_conc={}, gbar_values={},
+                                temp=22, recompile=True, ljp=0, Rm=20000,
+                                cm=1, v_rest=-65, directory="", sim_dt=0.01)
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
         cls.activationY_cc = cls.modelY.get_activation_steady_state(
@@ -305,9 +385,11 @@ class TestCapabilites(unittest.TestCase):
             electrode_current=True)
 
         cls.modelN = ModelPatch(channel_loc, ["na3"], ["na"],
-                                            gbar_names={"na3": "gbar"},
-                                            E_rev={"na": 40},
-                                            cvode=False)
+                                gbar_names={"na3": "gbar"},
+                                E_rev={"na": 40}, gbar_values={},
+                                cvode=False, internal_conc={}, external_conc={},
+                                temp=22, recompile=True, ljp=0, Rm=20000, cm=1,
+                                v_rest=-65, directory="", sim_dt=0.01)
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
         cls.activationN_cc = cls.modelN.get_activation_steady_state(

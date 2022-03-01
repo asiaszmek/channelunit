@@ -2,15 +2,14 @@ from .base_classes import ModelPatch
 from .base_classes import ModelPatchCa
 from .base_classes import WholeCellAttributes
 
-from .base_classes import memb_shell_width
-
+memb_shell_width = .1
 
 class ModelWholeCellPatch(ModelPatch, WholeCellAttributes):
     """
     Rin -- in ohms
     """
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
-                 external_conc={}, gbar_names={},
+                 external_conc={}, internal_conc={}, gbar_names={},
                  temp=22, recompile=True, L=10, diam=10, Ra=100,
                  ljp=0, cvode=True,  Rin=200e6, Rm=20000, cap=None, cm=1,
                  v_rest=-65, E_rev={}, gbar_values={}):
@@ -19,6 +18,7 @@ class ModelWholeCellPatch(ModelPatch, WholeCellAttributes):
                                                   channel_names,
                                                   ion_names,
                                                   external_conc=external_conc,
+                                                  internal_conc=internal_conc,
                                                   gbar_names=gbar_names,
                                                   temp=temp,
                                                   recompile=recompile,
@@ -26,7 +26,9 @@ class ModelWholeCellPatch(ModelPatch, WholeCellAttributes):
                                                   cvode=cvode, Rm=Rm,
                                                   cm=cm, v_rest=v_rest,
                                                   E_rev=E_rev,
-                                                  gbar_values=gbar_values)
+                                                  gbar_values=gbar_values,
+                                                  sim_dt=0.001,
+                                                  directory="")
         self._L = L
         self._diam = diam
         self.patch.L = self._L
@@ -49,6 +51,7 @@ class ModelWholeCellPatch(ModelPatch, WholeCellAttributes):
 class ModelWholeCellPatchSingleChan(ModelWholeCellPatch):
     def __init__(self, path_to_mods: str, channel_name: str,
                  ion_name: str, external_conc=None,
+                 internal_conc=None,
                  gbar_name="gbar", temp=22, recompile=True,
                  L=10, diam=10, Ra=100,
                  ljp=0, cvode=True,  Rin=200e6, Rm=20000,
@@ -56,19 +59,22 @@ class ModelWholeCellPatchSingleChan(ModelWholeCellPatch):
                  v_rest=-65, E_rev=None, gbar_value=0.001):
         channel_names = [channel_name]
         ion_names = [ion_name]
+        ext_c = {}
+        int_c = {}     
         if external_conc is not None:
-            ext_conc_dict = {ion_name: external_conc}
-        else:
-            ext_conc_dict = {}
-        gbar_names = {channel_name: gbar_name}
-        gbar_values = {channel_name: gbar_value}
+            ext_c[ion_name] = external_conc
+        if internal_conc is not None:
+            int_c[ion_name] = internal_conc
+        gbar_n = {channel_name: gbar_name}
+        gbar_v = {channel_name: gbar_value}
         E_rev = {channel_name: E_rev}
         super(ModelWholeCellPatchSingleChan, self).__init__(path_to_mods,
                                                             channel_names,
                                                             ion_names,
-                                                            external_conc=ext_conc_dict,
-                                                            gbar_names=gbar_names,
-                                                            gbar_values=gbar_values,
+                                                            external_conc=ext_c,
+                                                            internal_conc=int_c,
+                                                            gbar_names=gbar_n,
+                                                            gbar_values=gbar_v,
                                                             E_rev=E_rev,
                                                             temp=temp,
                                                             recompile=recompile,
@@ -84,12 +90,14 @@ class ModelWholeCellPatchSingleChan(ModelWholeCellPatch):
 
 class ModelWholeCellPatchCa(ModelPatchCa, WholeCellAttributes):
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
-                 external_conc: dict, E_rev={}, gbar_names={}, temp=22, recompile=True,
+                 external_conc: dict, internal_conc={}, E_rev={},
+                 gbar_names={}, temp=22, recompile=True,
                  ljp=0, cvode=True, Rin=200e6, Rm=20000, cap=None, cm=1,
                  v_rest=-65,
                  gbar_values={}, t_decay=20, L=10, diam=10, Ra=100,
                  buffer_capacity=18,
-                 membrane_shell_width=memb_shell_width):
+                 membrane_shell_width=memb_shell_width,
+                 directory="validation_results", sim_dt=0.001):
         """
         Model class for testing calcium channels with 
         cap -- nF, cell capacitance 
@@ -100,18 +108,21 @@ class ModelWholeCellPatchCa(ModelPatchCa, WholeCellAttributes):
                                                     channel_names,
                                                     ion_names,
                                                     external_conc=external_conc,
+                                                    internal_conc=internal_conc,
                                                     E_rev=E_rev,
                                                     gbar_names=gbar_names,
                                                     temp=temp,
                                                     recompile=recompile,
                                                     ljp=ljp,
-                                                    cvode=cvode,
+                                                    cvode=cvode, L=L, diam=diam,
                                                     Rm=Rm, cm=cm,
                                                     v_rest=v_rest,
                                                     gbar_values=gbar_values,
                                                     t_decay=t_decay, Ra=Ra,
                                                     buffer_capacity=buffer_capacity,
-                                                    membrane_shell_width=membrane_shell_width)
+                                                    membrane_shell_width=membrane_shell_width,
+                                                    directory=directory,
+                                                    sim_dt=sim_dt)
         self._L = L
         self._diam = diam
         self.patch.L = self._L
@@ -133,7 +144,7 @@ class ModelWholeCellPatchCa(ModelPatchCa, WholeCellAttributes):
 
 class ModelWholeCellPatchCaSingleChan(ModelWholeCellPatchCa):
     def __init__(self, path_to_mods: str, channel_name: str, ion_name: str,
-                 external_conc,
+                 external_conc, internal_conc=None,
                  E_rev={}, gbar_name="gbar", temp=22, recompile=True, L=10,
                  diam=10, Ra=100,
                  ljp=0, cvode=True,  Rin=200e6, Rm=20000, cap=None, cm=1,
@@ -143,19 +154,24 @@ class ModelWholeCellPatchCaSingleChan(ModelWholeCellPatchCa):
                  membrane_shell_width=memb_shell_width):
         channel_names = [channel_name]
         ion_names = [ion_name]
+        
         if external_conc is not None:
-            ext_conc_dict = {ion_name: external_conc}
+            exc = {ion_name: external_conc}
         else:
             raise SystemError("Ca external conc needs to be specified")
-        gbar_names = {channel_name: gbar_name}
-        gbar_values = {channel_name: gbar_value}
+        inc = {}
+        if internal_conc is not None:
+            inc[ion_name] = internal_conc
+        gbarn = {channel_name: gbar_name}
+        gbarv = {channel_name: gbar_value}
         super(ModelWholeCellPatchCaSingleChan, self).__init__(path_to_mods,
                                                               channel_names,
                                                               ion_names,
-                                                              external_conc=ext_conc_dict,
+                                                              external_conc=exc,
+                                                              internal_conc=inc,
                                                               E_rev=E_rev,
-                                                              gbar_names=gbar_names,
-                                                              gbar_values=gbar_values,
+                                                              gbar_names=gbarn,
+                                                              gbar_values=gbarv,
                                                               temp=temp,
                                                               recompile=recompile,
                                                               ljp=ljp,
@@ -173,12 +189,13 @@ class ModelWholeCellPatchCaSingleChan(ModelWholeCellPatchCa):
 class ModelOocyte(ModelWholeCellPatch):
     #parameters from  PMID: 20737886 DOI: 10.1016/0012-1606(81)90417-6 
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
-                 external_conc={}, gbar_names={},
+                 external_conc={}, internal_conc={}, gbar_names={},
                  temp=22, recompile=True, ljp=0, cvode=True,
                  E_rev={}, gbar_values={}):
         super(ModelOocyte, self).__init__(path_to_mods, channel_names,
                                           ion_names,
                                           external_conc=external_conc,
+                                          internal_conc=internal_conc,
                                           gbar_names=gbar_names,
                                           temp=22, recompile=True, L=1.3e3,
                                           diam=1.3e3, Ra=100,
@@ -194,12 +211,13 @@ class ModelOocyteCa(ModelWholeCellPatchCa):
     # (electric)
     #Ca params from https://doi.org/10.1016/j.ydbio.2005.10.034
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
-                 external_conc={}, E_rev={}, gbar_names={},
+                 external_conc={}, internal_conc={}, E_rev={}, gbar_names={},
                  temp=22, recompile=True, ljp=0, cvode=True,
                  gbar_values={}):
         super(ModelOocyteCa, self).__init__(path_to_mods, channel_names,
                                             ion_names,
                                             external_conc=external_conc,
+                                            internal_conc=internal_conc,
                                             E_rev=E_rev, gbar_names=gbar_names,
                                             temp=22, recompile=True,
                                             L=1.3e3, diam=1.3e3, Ra=100,
@@ -213,13 +231,14 @@ class ModelOocyteCa(ModelWholeCellPatchCa):
 
 class ModelGiantExcisedPatch(ModelWholeCellPatch):
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
-                 external_conc={}, gbar_names={},
+                 external_conc={}, internal_conc={}, gbar_names={},
                  temp=22, recompile=True, ljp=0, cvode=True,
                  E_rev={}, gbar_values={}):
         super(ModelGiantExcisedPatch, self).__init__(path_to_mods,
                                                      channel_names,
                                                      ion_names,
                                                      external_conc=external_conc,
+                                                     internal_conc=internal_conc,
                                                      gbar_names=gbar_names,
                                                      temp=temp, recompile=True,
                                                      L=15,
@@ -234,13 +253,14 @@ class ModelGiantExcisedPatch(ModelWholeCellPatch):
 
 class ModelGiantExcisedPatchCa(ModelWholeCellPatchCa):
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
-                 external_conc={}, gbar_names={},
+                 external_conc={}, internal_conc={}, gbar_names={},
                  temp=22, recompile=True, ljp=0, cvode=True,
                  E_rev={}, gbar_values={}):
         super(ModelGiantExcisedPatchCa, self). __init__(path_to_mods,
                                                         channel_names,
                                                         ion_names,
                                                         external_conc=external_conc,
+                                                        internal_conc=internal_conc,
                                                         E_rev=E_rev,
                                                         gbar_names=gbar_names,
                                                         temp=temp,
@@ -261,13 +281,14 @@ class ModelGiantExcisedPatchCa(ModelWholeCellPatchCa):
 
 class ModelCellAttachedPatch(ModelWholeCellPatch):
     def __init__(self, path_to_mods, channel_names: list, ion_names: list,
-                 external_conc={}, gbar_names={},
+                 external_conc={}, internal_conc={}, gbar_names={},
                  temp=22, recompile=True, ljp=0, cvode=True,
                  E_rev={}, gbar_values={}, Rin=5e9, v_rest=-65):
         super(ModelWholeCellPatch, self).__init__(path_to_mods,
                                                   channel_names,
                                                   ion_names,
                                                   external_conc=external_conc,
+                                                  internal_conc=internal_conc,
                                                   gbar_names=gbar_names,
                                                   temp=temp, recompile=True,
                                                   L=3,
@@ -290,6 +311,7 @@ class ModelCellAttachedPatchCa(ModelWholeCellPatchCa):
                                                         channel_names,
                                                         ion_names,
                                                         external_conc=external_conc,
+                                                        internal_conc=internal_conc,
                                                         E_rev=E_rev,
                                                         gbar_names=gbar_names,
                                                         temp=temp,

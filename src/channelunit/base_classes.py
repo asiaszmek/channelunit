@@ -17,15 +17,17 @@ mechanisms_path = os.path.join(loc, 'mechanisms')
 
 N = 4
 DT = 0.1
-memb_shell_width = .1
+
 
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
 
 class MembranePatch(sciunit.Model):
-    def __init__(self, temp=22, Rm=20000, cm=1,
-                 v_rest=-65, ljp=0,
-                 cvode=True, sim_dt=0.001):
+    # def __init__(self, temp=22, Rm=20000, cm=1,
+    #              v_rest=-65, ljp=0,
+    #              cvode=True, sim_dt=0.001):
+    def __init__(self, temp, Rm, cm,
+                 v_rest, ljp, cvode, sim_dt):
         h.load_file("stdrun.hoc")
         self.dt = DT
         self.compile_and_add(mechanisms_path, True)
@@ -156,11 +158,11 @@ class ModelPatch(MembranePatch, NModlChannel):
     _ki = 140  # mM
     _cai = 100e-6  # mM
     def __init__(self, path_to_mods: str, channel_names: list, ion_names: list,
-                 external_conc={}, E_rev={},
-                 gbar_names={}, gbar_values={},
-                 temp=22, recompile=True, ljp=0, cvode=True,
-                 Rm=20000, cm=1, v_rest=-65, directory="validation_results",
-                 sim_dt=0.001):
+                 external_conc: dict, internal_conc: dict, E_rev: dict,
+                 gbar_names: dict, gbar_values: dict,
+                 temp, recompile: bool, ljp, cvode: bool,
+                 Rm, cm, v_rest, directory,
+                 sim_dt):
         """
         ion_name: list
             most common ions are: na (sodium), k, ca (sometimes Ca, if 
@@ -173,7 +175,8 @@ class ModelPatch(MembranePatch, NModlChannel):
         Rm: float 
             mebrane resistivity (in ohm*cm^2)
         """
-
+        if not directory:
+            directory = "validation_results"
         self.channel_names = []
         self.mod_path = path_to_mods
         self.compile_and_add(self.mod_path, recompile)
@@ -212,6 +215,14 @@ class ModelPatch(MembranePatch, NModlChannel):
                     self.external_conc[ion] = e_conc
             else:
                 e_conc = None
+            if ion in internal_conc:
+                if ion.lower() == "ca" or ion.lower() == "ba":
+                    self._cai = internal_conc[ion]
+                elif ion == "k":
+                    self._ki = internal_conc[ion]
+                elif ion == "na":
+                    self._nai = internal_conc[ion]
+
             if ion in E_rev:
                 e_rev = E_rev[ion]
             else:
@@ -807,18 +818,26 @@ class ModelPatch(MembranePatch, NModlChannel):
 
 class ModelPatchCa(ModelPatch):
     def __init__(self, path_to_mods: str, channel_names: list, ion_names: list,
-                 external_conc={}, E_rev={},
-                 gbar_names={}, gbar_values={},
-                 temp=22, recompile=True, ljp=0, cvode=True,
-                 Rm=20000, cm=1, v_rest=-65, directory="validation_results",
-                 sim_dt=0.001, t_decay=20, L=10, diam=10, Ra=100,
-                 buffer_capacity=18,
-                 membrane_shell_width=memb_shell_width):
-        super(ModelPatchCa, self).__init__(path_to_mods, channel_names, ion_names,
-                                           external_conc=external_conc, E_rev=E_rev,
-                                           gbar_names=gbar_names, gbar_values=gbar_values,
-                                           temp=temp, recompile=recompile, ljp=ljp,
-                                           cvode=cvode, Rm=Rm, cm=cm, v_rest=v_rest,
+                 external_conc: dict, internal_conc: dict, E_rev: dict,
+                 gbar_names: dict, gbar_values: dict,
+                 temp, recompile: bool, ljp, cvode: bool,
+                 Rm, cm, v_rest, directory,
+                 sim_dt, t_decay, L, diam, Ra,
+                 buffer_capacity,
+                 membrane_shell_width):
+
+        if not directory:
+            directory = "validation_results"
+        super(ModelPatchCa, self).__init__(path_to_mods, channel_names,
+                                           ion_names,
+                                           external_conc=external_conc,
+                                           internal_conc=internal_conc,
+                                           E_rev=E_rev,
+                                           gbar_names=gbar_names,
+                                           gbar_values=gbar_values,
+                                           temp=temp, recompile=recompile,
+                                           ljp=ljp, cvode=cvode, Rm=Rm,
+                                           cm=cm, v_rest=v_rest,
                                            directory=directory, sim_dt=sim_dt)
 
         self.t_decay = t_decay
@@ -850,7 +869,8 @@ class ModelPatchCa(ModelPatch):
                                   name='Ca', charge=2,
                                   initial=0,
                                   atolscale=1e-9)
-            self._cai = 0
+            if "Ba" not in internal_conc:
+                self._cai = 0
             self.E_rev["Ca"] = None
             h.Cao0_Ca_ion = self.external_conc["Ca"]
             for channel_name in self.channel_names:
@@ -864,7 +884,8 @@ class ModelPatchCa(ModelPatch):
                                   name='ca', charge=2,
                                   initial=0,
                                   atolscale=1e-9)
-            self._cai = 0
+            if "ba" not in internal_conc:
+                self._cai = 0
             self.E_rev["ca"] = None
             h.cao0_ca_ion = self.external_conc["Ca"]
             for channel_name in self.channel_names:
