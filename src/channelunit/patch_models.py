@@ -248,12 +248,12 @@ class ModelGiantExcisedPatchCa(ModelWholeCellPatchCa):
                                                         ljp=ljp,
                                                         cvode=cvode,
                                                         L=15, diam=15, Ra=100,
-                                                        Rin=None, cap=None,
+                                                        Rin=5e9, cap=None,
                                                         Rm=400000, cm=12e-3,
                                                         v_rest=-50,
                                                         gbar_values=gbar_values,
                                                         t_decay=8, 
-                                                        buffer_capacity=20,
+                                                        buffer_capacity=10,
                                                         membrane_shell_width=0.1)
 
         self.vclamp.rs = 10e3
@@ -265,18 +265,18 @@ class ModelCellAttachedPatch(ModelWholeCellPatch):
                  temp=22, recompile=True, ljp=0, cvode=True,
                  E_rev={}, gbar_values={}, Rin=5e9, v_rest=-65):
         super(ModelWholeCellPatch, self).__init__(path_to_mods,
-                                                     channel_names,
-                                                     ion_names,
-                                                     external_conc=external_conc,
-                                                     gbar_names=gbar_names,
-                                                     temp=temp, recompile=True,
-                                                     L=3,
-                                                     diam=3, Ra=10,
-                                                     ljp=0, cvode=True,
-                                                     Rin=Rin, Rm=20000,
-                                                     cap=None, cm=1,
-                                                     v_rest=-65, E_rev=E_rev,
-                                                     gbar_values=gbar_values)
+                                                  channel_names,
+                                                  ion_names,
+                                                  external_conc=external_conc,
+                                                  gbar_names=gbar_names,
+                                                  temp=temp, recompile=True,
+                                                  L=3,
+                                                  diam=3, Ra=10,
+                                                  ljp=0, cvode=True,
+                                                  Rin=Rin, Rm=20000,
+                                                  cap=None, cm=1,
+                                                  v_rest=-65, E_rev=E_rev,
+                                                  gbar_values=gbar_values)
         self.vclamp.rs = 10e3
 
 
@@ -297,7 +297,7 @@ class ModelCellAttachedPatchCa(ModelWholeCellPatchCa):
                                                         ljp=ljp,
                                                         cvode=cvode,
                                                         L=15, diam=15, Ra=100,
-                                                        Rin=5e9, cap=None,
+                                                        Rin=Rin, cap=None,
                                                         Rm=400, cm=1,
                                                         v_rest=v_rest,
                                                         gbar_values=gbar_values,

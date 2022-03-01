@@ -11,7 +11,7 @@ UNITS {
 }
 
 NEURON {
-    SUFFIX caq_ms
+    SUFFIX CaV21
     USEION ca READ cai, cao WRITE ica VALENCE 2
     RANGE pbar, ica
 }

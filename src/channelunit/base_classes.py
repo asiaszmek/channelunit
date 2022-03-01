@@ -879,48 +879,46 @@ class ModelPatchCa(ModelPatch):
 
     @property
     def cai(self):
-        if self.ion_name == "ca":
-            return self.patch.cainf_cad
-        elif self.ion_name == "Ca":
-            return self.patch.cainf_Cad
-        elif self.ion_name == "ba":
+        if "ca" in self.ion_names:
+            return self.patch._cai
+        elif "Ca" in self.ion_names:
+            return self.patch._cai
+        elif "ba" in self.ion_names:
             return 0
-        elif self.ion_name == "Ba":
+        elif "Ba" in self.ion_names:
             return 0
 
     @cai.setter
     def cai(self, value):
         self._cai = value
-        if self.ion_name.lower() == "ca":
-            self.patch.cainf_cad = self._cai
-            self.patch.eca = self.calc_E_rev("ca",
-                                             external=self.external_conc["Ca"])
-        elif self.ion_name == "Ca":
-            self.patch.cainf_Cad = self._cai
-            self.patch.eCa = self.calc_E_rev("Ca",
-                                             external=self.external_conc["Ca"])
+        if value > 0:
+            if "ca" in self.ion_names:
+                self.patch.eca = self.calc_E_rev("ca",
+                                                 external=self.external_conc["Ca"])
+            elif "Ca" in self.ion_names:
+                self.patch.eCa = self.calc_E_rev("Ca",
+                                                 external=self.external_conc["Ca"])
                              
     @property
     def Cai(self):
-        if self.ion_name == "ca":
-            return self.patch.cainf_cad
-        elif self.ion_name == "Ca":
-            return self.patch.cainf_cad
+        if "ca" in self.ion_names:
+            return self.patch._cai
+        elif "Ca" in self.ion_names:
+            return self.patch._cai
         else:
             return 0
 
     @cai.setter
     def Cai(self, value):
         self._cai = value
-        if self.ion_name.lower() == "ca":
-            self.patch.cainf_cad = self._cai
-            self.patch.eca = self.calc_E_rev("ca",
-                                            external=self.external_conc["Ca"])
-        elif self.ion_name == "Ca":
-            self.patch.cainf_Cad = self._cai
-            self.patch.eCa = self.calc_E_rev("Ca",
-                                            external=self.external_conc["Ca"])
-
+        if value > 0:
+            if "ca" in self.ion_names:
+                self.patch.eca = self.calc_E_rev("ca",
+                                                 external=self.external_conc["Ca"])
+            elif "Ca" in self.ion_names:
+                self.patch.eCa = self.calc_E_rev("Ca",
+                                                 external=self.external_conc["Ca"])
+            
     @property
     def Ca_ext(self):
         return  self.external_conc["Ca"]
