@@ -14,10 +14,7 @@ class TestVclamp(unittest.TestCase):
                                       cvode=True, sim_dt=0.001)
         cls.modelljp2 = MembranePatch(temp=22, Rm=20000, cm=2,
                                       v_rest=-65, ljp=10,
-                                      cvode=True, sim_dt=0.001)
-        cls.model = MembranePatch(temp=22, Rm=20000, cm=1,
-                                  v_rest=-65, ljp=0,
-                                  cvode=True, sim_dt=0.001)
+                                      cvode=False, sim_dt=0.001)
         cls.modelljp1.set_vclamp(10, 10, 100, 100, False)
         cls.dur1 = 10
         cls.dur2 = 20
@@ -26,22 +23,28 @@ class TestVclamp(unittest.TestCase):
                                  cls.delay)
         cls.pulse = 20
 
-    def test_init_default_1(self):
+    def test_sim_dt(self):
+        self.assertEqual(self.modelljp2.sim_dt, 0.001)
+
+    def test_init_1(self):
         self.assertEqual(self.modelljp1.temperature, 22)
 
-    def test_init_default_pas_1(self):
+    def test_init_pas_1(self):
         self.assertTrue(np.isclose(self.modelljp1.patch.g_pas,
                                    1/20000))
 
-    def test_init_default_pas_2(self):
+    def test_init_pas_2(self):
         self.assertTrue(np.isclose(self.modelljp1.patch.e_pas,
                                    -65))
 
-    def test_init_default_cvode(self):
+    def test_init_cvode(self):
         self.assertTrue(self.modelljp1.cvode)
 
-        
-    def test_set_cm(self):
+    def test_rs(self):
+        self.modelljp1.vclamp.rs = 100
+        self.assertEqual(100, self.modelljp1.vclamp.rs)
+    
+    def test_getter_cm(self):
         cm = self.modelljp2.patch.cm
         self.assertEqual(cm, 2)
 
@@ -50,11 +53,8 @@ class TestVclamp(unittest.TestCase):
         self.assertEqual(2, self.modelljp1.patch.cm)
 
     def test_Rm_setter(self):
-        out = MembranePatch(temp=22, Rm=20000, cm=1,
-                            v_rest=-65, ljp=0,
-                            cvode=True, sim_dt=0.001)
-        out.Rm = 10e3
-        self.assertTrue(np.isclose(out.patch.g_pas, 1/10e3))
+        self.modelljp2.Rm = 10e3
+        self.assertTrue(np.isclose(self.modelljp2.patch.g_pas, 1/10e3))
 
     def test_set_vclamp_junction_amp1(self):
         self.assertEqual(self.modelljp1.vclamp.amp1,

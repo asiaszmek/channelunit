@@ -65,6 +65,8 @@ class TestModelPatch(unittest.TestCase):
                                        Rm=20000, v_rest=-65, cm=1,
                                        directory="validation_results",
                                        sim_dt=0.01)
+    def test_internal_na(self):
+        self.assertEqual(self.modelNJ._nai, 10)
     def test_cm(self):
         cm = self.modelJ.patch.cm
         self.assertEqual(cm, 3)
@@ -80,6 +82,7 @@ class TestModelPatch(unittest.TestCase):
     def test_more_than_one_channel_3(self):
         self.assertEqual({"na": 40, "k": -77},
                          self.modelmoreions.E_rev)
+
     def test_reading_in_no_gbar(self):
         self.assertRaises(SystemExit,  ModelPatch,
                           channel_loc, ["na3"], ["na"], external_conc={},
