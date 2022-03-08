@@ -340,16 +340,14 @@ class ModelPatch(MembranePatch, NModlChannel):
             fname = "%s_Ca_conc" % fname
         return fname
 
-    def _record_current(self, electrode_current, chord_conductance):
+    def _record_current(self, electrode_current, chord_conductance,
+                        leak_subtraction):
         current = h.Vector()
         if electrode_current:
             current.record(self.vclamp._ref_i, self.dt)
-            leak_subtraction = True
         else:
-            leak_subtraction = False
             if len(self.ion_names) > 1:
                 current.record(self.vclamp._ref_i, self.dt)
-                leak_subtraction = True
                 chord_conductance = False
             else:
                 if self.ion_names[0] == "na":
@@ -366,15 +364,15 @@ class ModelPatch(MembranePatch, NModlChannel):
                     current.record(self.patch(0.5)._ref_iCa, self.dt)
                 else:
                     current.record(self.vclamp._ref_i, self.dt)
-                    leak_subtraction = True
-        return current, leak_subtraction, chord_conductance
+        return current, chord_conductance
 
     def get_activation_traces(self, stimulation_levels: list,
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
                               electrode_current=True,
                               interval=200,
-                              save_traces=True, save_ca=True):
+                              save_traces=True, save_ca=True,
+                              leak_subtraction=True):
         """
         Function for running step experiments to determine 
         current/chord conductance traces
@@ -427,9 +425,9 @@ class ModelPatch(MembranePatch, NModlChannel):
         h.celsius = self.temperature
         current_vals = {}
         current,\
-            leak_subtraction,\
             chord_conductance = self._record_current(electrode_current,
-                                                     chord_conductance)
+                                                     chord_conductance,
+                                                     leak_subtraction)
         time = h.Vector()
         time.record(h._ref_t, self.dt)
         delay = 200
@@ -541,7 +539,8 @@ class ModelPatch(MembranePatch, NModlChannel):
                                 chord_conductance,
                                 electrode_current,
                                 interval=200,
-                                save_traces=True, save_ca=True):
+                                save_traces=True, save_ca=True,
+                                leak_subtraction=True):
         """
         Function for running step experiments to determine steady-state
         inactivation currents.
@@ -594,9 +593,9 @@ class ModelPatch(MembranePatch, NModlChannel):
         stim_start = int(delay/self.dt)
         current_values = {}
         current,\
-            leak_subtraction,\
             chord_conductance = self._record_current(electrode_current,
-                                                     chord_conductance)
+                                                     chord_conductance,
+                                                     leak_subtraction)
         time = h.Vector()
         time.record(h._ref_t, self.dt)
         for i, v_hold in enumerate(stimulation_levels):
