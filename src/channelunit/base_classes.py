@@ -18,7 +18,7 @@ mechanisms_path = os.path.join(loc, 'mechanisms')
 N = 4
 DT = 0.1
 
-
+shift = 0.5
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
 
@@ -41,7 +41,7 @@ class MembranePatch(sciunit.Model):
         self.patch.g_pas = 1/Rm
         self.patch.cm = cm # uF/cm2
         self.temperature = temp
-        self.v_low = 29.5
+        self.v_low = 50
         self.vclamp = h.SEClampOLS(self.patch(0.5))
         if cvode is True:
             self.cvode = True
@@ -60,7 +60,7 @@ class MembranePatch(sciunit.Model):
         neuron.load_mechanisms(path)
         os.chdir(working_dir)
 
-    def set_vclamp(self, dur1, v1, dur2, v2, leak_subtraction, delay=200):
+    def set_vclamp(self, dur1, v1, dur2, v2, leak_subtraction):
         self.vclamp.dur1 = dur1
         self.vclamp.amp1 = v1 - self.junction
         self.vclamp.dur2 = dur2
@@ -76,36 +76,36 @@ class MembranePatch(sciunit.Model):
             self.vclamp.dur10 = 0
             self.vclamp.dur11 = 0
             self.vclamp.dur12 = 0
-            return dur1+dur2+delay
+            return dur1+dur2
 
         pulse_amp = self.vclamp.amp2 - self.vclamp.amp1
-        self.vclamp.dur3 = delay
+        self.vclamp.dur3 = dur2
         self.vclamp.amp3 = self.vclamp.amp1
         v_sub = self.vclamp.amp1 - pulse_amp/4 - self.v_low 
         v_pulse = v_sub + pulse_amp/4 
         self.vclamp.amp4 = v_sub
-        self.vclamp.dur4 = delay
+        self.vclamp.dur4 = dur2
         # 1st pulse
         self.vclamp.amp5 = v_pulse
         self.vclamp.dur5 = dur2
         self.vclamp.amp6 = v_sub
-        self.vclamp.dur6 = delay
+        self.vclamp.dur6 = dur2
         #2nd pulse
         self.vclamp.amp7 = v_pulse
         self.vclamp.dur7 = dur2
         self.vclamp.amp8 = v_sub
-        self.vclamp.dur8 = delay
+        self.vclamp.dur8 = dur2
         #3rd pulse
         self.vclamp.amp9 = v_pulse
         self.vclamp.dur9 = dur2
         self.vclamp.amp10 = v_sub
-        self.vclamp.dur10 = delay
+        self.vclamp.dur10 = dur2
         #4th pulse
         self.vclamp.amp11 = v_pulse
         self.vclamp.dur11 = dur2
         self.vclamp.amp12 = v_sub
-        self.vclamp.dur12 = delay
-        return dur1 + 6*delay + 5*dur2
+        self.vclamp.dur12 = dur2
+        return dur1 + 11*dur2
 
     def run(self, t_stop, dt=DT):
         current = h.Vector()
@@ -122,17 +122,18 @@ class MembranePatch(sciunit.Model):
 
     @classmethod
     def curr_stim_response(self, I, dur1, dur2, dt):
-        current = I[int(dur1/dt)+10:int((dur1+dur2)/dt)]
+        current = I[int(dur1/dt):int((dur1+dur2)/dt)]
         return current.copy()
 
     @classmethod
-    def curr_leak_amp(self, I, dur1, dur2, delay, dt):
-        t_start = dur1 + dur2 + 2*delay
-        length = int((t_start+dur2)/dt) - int(t_start/dt) -10
+    def curr_leak_amp(self, I, dur1, dur2, dt):
+        t_start = dur1 + 2*dur2 
+        length = int((t_start+dur2)/dt) - int(t_start/dt) 
         pulse = np.zeros((length,))
         for i in range(N):
-            pulse += I[int(t_start/dt)+10:int((t_start+dur2)/dt)].copy()
-            t_start += dur2 + delay
+            basal = I[int(t_start/dt):int((t_start+dur2)/dt)].copy()
+            pulse += I[int((t_start+dur2)/dt):int((t_start+2*dur2)/dt)].copy() - basal
+            t_start += 2*dur2
         return pulse
 
     @property
@@ -340,8 +341,7 @@ class ModelPatch(MembranePatch, NModlChannel):
             fname = "%s_Ca_conc" % fname
         return fname
 
-    def _record_current(self, electrode_current, chord_conductance,
-                        leak_subtraction):
+    def _record_current(self, electrode_current, chord_conductance):
         current = h.Vector()
         if electrode_current:
             current.record(self.vclamp._ref_i, self.dt)
@@ -399,6 +399,7 @@ class ModelPatch(MembranePatch, NModlChannel):
         duration: float
           duration of the simulation
         """
+        out_I = []
         if save_traces:
             fname = self.generate_fname("Activation_traces",
                                         min(stimulation_levels),
@@ -426,16 +427,14 @@ class ModelPatch(MembranePatch, NModlChannel):
         current_vals = {}
         current,\
             chord_conductance = self._record_current(electrode_current,
-                                                     chord_conductance,
-                                                     leak_subtraction)
+                                                     chord_conductance)
         time = h.Vector()
         time.record(h._ref_t, self.dt)
         delay = 200
         stim_start = int(delay/self.dt)
         for i, level in enumerate(stimulation_levels):
             stim_stop = self.set_vclamp(delay, v_hold, t_stop, level,
-                                        leak_subtraction,
-                                        delay=interval)
+                                        leak_subtraction)
             h.finitialize(v_hold)
             if self.cvode:
                 h.CVode().re_init()
@@ -445,9 +444,12 @@ class ModelPatch(MembranePatch, NModlChannel):
             h.tstop = stim_stop
             h.run()
             I = current.as_numpy()
+            if not i:
+                out_I.append(time.as_numpy())
+            out_I.append(current.as_numpy().copy())  
             out = self.extract_current(I, chord_conductance, leak_subtraction,
-                                       delay, t_stop, interval, self.dt)
-            beg = int(delay/self.dt)+10
+                                       delay, t_stop, self.dt)[int(shift/self.dt):]
+            beg = int(delay/self.dt)
             end = int((delay+t_stop)/self.dt)
             if save_ca:
                 if not i:
@@ -457,7 +459,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                 calcium_vals.append(calcium.as_numpy()[beg: end].copy())
             if save_traces:
                 if not i:
-                    save_time = time.as_numpy()[beg:end].copy()                  
+                    save_time = time.as_numpy()[beg+int(shift/self.dt):end].copy()
                     output.append(save_time)
                 output.append(out)
                 header += ";%4.2f" % level
@@ -476,7 +478,13 @@ class ModelPatch(MembranePatch, NModlChannel):
             path_to_save = os.path.join(path, "%s.csv" % ca_fname)
             np.savetxt(path_to_save, np.array(calcium_vals), delimiter=";",
                        header=header, comments="")
-            
+        path = os.path.join(self.base_directory, "data")
+        if not os.path.exists(path):
+            os.makedirs(path)
+        path_to_save = os.path.join(path, "Raw_%s.csv" % fname)
+        np.savetxt(path_to_save, np.array(out_I), delimiter=";",
+                   header=header, comments="")
+        
         return current_vals
 
     def get_activation_steady_state(self, stimulation_levels: list,
@@ -594,14 +602,12 @@ class ModelPatch(MembranePatch, NModlChannel):
         current_values = {}
         current,\
             chord_conductance = self._record_current(electrode_current,
-                                                     chord_conductance,
-                                                     leak_subtraction)
+                                                     chord_conductance)
         time = h.Vector()
         time.record(h._ref_t, self.dt)
         for i, v_hold in enumerate(stimulation_levels):
             t_stop = self.set_vclamp(delay, v_hold, t_test, v_test,
-                                     leak_subtraction,
-                                     delay=interval)
+                                     leak_subtraction)
             h.finitialize(v_hold)
             if self.cvode:
                 h.CVode().re_init()
@@ -612,10 +618,10 @@ class ModelPatch(MembranePatch, NModlChannel):
             h.run()
             I = current.as_numpy()
             out = self.extract_current(I, chord_conductance,
-                                       leak_subtraction, delay, t_test,
-                                       0, self.dt)
+                                       leak_subtraction, delay,
+                                       t_test, self.dt)[int(shift/self.dt):]
             current_values[v_hold] = out
-            beg = int(delay/self.dt)+10
+            beg = int(delay/self.dt)
             end = int((delay+t_test)/self.dt)
             if save_ca:
                 if not i:
@@ -624,7 +630,8 @@ class ModelPatch(MembranePatch, NModlChannel):
                 calcium_vals.append(calcium.as_numpy()[beg: end].copy())
             if save_traces:
                 if not i:
-                    save_time = time.as_numpy()[beg:end].copy()
+                    save_time = time.as_numpy()[beg+int(shift/self.dt)
+                                                :end].copy()
                     output.append(save_time)
                 output.append(out)
                 header += ";%4.2f" % v_hold
@@ -643,7 +650,6 @@ class ModelPatch(MembranePatch, NModlChannel):
             path_to_save = os.path.join(path, "%s.csv" % ca_fname)
             np.savetxt(path_to_save, np.array(calcium_vals), delimiter=";",
                        header=header, comments="")
-  
         return current_values
         
     def get_inactivation_steady_state(self, stimulation_levels: list,
@@ -702,13 +708,13 @@ class ModelPatch(MembranePatch, NModlChannel):
         return result
                 
     def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
-                        dur2, delay, dt):
+                        dur2, dt):
         #dt = self.dt
         current = self.curr_stim_response(I, dur1, dur2, dt)
         
         #either step injection or the short pulse
         if leak_subtraction:
-            pulse = self.curr_leak_amp(I, dur1, dur2, delay, dt)
+            pulse = self.curr_leak_amp(I, dur1, dur2, dt)
             current = current - pulse
 
         if chord_conductance:
@@ -893,7 +899,7 @@ class ModelPatchCa(ModelPatch):
                     from_mech = getattr(seg, channel_name)
                     gbar_val = 2*chan[self.gbar_names[channel_name]][i]
                     setattr(from_mech, self.gbar_names[channel_name], gbar_val)
-
+        
         self.decay_eq = (self._cai - self.ca)/self.t_decay
         self.ca_decay = rxd.Rate(self.ca, self.decay_eq)
 

@@ -35,7 +35,7 @@ class TestProximalKA(unittest.TestCase):
                                      delimiter=",")
         inactivation_data = np.loadtxt(inactivation_loc_K_A, skiprows=1,
                                        delimiter=",")
-        
+
         cls.power = 1
         cls.activation_data = dict()
         for val in activation_data:

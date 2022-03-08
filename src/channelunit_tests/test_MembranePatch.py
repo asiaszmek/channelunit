@@ -16,9 +16,8 @@ class TestVclamp(unittest.TestCase):
         cls.modelljp1.set_vclamp(10, 10, 100, 100, False)
         cls.dur1 = 10
         cls.dur2 = 20
-        cls.delay = 30
-        cls.modelljp2.set_vclamp(cls.dur1, 10, cls.dur2, 90, True,
-                                 cls.delay)
+        cls.delay = cls.dur1
+        cls.modelljp2.set_vclamp(cls.dur1, 10, cls.dur2, 90, True)
         cls.pulse = 20
 
     def test_sim_dt(self):
@@ -92,7 +91,7 @@ class TestVclamp(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_dur3(self):
         self.assertEqual(self.modelljp2.vclamp.dur3,
-                         30)
+                         20)
 
     def test_set_vclamp_ls_junction_amp4(self):
         self.assertEqual(self.modelljp2.vclamp.amp4,
@@ -101,7 +100,7 @@ class TestVclamp(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_dur4(self):
         self.assertEqual(self.modelljp2.vclamp.dur4,
-                         30)
+                         20)
 
     def test_set_vclamp_ls_junction_amp5(self):
         self.assertEqual(self.modelljp2.vclamp.amp5,
@@ -119,7 +118,7 @@ class TestVclamp(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_dur6(self):
         self.assertEqual(self.modelljp2.vclamp.dur6,
-                         30)
+                         20)
 
     def test_set_vclamp_ls_junction_amp7(self):
         self.assertEqual(self.modelljp2.vclamp.amp7,
@@ -136,7 +135,7 @@ class TestVclamp(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_dur8(self):
         self.assertEqual(self.modelljp2.vclamp.dur8,
-                         30)
+                         20)
 
     def test_set_vclamp_ls_junction_amp9(self):
         self.assertEqual(self.modelljp2.vclamp.amp9,
@@ -152,7 +151,7 @@ class TestVclamp(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_dur10(self):
         self.assertEqual(self.modelljp2.vclamp.dur10,
-                         30)
+                         20)
 
     def test_set_vclamp_ls_junction_amp11(self):
         self.assertEqual(self.modelljp2.vclamp.amp11,
@@ -169,7 +168,7 @@ class TestVclamp(unittest.TestCase):
 
     def test_set_vclamp_ls_junction_dur12(self):
         self.assertEqual(self.modelljp2.vclamp.dur12,
-                         30)
+                         20)
 
     def test_pulse_height_1(self):
         self.assertEqual(self.modelljp2.vclamp.amp5,

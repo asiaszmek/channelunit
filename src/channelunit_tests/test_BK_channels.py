@@ -27,7 +27,6 @@ class TestBK_CaV21(unittest.TestCase):
                                              ljp=0)
         
         cls.model.ki = 120
-        print(cls.model.patch.psection())
         cls.model.cai = 0
         activation_data = np.loadtxt(activation_loc_BK_CaV21, skiprows=1,
                                      delimiter=",")

@@ -14,9 +14,8 @@ class TestSubtractPassiveProperties(unittest.TestCase):
         cls.modelljp2.patch.diam= 10
         cls.dur1 = 10
         cls.dur2 = 20
-        cls.delay = 30
-        cls.modelljp2.set_vclamp(cls.dur1, 10, cls.dur2, 90, True,
-                                 cls.delay)
+        cls.delay = cls.dur2
+        cls.modelljp2.set_vclamp(cls.dur1, 10, cls.dur2, 90, True,)
         cls.pulse = 20
         t_stop = cls.dur1 + 6*cls.dur2 + 5*cls.delay
         cls.current = cls.modelljp2.run(t_stop)
@@ -24,37 +23,38 @@ class TestSubtractPassiveProperties(unittest.TestCase):
 
     def test_current_subtraction(self):
         dt = self.modelljp2.dt
-        passive = self.current[int(self.dur1/dt)+10:
+        passive = self.current[int(self.dur1/dt):
                                int((self.dur1+self.dur2)/dt)].copy()
         expected = self.modelljp2.curr_stim_response(self.current, self.dur1,
                                                      self.dur2, dt)
-        self.assertTrue(np.allclose(passive, expected))
+        self.assertTrue(np.allclose(passive[4:], expected[4:]))
 
     def test_pulse_sum(self):
         dt = self.modelljp2.dt
-        length = int(self.dur2/self.modelljp2.dt)-10
+        length = int(self.dur2/self.modelljp2.dt)
         p_sum = np.zeros((length,))
-        t_start = self.dur1 + self.dur2 + 2*self.delay
+        t_start = self.dur1 + 2*self.dur2 
         for i in range(4):
-            p_sum += self.current[int(t_start/dt)+10:
+            basal = self.current[int(t_start/dt):
                                   int((t_start+self.dur2)/dt)]
-            t_start += self.dur2 + self.delay
+            p_sum += (self.current[int((t_start+self.dur2)/dt):
+                                  int((t_start+2*self.dur2)/dt)]-basal)
+            t_start += 2*self.dur2
         expected = self.modelljp2.curr_leak_amp(self.current, self.dur1,
-                                                self.dur2, self.delay, dt)
+                                                self.dur2, dt)
         self.assertTrue(np.allclose(p_sum, expected))
 
     def test_leak_substraction(self):
         dt = self.modelljp2.dt
-        expected = self.current[int(self.dur1/dt)+10:
+        expected = self.current[int(self.dur1/dt):
                                 int((self.dur1+self.dur2)/dt)].copy()
         automatic_leak_subtraction = self.modelljp2.curr_leak_amp(self.current,
                                                                   self.dur1,
                                                                   self.dur2,
-                                                                  self.delay,
                                                                   dt)
         
-        difference = abs(expected - automatic_leak_subtraction)/expected
-        self.assertTrue(np.all(difference < 0.03))
+        difference = abs(expected - automatic_leak_subtraction)
+        self.assertTrue(np.all(difference[4:] < 0.03))
 
     def test_sum_amp(self):
         out_1 = (self.modelljp2.vclamp.amp5 + self.modelljp2.vclamp.amp7
