@@ -79,10 +79,11 @@ class MembranePatch(sciunit.Model):
             return dur1+dur2
 
         pulse_amp = self.vclamp.amp2 - self.vclamp.amp1
+        v_sub = self.vclamp.amp1 - pulse_amp/N - self.v_low 
+        v_pulse = v_sub + pulse_amp/N 
+
         self.vclamp.dur3 = dur2
         self.vclamp.amp3 = self.vclamp.amp1
-        v_sub = self.vclamp.amp1 - pulse_amp/4 - self.v_low 
-        v_pulse = v_sub + pulse_amp/4 
         self.vclamp.amp4 = v_sub
         self.vclamp.dur4 = dur2
         # 1st pulse
@@ -121,8 +122,11 @@ class MembranePatch(sciunit.Model):
         return current.as_numpy()
 
     @classmethod
-    def curr_stim_response(self, I, dur1, dur2, dt):
+    def curr_stim_response(self, I, dur1, dur2, dt,
+                           leak_subtraction):
         current = I[int(dur1/dt):int((dur1+dur2)/dt)]
+        if leak_subtraction:
+            current -= I[:int(dur1/dt)]
         return current.copy()
 
     @classmethod
@@ -132,7 +136,8 @@ class MembranePatch(sciunit.Model):
         pulse = np.zeros((length,))
         for i in range(N):
             basal = I[int(t_start/dt):int((t_start+dur2)/dt)].copy()
-            pulse += I[int((t_start+dur2)/dt):int((t_start+2*dur2)/dt)].copy() - basal
+            pulse += (I[int((t_start+dur2)/dt):int((t_start+2*dur2)/dt)].copy()
+                      - basal)
             t_start += 2*dur2
         return pulse
 
@@ -370,7 +375,6 @@ class ModelPatch(MembranePatch, NModlChannel):
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
                               electrode_current=True,
-                              interval=200,
                               save_traces=True, save_ca=True,
                               leak_subtraction=True):
         """
@@ -400,6 +404,13 @@ class ModelPatch(MembranePatch, NModlChannel):
           duration of the simulation
         """
         out_I = []
+        if not electrode_current:
+            leak_subtraction = False
+            delay = 200
+        if leak_subtraction:
+            delay = t_stop
+        else:
+            delay = 200
         if save_traces:
             fname = self.generate_fname("Activation_traces",
                                         min(stimulation_levels),
@@ -430,7 +441,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                                                      chord_conductance)
         time = h.Vector()
         time.record(h._ref_t, self.dt)
-        delay = 200
+
         stim_start = int(delay/self.dt)
         for i, level in enumerate(stimulation_levels):
             stim_stop = self.set_vclamp(delay, v_hold, t_stop, level,
@@ -490,7 +501,7 @@ class ModelPatch(MembranePatch, NModlChannel):
     def get_activation_steady_state(self, stimulation_levels: list,
                                     v_hold: float, t_stop:float,
                                     power: int, chord_conductance,
-                                    electrode_current, interval=200,
+                                    electrode_current,
                                     normalization="to_one",
                                     save_traces=True, save_ca=True):
         """
@@ -531,7 +542,6 @@ class ModelPatch(MembranePatch, NModlChannel):
                                               v_hold, t_stop,
                                               chord_conductance,
                                               electrode_current,
-                                              interval=interval,
                                               save_traces=save_traces,
                                               save_ca=save_ca)
         
@@ -546,7 +556,6 @@ class ModelPatch(MembranePatch, NModlChannel):
                                 v_test: float, t_test:float,
                                 chord_conductance,
                                 electrode_current,
-                                interval=200,
                                 save_traces=True, save_ca=True,
                                 leak_subtraction=True):
         """
@@ -573,6 +582,13 @@ class ModelPatch(MembranePatch, NModlChannel):
           in many experiments current is normalized by membrane voltage
           minus the ion's reversal potential.
         """
+        if not electrode_current:
+            leak_subtraction = False
+            delay = 200
+        if leak_subtraction:
+            delay = t_test
+        else:
+            delay = 200
         if save_traces:
             fname = self.generate_fname("Inactivation_traces",
                                         min(stimulation_levels),
@@ -597,7 +613,6 @@ class ModelPatch(MembranePatch, NModlChannel):
             ca_fname = ""
 
         h.celsius = self.temperature
-        delay = 200
         stim_start = int(delay/self.dt)
         current_values = {}
         current,\
@@ -658,7 +673,6 @@ class ModelPatch(MembranePatch, NModlChannel):
                                       chord_conductance=False,
                                       leak_subtraction=True,
                                       electrode_current=True,
-                                      interval=200,
                                       normalization="to_one",
                                       save_traces=True, save_ca=True):
         """
@@ -697,7 +711,6 @@ class ModelPatch(MembranePatch, NModlChannel):
                                                 v_test, t_test,
                                                 chord_conductance,
                                                 leak_subtraction,
-                                                interval,
                                                 save_traces=save_traces,
                                                 save_ca=save_ca)
         max_current = self.get_max_of_dict(currents)
@@ -710,7 +723,8 @@ class ModelPatch(MembranePatch, NModlChannel):
     def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
                         dur2, dt):
         #dt = self.dt
-        current = self.curr_stim_response(I, dur1, dur2, dt)
+        current = self.curr_stim_response(I, dur1, dur2, dt,
+                                          leak_subtraction)
         
         #either step injection or the short pulse
         if leak_subtraction:

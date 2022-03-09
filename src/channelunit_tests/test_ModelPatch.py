@@ -183,7 +183,7 @@ class TestModelPatch(unittest.TestCase):
     def test_extract_current_ls_chord_conductance(self):
         dt = 0.01
         dur1 = 20
-        dur2 = 10
+        dur2 = 20
         delay = dur2
         I = np.ones((int((dur1+5*dur2+6*delay)/dt)))
         I[:int(dur1/dt)] = 0
@@ -207,7 +207,7 @@ class TestModelPatch(unittest.TestCase):
     def test_extract_current_ls_no_chord_conductance(self):
         dt = 0.01
         dur1 = 20
-        dur2 = 10
+        dur2 = 20
         delay = dur2
         I = np.ones((int((dur1+5*dur2+6*delay)/dt)))
         I[:int(dur1/dt)] = 0
