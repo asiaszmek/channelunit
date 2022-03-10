@@ -55,9 +55,8 @@ class TestSubtractPassiveProperties(unittest.TestCase):
                                                                   self.dur1,
                                                                   self.dur2,
                                                                   dt)
-        
         difference = abs(expected - automatic_leak_subtraction)
-        self.assertTrue(np.all(difference[4:] < 0.03))
+        self.assertTrue(np.all(difference[20:] < 0.03))
 
     def test_sum_amp(self):
         out_1 = (self.modelljp2.vclamp.amp5 + self.modelljp2.vclamp.amp7

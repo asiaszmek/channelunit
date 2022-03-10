@@ -178,7 +178,7 @@ class TestModelWholeCellPatchSingleChan(unittest.TestCase):
         self.assertEqual(["na"], self.model.ion_names)
 
     def test_ext_conc(self):
-        self.assertEqual(self.model.external_conc, {"na": 110, "Ca": None})
+        self.assertEqual(self.model.external_conc, {"na": 110, "Ca": 0})
 
     def test_gbar_name(self):
         self.assertEqual(self.model.gbar_names, {"nap": "gnabar"}) 

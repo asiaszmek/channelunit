@@ -16,9 +16,9 @@ mechanisms_path = os.path.join(loc, 'mechanisms')
 
 
 N = 4
-DT = 0.1
+DT = 0.01
 
-shift = 0.5
+shift = 0.1
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
 
@@ -126,20 +126,20 @@ class MembranePatch(sciunit.Model):
                            leak_subtraction):
         current = I[int(dur1/dt):int((dur1+dur2)/dt)]
         if leak_subtraction:
-            current -= I[:int(dur1/dt)]
+            current -= I[:int((dur1)/dt)]
         return current.copy()
 
     @classmethod
     def curr_leak_amp(self, I, dur1, dur2, dt):
-        t_start = dur1 + 2*dur2 
-        length = int((t_start+dur2)/dt) - int(t_start/dt) 
+        t_start =  dur1 + 2*dur2 
+        length = int(dur2/dt)
         pulse = np.zeros((length,))
         for i in range(N):
             basal = I[int(t_start/dt):int((t_start+dur2)/dt)].copy()
             pulse += (I[int((t_start+dur2)/dt):int((t_start+2*dur2)/dt)].copy()
                       - basal)
             t_start += 2*dur2
-        return pulse
+        return pulse.copy()
 
     @property
     def cm(self):
@@ -195,7 +195,7 @@ class ModelPatch(MembranePatch, NModlChannel):
 
         self.channels = []
         self.gbar_names = {}
-        self.external_conc = {"Ca": None}
+        self.external_conc = {"Ca": 0}
         self.E_rev = {}
         self.base_directory = directory
         self.ion_names = ion_names
@@ -330,7 +330,7 @@ class ModelPatch(MembranePatch, NModlChannel):
         for channel_name in self.channel_names:
             fname = "%s_%s" % (fname, channel_name)
         for ion_name in self.external_conc.keys():
-            if self.external_conc[ion_name] is not None:
+            if self.external_conc[ion_name]:
                 fname = "%s_%s_ext_%4.2f_mM" % (fname, ion_name,
                                                 self.external_conc[ion_name])
         for ion_name in self.E_rev:
@@ -406,11 +406,11 @@ class ModelPatch(MembranePatch, NModlChannel):
         out_I = []
         if not electrode_current:
             leak_subtraction = False
-            delay = 200
+            delay = 200 
         if leak_subtraction:
             delay = t_stop
         else:
-            delay = 200
+            delay = 200 
         if save_traces:
             fname = self.generate_fname("Activation_traces",
                                         min(stimulation_levels),
@@ -458,10 +458,11 @@ class ModelPatch(MembranePatch, NModlChannel):
             if not i:
                 out_I.append(time.as_numpy())
             out_I.append(current.as_numpy().copy())  
-            out = self.extract_current(I, chord_conductance, leak_subtraction,
-                                       delay, t_stop, self.dt)[int(shift/self.dt):]
-            beg = int(delay/self.dt)
-            end = int((delay+t_stop)/self.dt)
+            out = self.extract_current(I, chord_conductance,
+                                       leak_subtraction,
+                                       delay, t_stop, self.dt)
+            beg = int(np.ceil((delay+shift)/self.dt))
+            end = int(np.ceil((delay+t_stop)/self.dt))
             if save_ca:
                 if not i:
                     save_time = time.as_numpy()[beg: end].copy()
@@ -470,9 +471,9 @@ class ModelPatch(MembranePatch, NModlChannel):
                 calcium_vals.append(calcium.as_numpy()[beg: end].copy())
             if save_traces:
                 if not i:
-                    save_time = time.as_numpy()[beg+int(shift/self.dt):end].copy()
+                    save_time = time.as_numpy()[beg: end].copy()
                     output.append(save_time)
-                output.append(out)
+                output.append(out[int(np.ceil(shift/self.dt)):])
                 header += ";%4.2f" % level
             current_vals[level] = out
         if save_traces:
@@ -632,12 +633,13 @@ class ModelPatch(MembranePatch, NModlChannel):
             h.tstop = t_stop
             h.run()
             I = current.as_numpy()
-            out = self.extract_current(I, chord_conductance,
+            out = self.extract_current(I,
+                                       chord_conductance,
                                        leak_subtraction, delay,
-                                       t_test, self.dt)[int(shift/self.dt):]
+                                       t_test, self.dt)
             current_values[v_hold] = out
-            beg = int(delay/self.dt)
-            end = int((delay+t_test)/self.dt)
+            beg = int(np.ceil((delay+shift)/self.dt))
+            end = int(np.ceil((delay+t_test)/self.dt))
             if save_ca:
                 if not i:
                     save_time = time.as_numpy()[beg: end].copy()
@@ -645,12 +647,10 @@ class ModelPatch(MembranePatch, NModlChannel):
                 calcium_vals.append(calcium.as_numpy()[beg: end].copy())
             if save_traces:
                 if not i:
-                    save_time = time.as_numpy()[beg+int(shift/self.dt)
-                                                :end].copy()
+                    save_time = time.as_numpy()[beg: end].copy()
                     output.append(save_time)
-                output.append(out)
+                output.append(out[int(np.ceil(shift/self.dt)):])
                 header += ";%4.2f" % v_hold
-
         if save_traces:
             path = os.path.join(self.base_directory, "data")
             if not os.path.exists(path):
@@ -723,17 +723,17 @@ class ModelPatch(MembranePatch, NModlChannel):
     def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
                         dur2, dt):
         #dt = self.dt
+
         current = self.curr_stim_response(I, dur1, dur2, dt,
                                           leak_subtraction)
-        
         #either step injection or the short pulse
         if leak_subtraction:
             pulse = self.curr_leak_amp(I, dur1, dur2, dt)
             current = current - pulse
-
+        
         if chord_conductance:
             current = current/(self.vclamp.amp2 - self.E_rev[self.ion_names[0]])
-        return current
+        return current.copy()
 
     @staticmethod
     def normalize_to_one(current, normalization="save_sign"):
@@ -743,6 +743,9 @@ class ModelPatch(MembranePatch, NModlChannel):
         values = np.array(list(current.values()))
         factor = max(abs(values))
         new_current = {}
+        if factor < 1e-2:
+            for key in current.keys():
+                new_current[key] = 0
         if normalization == "save_sign":
             for key in current.keys():
                 new_current[key] = current[key]/factor

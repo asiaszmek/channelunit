@@ -7,7 +7,9 @@ directory = "data"
 files = glob.glob(os.path.join(directory, "*"))
 colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple",
           "tab:brown", "tab:pink", "tab:gray", "tab:olive", "tab:cyan",
-          "purple", "teal", "gold"]
+          "purple", "teal", "gold", "m", "darkolivegreen", "saddlebrown",
+          "firebrick", "dodgerblue","indigo", "darkslategrey",
+          "aqua", "tomato", "darksalmon", "tan", "crimson"]
 for fname in files:
     f = open(fname, "r")
     header = f.readline().split(";")
