@@ -244,7 +244,7 @@ class ModelGiantExcisedPatch(ModelWholeCellPatch):
                                                      L=15,
                                                      diam=15, Ra=100,
                                                      ljp=0, cvode=True,
-                                                     Rin=None, Rm=400000,
+                                                     Rin=5e9, Rm=400000,
                                                      cap=12e-3, cm=12,
                                                      v_rest=-50, E_rev=E_rev,
                                                      gbar_values=gbar_values)
