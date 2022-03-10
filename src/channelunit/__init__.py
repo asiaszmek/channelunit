@@ -14,5 +14,5 @@ from .patch_models import CaConcClamp
 
 import os
 loc = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(loc, 'demo_CA1')
+data_path = os.path.join(loc, "..", 'demo_CA1')
 mechanisms_path = os.path.join(loc, 'mechanisms')
