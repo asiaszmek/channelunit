@@ -333,10 +333,13 @@ class ModelPatch(MembranePatch, NModlChannel):
             if self.external_conc[ion_name]:
                 fname = "%s_%s_ext_%4.2f_mM" % (fname, ion_name,
                                                 self.external_conc[ion_name])
-        for ion_name in self.E_rev:
-            if self.E_rev[ion_name] is not None:
-                fname = "%s_E_%s_rev_%4.2f_mV" % (fname, ion_name,
-                                                  self.E_rev[ion_name])
+        if "ca" in self.ion_names or "Ca" in self.ion_names:
+             fname = "%s_int_Ca_%4.2f_mM" % (fname, self._cai)
+        if chord_conductance:
+            for ion_name in self.E_rev:
+                if self.E_rev[ion_name] is not None:
+                    fname = "%s_E_%s_rev_%4.2f_mV" % (fname, ion_name,
+                                                      self.E_rev[ion_name])
       
         fname = "%s_from_%4.2f_mV_to_%4.2f_mV" % (fname, stim_beg, stim_end)
         
