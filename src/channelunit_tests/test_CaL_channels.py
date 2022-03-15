@@ -36,7 +36,7 @@ class TestCaLChannelsLowBariumba(unittest.TestCase):
                                                    "electrode_current": False,
                                                    "chord_conductance":False,
                                                    "normalization": "to_one"}, 1,
-                                                  "ActvationSSTestLowBa",
+                                                  "ActvationSSTestLowba",
                                                   save_figures=True)
         cls.act_results = cls.test_Ba20.run_model(cls.modelBa20_H,
                                                   cls.test_Ba20.stimulus_list,
@@ -130,7 +130,7 @@ class TestCaLChannelsLowCalciumca(unittest.TestCase):
                                                    "chord_conductance":False,
                                                    "normalization":
                                                    "save_sign"}, 1,
-                                                  "ActvationSSTest",
+                                                  "ActvationSSTestLowca",
                                                   save_figures=True)
         cls.act_results = cls.test_Ca20.run_model(cls.modelCa20_H,
                                                   cls.test_Ca20.stimulus_list,
@@ -178,7 +178,7 @@ class TestCaLChannelsLowCalciumCa(unittest.TestCase):
                                                  "electrode_current": False,
                                                  "chord_conductance":False,
                                                  "normalization": "save_sign"}, 1,
-                                                "ActvationSSTest",
+                                                "ActvationSSTestLowCa",
                                                 save_figures=True)
         cls.act_results = cls.test_Ca20.run_model(cls.modelCa20_HH,
                                                   cls.test_Ca20.stimulus_list,

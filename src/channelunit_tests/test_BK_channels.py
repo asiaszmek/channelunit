@@ -36,7 +36,7 @@ class TestBK_1_uM_Ca(unittest.TestCase):
         cls.power = 1
         cls.test = ActivationSteadyStateTest(cls.activation_data,
                                              {"v_init": -80, "t_stop": 40,
-                                              "electrode_current": False,
+                                              "electrode_current": True,
                                               "chord_conductance":False,
                                               "normalization": "to_one"},
                                              1,
@@ -50,7 +50,6 @@ class TestBK_1_uM_Ca(unittest.TestCase):
                                              cls.test.chord_conductance,
                                              cls.test.electrode_current,
                                              "to_one")
-       
 
     def test_summarize(self):
         self.score = self.test.judge(self.model)
