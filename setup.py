@@ -17,15 +17,16 @@ setuptools.setup(
     },
     package_dir={"": "src"},
     packages=["channelunit", "channelunit.capabilities", "channelunit.tests",
-              "channelunit.tests", "channelunit.scores", "channelunit_tests"],
+              "channelunit.tests", "channelunit.scores", "channelunit_tests",
+              "demo_CA1"],
     include_package_data=True,
     package_data={
         'channelunit': [
             "mechanisms/*mod",
-            "demo_CA1/ion_channels/*mod",
-            "demo_CA1/data/*csv",
+        ],
+        "demo_CA1":  ["ion_channels/*mod",
+                      "data/*csv",]
 
-        ]
     },
     
     python_requires=">=3.6",

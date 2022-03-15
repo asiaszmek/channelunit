@@ -82,7 +82,7 @@ class SteadyStateTest(Test):
         obs_val = [observations[v][0] for v in v_values]
         obs_std = [observations[v][1] for v in v_values]
         channel_names_path = ""
-        for channel_name in model.channel_name:
+        for channel_name in model.channel_names:
             channel_names_path += channel_name + "_"
         if self.base_directory:
             path = os.path.join(self.base_directory, "figs",
@@ -94,7 +94,10 @@ class SteadyStateTest(Test):
             os.makedirs(path)
 
         fig, ax = plt.subplots(1, 1)
-        ax.plot(v_values, pred_val, "d", label=model.channel_name)
+        label = ""
+        for n in model.channel_names:
+            label += n + " "
+        ax.plot(v_values, pred_val, "d", label=label)
         ax.errorbar(v_values, obs_val, yerr=obs_std, marker="d", linewidth=0,
                     label="experimental data")
         ax.set_xlabel("Voltage (mV)")

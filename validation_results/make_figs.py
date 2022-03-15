@@ -5,7 +5,11 @@ import matplotlib.pyplot as plt
 
 directory = "data"
 files = glob.glob(os.path.join(directory, "*"))
-
+colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple",
+          "tab:brown", "tab:pink", "tab:gray", "tab:olive", "tab:cyan",
+          "purple", "teal", "gold", "m", "darkolivegreen", "saddlebrown",
+          "firebrick", "dodgerblue","indigo", "darkslategrey",
+          "aqua", "tomato", "darksalmon", "tan", "crimson"]
 for fname in files:
     f = open(fname, "r")
     header = f.readline().split(";")
@@ -16,7 +20,7 @@ for fname in files:
         continue
     fig, ax = plt.subplots(1, 1)
     for i, level in enumerate(header[1:]):
-        ax.plot(time, data[i+1, :], label="%s mV"%level)
+        ax.plot(time, data[i+1, :], colors[i], label="%s mV"%level)
     if "calcium" not in fname:
         ax.set_ylabel("Current (nA)")
     else:
