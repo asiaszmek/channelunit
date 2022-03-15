@@ -95,8 +95,8 @@ class SteadyStateTest(Test):
 
         fig, ax = plt.subplots(1, 1)
         label = ""
-        for name in model.channel_names:
-            label += name + " "
+        for n in model.channel_names:
+            label += n + " "
         ax.plot(v_values, pred_val, "d", label=label)
         ax.errorbar(v_values, obs_val, yerr=obs_std, marker="d", linewidth=0,
                     label="experimental data")
