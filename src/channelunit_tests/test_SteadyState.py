@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from channelunit.tests import SteadyStateTest
+from channelunit.tests import BaseSteadyStateTest
 from channelunit.tests import InactivationSteadyStateTest
 from channelunit.tests import ActivationSteadyStateTest
 from channelunit import ModelWholeCellPatchSingleChan
@@ -17,13 +17,13 @@ inactivation_loc = os.path.join(data_path, "data",
                                 "I_Na_inactivation.csv")
 
 
-class TestSteadyState(unittest.TestCase):
+class TestBaseSteadyState(unittest.TestCase):
     def test_make_numeric_1(self):
-        out = SteadyStateTest._get_numerical("5")
+        out = BaseSteadyStateTest._get_numerical("5")
         self.assertEqual(out, 5)
 
     def test_make_numeric_2(self):
-        out = SteadyStateTest._get_numerical(5)
+        out = BaseSteadyStateTest._get_numerical(5)
         self.assertEqual(out, 5)
 
     def test_make_numeric_3(self):
@@ -31,36 +31,36 @@ class TestSteadyState(unittest.TestCase):
         self.assertEqual(out, 5.)
 
     def test_make_numeric_4(self):
-        self.assertRaises(ValueError, SteadyStateTest._get_numerical, "a")
+        self.assertRaises(ValueError, BaseSteadyStateTest._get_numerical, "a")
 
     def test_make_numeric_5(self):
-        self.assertRaises(ValueError, SteadyStateTest._get_numerical, [5, 7])
+        self.assertRaises(ValueError, BaseSteadyStateTest._get_numerical, [5, 7])
 
     def test_make_numeric_6(self):
-        self.assertRaises(ValueError, SteadyStateTest._get_numerical, ["a"])
+        self.assertRaises(ValueError, BaseSteadyStateTest._get_numerical, ["a"])
     
     def test_make_numeric_7(self):
-        out = SteadyStateTest._get_numerical([5])
+        out = BaseSteadyStateTest._get_numerical([5])
         self.assertEqual(out, 5)
 
     def test_make_numeric_8(self):
-        out = SteadyStateTest._get_numerical([5.])
+        out = BaseSteadyStateTest._get_numerical([5.])
         self.assertEqual(out, 5.)
 
     def test_extract_simulation(self):
         obs = {"-30": 3, -50: 6, -10.: 1}
-        out = SteadyStateTest.extract_stimulation(obs)
+        out = BaseSteadyStateTest.extract_stimulation(obs)
         expected = [-50, -30, -10.]
         self.assertEqual(expected, out)
 
     def test_extract_simulation_1(self):
         obs = {"-30": 3, -50:6, -10.:1, "a":2}
-        self.assertRaises(ValueError, SteadyStateTest.extract_stimulation,
+        self.assertRaises(ValueError, BaseSteadyStateTest.extract_stimulation,
                           obs)
 
     def test_format_data_1(self):
         obs = {"-10": "3", "-20": ["2", "0.5"]}
-        out = SteadyStateTest.format_data(obs)
+        out = BaseSteadyStateTest.format_data(obs)
         self.assertEqual(out, {-10:[3, 0.03], -20:[2, 0.5]})
 
 
@@ -164,7 +164,7 @@ class TestInactivationSteadyState(unittest.TestCase):
                                                 "chord_conductance":True,
                                                 "electrode_current":True,
                                                 "normalization": "to_one"}, 1,
-                                               "InactvationSSTest",
+                                               "InactivationSSTest",
                                                save_figures=True)
 
 
@@ -175,7 +175,8 @@ class TestInactivationSteadyState(unittest.TestCase):
         
     def test_run_model(self):
         out = self.test.run_model(self.model, self.test.stimulus_list,
-                                  self.test.v_test, self.test.t_test, self.power,
+                                  self.test.v_test, self.test.t_test,
+                                  self.power,
                                   self.test.chord_conductance,
                                   self.test.electrode_current,
                                   self.test.normalization)

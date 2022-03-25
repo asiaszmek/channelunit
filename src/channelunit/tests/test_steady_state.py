@@ -7,7 +7,7 @@ from sciunit import Test, Score
 from channelunit.capabilities import NModlChannel
 from channelunit.scores import ZScore_SteadyStateCurves
 
-class SteadyStateTest(Test):
+class BaseSteadyStateTest(Test):
     """
     Common features of the Activation Steady State and Inactivation 
     steady state
@@ -76,6 +76,19 @@ class SteadyStateTest(Test):
         score = ZScore_SteadyStateCurves(score_avg)
         return score
 
+
+    def add_to_fig(v_values_1, pred_val_1, obs_val_1, obs_std_1,
+                   ax_1, label, marker="d",
+                   xlabel="Voltage (mV)",
+                   ylabel="Normalized current"):
+        ax.plot(v_values_1, pred_val_1, marker, label=label)
+        ax.errorbar(v_values_1, obs_val_1, yerr=obs_std_1,
+                    marker=marker_1,
+                    linewidth=0, label="experimental data")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.legend()
+
     def generate_figures(self, model, observations, predictions, name):
         v_values = list(observations.keys())
         pred_val = [predictions[v] for v in v_values]
@@ -97,28 +110,25 @@ class SteadyStateTest(Test):
         label = ""
         for n in model.channel_names:
             label += n + " "
-        ax.plot(v_values, pred_val, "d", label=label)
-        ax.errorbar(v_values, obs_val, yerr=obs_std, marker="d", linewidth=0,
-                    label="experimental data")
-        ax.set_xlabel("Voltage (mV)")
-        ax.set_ylabel("Normalized current")
-        ax.legend()
+        self.add_to_fig(v_values, pred_val, obs_val, obs_std,
+                        ax, label)
         savefig_path = os.path.join(path, "%s_%s.png" % (channel_names_path,
                                                          name))
         fig.savefig(savefig_path, dpi=self.dpi,
                     bbox_inches='tight')
 
         
-class ActivationSteadyStateTest(SteadyStateTest):
+class ActivationSteadyStateTest(BaseSteadyStateTest):
 
     def __init__(self, observation, experimental_conditions, power: int,
                  name="Activation Steady State Test",
                  base_directory="", save_figures=True):
-
+        conditions = experimental_conditions
         super(ActivationSteadyStateTest, self).__init__(observation,
-                                                        experimental_conditions,
-                                                        name, base_directory,
-                                                        save_figures)
+                                                            conditions,
+                                                            name,
+                                                            base_directory,
+                                                            save_figures)
         try:
             self.v_init = experimental_conditions["v_init"]
         except KeyError:
@@ -145,11 +155,11 @@ class ActivationSteadyStateTest(SteadyStateTest):
 
     def run_model(self, model, stim_list, v_init, t_stop,
                   power, chord_conductance, electrode_current, normalization):
-        return model.get_activation_steady_state(stim_list,
-                                                 v_init, t_stop, power,
-                                                 chord_conductance,
-                                                 electrode_current,
-                                                 normalization=normalization)
+        return model.get_activation_SS(stim_list,
+                                       v_init, t_stop, power,
+                                       chord_conductance,
+                                       electrode_current,
+                                       normalization=normalization)
     
 
     def generate_prediction(self, model, verbose=False):
@@ -166,16 +176,17 @@ class ActivationSteadyStateTest(SteadyStateTest):
         return prediction
 
 
-class InactivationSteadyStateTest(SteadyStateTest):
+class InactivationSteadyStateTest(BaseSteadyStateTest):
 
     def __init__(self, observation, experimental_conditions, power,
                  name="Inctivation Steady State Test",
                  base_directory="", save_figures=True):
-
+        conditions = experimental_conditions
         super(InactivationSteadyStateTest, self).__init__(observation,
-                                                          experimental_conditions,
-                                                          name, base_directory,
-                                                          save_figures)
+                                                              conditions,
+                                                              name,
+                                                              base_directory,
+                                                              save_figures)
         try:
             self.v_test = experimental_conditions["v_test"]
         except KeyError:
@@ -202,11 +213,11 @@ class InactivationSteadyStateTest(SteadyStateTest):
 
     def run_model(self, model, stim_list, v_test, t_test, power,
                   chord_conductance, electrode_current, normalization):
-        return model.get_inactivation_steady_state(stim_list,
-                                                   v_test, t_test, power,
-                                                   chord_conductance,
-                                                   electrode_current,
-                                                   normalization=normalization)
+        return model.get_inactivation_SS(stim_list,
+                                         v_test, t_test, power,
+                                         chord_conductance,
+                                         electrode_current,
+                                         normalization=normalization)
     
 
     def generate_prediction(self, model, verbose=False):

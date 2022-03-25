@@ -1,3 +1,4 @@
-from .test_steady_state import SteadyStateTest
+from .test_steady_state import BaseSteadyStateTest
 from .test_steady_state import ActivationSteadyStateTest
 from .test_steady_state import InactivationSteadyStateTest
+from .test_act_inact_steady_state_at_once import SteadyStateTest

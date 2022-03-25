@@ -505,21 +505,15 @@ class ModelPatch(MembranePatch, NModlChannel):
             path_to_save = os.path.join(path, "%s.csv" % ca_fname)
             np.savetxt(path_to_save, np.array(calcium_vals), delimiter=";",
                        header=header, comments="")
-        path = os.path.join(self.base_directory, "data")
-        if not os.path.exists(path):
-            os.makedirs(path)
-        path_to_save = os.path.join(path, "Raw_%s.csv" % fname)
-        np.savetxt(path_to_save, np.array(out_I), delimiter=";",
-                   header=header, comments="")
-        
+      
         return current_vals
 
-    def get_activation_steady_state(self, stimulation_levels: list,
-                                    v_hold: float, t_stop:float,
-                                    power: int, chord_conductance,
-                                    electrode_current,
-                                    normalization="to_one",
-                                    save_traces=True, save_ca=True):
+    def get_activation_SS(self, stimulation_levels: list,
+                          v_hold: float, t_stop:float,
+                          power: int, chord_conductance,
+                          electrode_current,
+                          normalization="to_one",
+                          save_traces=True, save_ca=True):
         """
         Function for running step experiments to determine steady-state
         activation curves.
@@ -686,14 +680,14 @@ class ModelPatch(MembranePatch, NModlChannel):
                        header=header, comments="")
         return current_values
         
-    def get_inactivation_steady_state(self, stimulation_levels: list,
-                                      v_test: float, t_test:float,
-                                      power: int,
-                                      chord_conductance=False,
-                                      leak_subtraction=True,
-                                      electrode_current=True,
-                                      normalization="to_one",
-                                      save_traces=True, save_ca=True):
+    def get_inactivation_SS(self, stimulation_levels: list,
+                            v_test: float, t_test:float,
+                            power: int,
+                            chord_conductance=False,
+                            leak_subtraction=True,
+                            electrode_current=True,
+                            normalization="to_one",
+                            save_traces=True, save_ca=True):
         """
         Function for running step experiments to determine steady-state
         inactivation curves.

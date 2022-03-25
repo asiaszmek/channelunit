@@ -374,16 +374,16 @@ class TestCapabilites(unittest.TestCase):
                                 cm=1, v_rest=-65, directory="", sim_dt=0.01)
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
-        cls.activationY_cc = cls.modelY.get_activation_steady_state(
+        cls.activationY_cc = cls.modelY.get_activation_SS(
             cls.stim_levels_act, -90, 200, 1, chord_conductance=True,
             electrode_current=True)
-        cls.activationY = cls.modelY.get_activation_steady_state(
+        cls.activationY = cls.modelY.get_activation_SS(
             cls.stim_levels_act, -90, 200, 1, chord_conductance=False,
             electrode_current=True)
-        cls.inactivationY_cc = cls.modelY.get_inactivation_steady_state(
+        cls.inactivationY_cc = cls.modelY.get_inactivation_SS(
             cls.stim_levels_inact, -5, 20, 1, chord_conductance=True,
             electrode_current=True)
-        cls.inactivationY = cls.modelY.get_inactivation_steady_state(
+        cls.inactivationY = cls.modelY.get_inactivation_SS(
             cls.stim_levels_inact, -5, 20, 1, chord_conductance=False,
             electrode_current=True)
 
@@ -395,16 +395,16 @@ class TestCapabilites(unittest.TestCase):
                                 v_rest=-65, directory="", sim_dt=0.01)
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
-        cls.activationN_cc = cls.modelN.get_activation_steady_state(
+        cls.activationN_cc = cls.modelN.get_activation_SS(
             cls.stim_levels_act, -90, 200, 1, chord_conductance=True,
             electrode_current=True)
-        cls.activationN = cls.modelN.get_activation_steady_state(
+        cls.activationN = cls.modelN.get_activation_SS(
             cls.stim_levels_act, -90, 200, 1, chord_conductance=False,
             electrode_current=True)
-        cls.inactivationN_cc = cls.modelN.get_inactivation_steady_state(
+        cls.inactivationN_cc = cls.modelN.get_inactivation_SS(
             cls.stim_levels_inact, -5, 20, 1, chord_conductance=True,
             electrode_current=True)
-        cls.inactivationN = cls.modelN.get_inactivation_steady_state(
+        cls.inactivationN = cls.modelN.get_inactivation_SS(
             cls.stim_levels_inact, -5, 20, 1, chord_conductance=False,
             electrode_current=True)
 
