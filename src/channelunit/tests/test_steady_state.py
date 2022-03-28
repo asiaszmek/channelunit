@@ -81,13 +81,14 @@ class BaseSteadyStateTest(Test):
                    ax_1, label, marker="d",
                    xlabel="Voltage (mV)",
                    ylabel="Normalized current"):
-        ax.plot(v_values_1, pred_val_1, marker, label=label)
-        ax.errorbar(v_values_1, obs_val_1, yerr=obs_std_1,
+        print(v_values_1, pred_val_1, obs_val_1, obs_std_1,ax_1)
+        ax_1.plot(v_values_1, pred_val_1, marker, label=label)
+        ax_1.errorbar(v_values_1, obs_val_1, yerr=obs_std_1,
                     marker=marker_1,
                     linewidth=0, label="experimental data")
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        ax.legend()
+        ax_1.set_xlabel(xlabel)
+        ax_1.set_ylabel(ylabel)
+        ax_1.legend()
 
     def generate_figures(self, model, observations, predictions, name):
         v_values = list(observations.keys())

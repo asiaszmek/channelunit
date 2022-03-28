@@ -26,21 +26,10 @@ class SteadyStateTest(Test):
         act_cond = experimental_conditions["Activation"]
         act_cond["electrode_current"] = electrode_current
         act_cond["normalization"] = normalization
-
         inact_obs = observation["Inactivation"]
         inact_cond = experimental_conditions["Inactivation"]
         inact_cond["electrode_current"] = electrode_current
         inact_cond["normalization"] = normalization
-        Test.__init__(self, observation, name)
-        self.electrode_current = electrode_current
-        self.power = power
-        self.normalization = normalization
-        self.required_capabilities += (NModlChannel,)
-        self.base_directory = base_directory
-        self.save_figures = save_figures
-        self.score_type = ZScore_BothSteadyStateCurves
-        self.dpi = 200
-     
         self.act_test = ActivationSteadyStateTest(act_obs, act_cond,
                                                   power["Activation"],
                                                   "%s_%s" %(name,
@@ -54,6 +43,18 @@ class SteadyStateTest(Test):
                                                                  "Inactivation"),
                                                     base_directory,
                                                     save_figures=False)
+        observation = {"Activation": self.act_test.observation,
+                       "Inactivation": self.inact_test.observation}
+        Test.__init__(self, observation, name)
+        self.electrode_current = electrode_current
+        self.power = power
+        self.normalization = normalization
+        self.required_capabilities += (NModlChannel,)
+        self.base_directory = base_directory
+        self.save_figures = save_figures
+        self.score_type = ZScore_BothSteadyStateCurves
+        self.dpi = 200
+     
         
     def run_model(self, model, act_stim_list, act_v_init, act_t_stop,
                   act_power, act_chord_conductance, inact_stim_list,
@@ -81,7 +82,7 @@ class SteadyStateTest(Test):
                 "Inactivation": inact_prediction}
     
 
-    def generate(self, model, verbose=False):
+    def generate_prediction(self, model, verbose=False):
         prediction = self.run_model(model, self.act_test.stimulus_list,
                                     self.act_test.v_init,
                                     self.act_test.t_stop,
