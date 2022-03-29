@@ -6,6 +6,7 @@ from sciunit import Test, Score
 
 from channelunit.capabilities import NModlChannel
 from .test_steady_state import InactivationSteadyStateTest
+from .test_steady_state import BaseSteadyStateTest
 from .test_steady_state import ActivationSteadyStateTest
 from channelunit.scores import ZScore_BothSteadyStateCurves
 
@@ -45,7 +46,7 @@ class SteadyStateTest(Test):
                                                     save_figures=False)
         observation = {"Activation": self.act_test.observation,
                        "Inactivation": self.inact_test.observation}
-        Test.__init__(self, observation, name)
+        super(SteadyStateTest, self).__init__(observation, name)
         self.electrode_current = electrode_current
         self.power = power
         self.normalization = normalization
@@ -54,7 +55,13 @@ class SteadyStateTest(Test):
         self.save_figures = save_figures
         self.score_type = ZScore_BothSteadyStateCurves
         self.dpi = 200
-     
+    
+    def compute_score(self, observation, prediction, verbose=False):
+        score_avg, errors = ZScore_BothSteadyStateCurves.compute(observation,
+                                                                 prediction)
+        score = ZScore_BothSteadyStateCurves(score_avg)
+        return score
+
         
     def run_model(self, model, act_stim_list, act_v_init, act_t_stop,
                   act_power, act_chord_conductance, inact_stim_list,
@@ -123,9 +130,9 @@ class SteadyStateTest(Test):
         act_vals = [observations["Activation"][v][0] for v in act_v]
         act_vals_std = [observations["Activation"][v][1] for v in act_v]
         
-        self.add_to_fig(act_v, act_p, act_val1, act_vals_std,
-                        ax, label, marker="d",
-                        ylabel="Normalized conductance")
+        BaseSteadyStateTest.add_to_figure(act_v, act_p, act_val1, act_vals_std,
+                                          ax, label, marker="d",
+                                          ylabel="Normalized conductance")
         
         ax2 = ax.twinx()
         inact_v = list(observations["Inactivation"].keys())
@@ -133,9 +140,9 @@ class SteadyStateTest(Test):
         inact_vals = [observations["Inactivation"][v][0] for v in inact_v]
         inact_vals_std = [observations["Inactivation"][v][1] for v in inact_v]
         
-        self.add_to_fig(inact_v, inact_p, inact_val1, inact_vals_std,
-                        ax2, label, marker="d",
-                        ylabel="Normalized current")
+        BaseSteadyStateTest.add_to_fig(inact_v, inact_p, inact_val1, inact_vals_std,
+                                       ax2, label, marker="d",
+                                       ylabel="Normalized current")
         ymax = max(max(ax.get_ylim()), max(ax2.get_ylim()))
         ymin = min(min(ax.get_ylim()), min(ax2.get_ylim()))
         ax.set_ylim([ymin, ymax])

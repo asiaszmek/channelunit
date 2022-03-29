@@ -59,7 +59,7 @@ class BaseSteadyStateTest(Test):
             observation[new_key] = new_val
         return observation
 
-    def __init__(self, observation, experimental_conditions, name,
+    def __init__(self, observation, name,
                  base_directory, save_figures):
 
         observation = self.format_data(observation)
@@ -76,12 +76,11 @@ class BaseSteadyStateTest(Test):
         score = ZScore_SteadyStateCurves(score_avg)
         return score
 
-
-    def add_to_fig(v_values_1, pred_val_1, obs_val_1, obs_std_1,
+    @classmethod
+    def add_to_figure(self, v_values_1, pred_val_1, obs_val_1, obs_std_1,
                    ax_1, label, marker="d",
                    xlabel="Voltage (mV)",
                    ylabel="Normalized current"):
-        print(v_values_1, pred_val_1, obs_val_1, obs_std_1,ax_1)
         ax_1.plot(v_values_1, pred_val_1, marker, label=label)
         ax_1.errorbar(v_values_1, obs_val_1, yerr=obs_std_1,
                     marker=marker_1,
@@ -90,6 +89,7 @@ class BaseSteadyStateTest(Test):
         ax_1.set_ylabel(ylabel)
         ax_1.legend()
 
+    @classmethod
     def generate_figures(self, model, observations, predictions, name):
         v_values = list(observations.keys())
         pred_val = [predictions[v] for v in v_values]
@@ -111,8 +111,7 @@ class BaseSteadyStateTest(Test):
         label = ""
         for n in model.channel_names:
             label += n + " "
-        self.add_to_fig(v_values, pred_val, obs_val, obs_std,
-                        ax, label)
+        self.add_to_figure(v_values, pred_val, obs_val, obs_std, ax, label)
         savefig_path = os.path.join(path, "%s_%s.png" % (channel_names_path,
                                                          name))
         fig.savefig(savefig_path, dpi=self.dpi,
@@ -124,12 +123,10 @@ class ActivationSteadyStateTest(BaseSteadyStateTest):
     def __init__(self, observation, experimental_conditions, power: int,
                  name="Activation Steady State Test",
                  base_directory="", save_figures=True):
-        conditions = experimental_conditions
         super(ActivationSteadyStateTest, self).__init__(observation,
-                                                            conditions,
-                                                            name,
-                                                            base_directory,
-                                                            save_figures)
+                                                        name,
+                                                        base_directory,
+                                                        save_figures)
         try:
             self.v_init = experimental_conditions["v_init"]
         except KeyError:
@@ -182,12 +179,10 @@ class InactivationSteadyStateTest(BaseSteadyStateTest):
     def __init__(self, observation, experimental_conditions, power,
                  name="Inctivation Steady State Test",
                  base_directory="", save_figures=True):
-        conditions = experimental_conditions
         super(InactivationSteadyStateTest, self).__init__(observation,
-                                                              conditions,
-                                                              name,
-                                                              base_directory,
-                                                              save_figures)
+                                                          name,
+                                                          base_directory,
+                                                          save_figures)
         try:
             self.v_test = experimental_conditions["v_test"]
         except KeyError:

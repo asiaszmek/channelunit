@@ -19,6 +19,8 @@ class ZScore_SteadyStateCurves(Score):
         for key in prediction.keys():
             error = abs(prediction[key] - observation[key][0])/observation[key][1]
             errors[key] = error
+        print(errors)
+        print(numpy.nanmean(list(errors.values())))
         return numpy.nanmean(list(errors.values())), errors
 
     def __str__(self):
@@ -33,8 +35,8 @@ class ZScore_BothSteadyStateCurves(Score):
         if not isinstance(score, Exception) and not isinstance(score, float):
             raise InvalidScoreError("Score must be a float.")
         else:
-            super(ZScore_SteadyStateCurves, self).__init__(score,
-                                                          related_data=related_data)
+            super(ZScore_BothSteadyStateCurves, self).__init__(score,
+                                                               related_data=related_data)
 
     @classmethod
     def compute(cls, observation, prediction):
@@ -46,6 +48,8 @@ class ZScore_BothSteadyStateCurves(Score):
                 error = abs(prediction[exp][key] - observation[exp][key][0])/observation[exp][key][1]
                 new_key = "%s_%s" % (exp, key)
                 errors[new_key] = error
+        print(errors)
+        print(numpy.nanmean(list(errors.values())))
         return numpy.nanmean(list(errors.values())), errors
 
     def __str__(self):
