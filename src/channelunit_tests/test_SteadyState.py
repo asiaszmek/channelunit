@@ -27,7 +27,7 @@ class TestBaseSteadyState(unittest.TestCase):
         self.assertEqual(out, 5)
 
     def test_make_numeric_3(self):
-        out = SteadyStateTest._get_numerical(5.)
+        out = BaseSteadyStateTest._get_numerical(5.)
         self.assertEqual(out, 5.)
 
     def test_make_numeric_4(self):
