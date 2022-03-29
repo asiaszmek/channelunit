@@ -22,11 +22,11 @@ class TestCaLChannelsLowBariumba(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.modelBa20_H = ModelWholeCellPatchCaSingleChan(channel_loc,
-                                                               "calHGHK",
-                                                               "ba",
-                                                               external_conc=20,
-                                                               temp=22,
-                                                               ljp=0)
+                                                          "calHGHK",
+                                                          "ba",
+                                                          external_conc=20,
+                                                          temp=22,
+                                                          ljp=0, gbar_value=0.00001)
         activation_data = np.loadtxt(activation_loc_Cal_20_Ba, skiprows=1,
                                      delimiter=",")
         cls.power = 1
@@ -61,6 +61,12 @@ class TestCaLChannelsLowBariumba(unittest.TestCase):
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)
 
+    def test_gbar_val(self):
+        gbar_val = self.modelBa20_H.patch.psection()["density_mechs"]["calHGHK"]["gbar"]
+        print(self.modelBa20_H.ca_decay)
+        print(self.modelBa20_H.decay_eq)
+        print(self.modelBa20_H.patch.psection())
+        self.assertEqual(gbar_val, [0.00002])
         
 class TestCaLChannelsLowBariumBa(unittest.TestCase):
     @classmethod

@@ -19,8 +19,6 @@ class ZScore_SteadyStateCurves(Score):
         for key in prediction.keys():
             error = abs(prediction[key] - observation[key][0])/observation[key][1]
             errors[key] = error
-        print(errors)
-        print(numpy.nanmean(list(errors.values())))
         return numpy.nanmean(list(errors.values())), errors
 
     def __str__(self):
@@ -48,8 +46,6 @@ class ZScore_BothSteadyStateCurves(Score):
                 error = abs(prediction[exp][key] - observation[exp][key][0])/observation[exp][key][1]
                 new_key = "%s_%s" % (exp, key)
                 errors[new_key] = error
-        print(errors)
-        print(numpy.nanmean(list(errors.values())))
         return numpy.nanmean(list(errors.values())), errors
 
     def __str__(self):

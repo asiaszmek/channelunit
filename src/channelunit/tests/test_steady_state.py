@@ -78,18 +78,17 @@ class BaseSteadyStateTest(Test):
 
     @classmethod
     def add_to_figure(self, v_values_1, pred_val_1, obs_val_1, obs_std_1,
-                   ax_1, label, marker="d",
-                   xlabel="Voltage (mV)",
-                   ylabel="Normalized current"):
-        ax_1.plot(v_values_1, pred_val_1, marker, label=label)
+                      ax_1, label, marker="d", color="g", 
+                      xlabel="Voltage (mV)",
+                      ylabel="Normalized current"):
+        ax_1.plot(v_values_1, pred_val_1, marker, color=color, label=label)
         ax_1.errorbar(v_values_1, obs_val_1, yerr=obs_std_1,
-                    marker=marker_1,
-                    linewidth=0, label="experimental data")
+                      marker=marker, color=color,  markerfacecolor='none',
+                      linewidth=0, label="experimental data")
         ax_1.set_xlabel(xlabel)
         ax_1.set_ylabel(ylabel)
-        ax_1.legend()
+        
 
-    @classmethod
     def generate_figures(self, model, observations, predictions, name):
         v_values = list(observations.keys())
         pred_val = [predictions[v] for v in v_values]
@@ -112,6 +111,7 @@ class BaseSteadyStateTest(Test):
         for n in model.channel_names:
             label += n + " "
         self.add_to_figure(v_values, pred_val, obs_val, obs_std, ax, label)
+        ax.legend(loc=2)
         savefig_path = os.path.join(path, "%s_%s.png" % (channel_names_path,
                                                          name))
         fig.savefig(savefig_path, dpi=self.dpi,

@@ -90,6 +90,7 @@ class SteadyStateTest(Test):
     
 
     def generate_prediction(self, model, verbose=False):
+        
         prediction = self.run_model(model, self.act_test.stimulus_list,
                                     self.act_test.v_init,
                                     self.act_test.t_stop,
@@ -102,6 +103,8 @@ class SteadyStateTest(Test):
                                     self.inact_test.chord_conductance,
                                     self.electrode_current,
                                     self.normalization)
+        if self.save_figures:
+            self.generate_figures(model, self.observation, prediction, "SST")
         return prediction
 
 
@@ -129,25 +132,35 @@ class SteadyStateTest(Test):
         act_p = [predictions["Activation"][v] for v in act_v]
         act_vals = [observations["Activation"][v][0] for v in act_v]
         act_vals_std = [observations["Activation"][v][1] for v in act_v]
-        
-        BaseSteadyStateTest.add_to_figure(act_v, act_p, act_val1, act_vals_std,
-                                          ax, label, marker="d",
-                                          ylabel="Normalized conductance")
-        
+        if self.act_test.chord_conductance:
+            label1 = "Normalized conductance"
+        else:
+            label1 = "Normalized current"
+        if self.inact_test.chord_conductance:
+            label2 = "Normalized conductance"
+        else:
+            label2 = "Normalized current"
+
         ax2 = ax.twinx()
+        BaseSteadyStateTest.add_to_figure(act_v, act_p, act_vals, act_vals_std,
+                                          ax2, label,
+                                          ylabel=label1)
+        
+        
         inact_v = list(observations["Inactivation"].keys())
         inact_p = [predictions["Inactivation"][v] for v in inact_v]
         inact_vals = [observations["Inactivation"][v][0] for v in inact_v]
         inact_vals_std = [observations["Inactivation"][v][1] for v in inact_v]
         
-        BaseSteadyStateTest.add_to_fig(inact_v, inact_p, inact_val1, inact_vals_std,
-                                       ax2, label, marker="d",
-                                       ylabel="Normalized current")
+        BaseSteadyStateTest.add_to_figure(inact_v, inact_p, inact_vals,
+                                          inact_vals_std,
+                                          ax, label, marker="o", color="k",
+                                          ylabel=label2)
         ymax = max(max(ax.get_ylim()), max(ax2.get_ylim()))
         ymin = min(min(ax.get_ylim()), min(ax2.get_ylim()))
         ax.set_ylim([ymin, ymax])
         ax2.set_ylim([ymin, ymax])
-                   
+        ax.legend(loc=3)
         savefig_path = os.path.join(path, "Steady_state_%s_%s.png"
                                     % (channel_names_path, name))
         fig.savefig(savefig_path, dpi=self.dpi,
