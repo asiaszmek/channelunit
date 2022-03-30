@@ -161,8 +161,8 @@ class TestInactivationSteadyState(unittest.TestCase):
         cls.power = 1
         cls.test = InactivationSteadyStateTest(cls.inactivation_data,
                                                {"v_test": -5, "t_test": 10,
-                                                "chord_conductance":True,
-                                                "electrode_current":True,
+                                                "chord_conductance":False,
+                                                "electrode_current":False,
                                                 "normalization": "to_one"}, 1,
                                                "InactivationSSTest",
                                                save_figures=True)
