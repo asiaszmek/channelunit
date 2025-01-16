@@ -51,7 +51,6 @@ PARAMETER {
 ASSIGNED { 
     v (mV)
     ica (mA/cm2)
-    eca (mV)
     celsius (degC)
     cai (mM)
     cao (mM)
