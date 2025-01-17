@@ -19,19 +19,18 @@ class TestCaTChannels_ca(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.modelca_10_H = ModelWholeCellPatchCaSingleChan(channel_loc,
-                                                          "TC_iT_Des98",
+                                                          "caT",
                                                           "ca",
-                                                           external_conc=20,
-                                                           temp=22,
+                                                           external_conc=10,
+                                                           temp=25,
                                                            ljp=0,
-                                                           gbar_name="gbar",
-                                                           gbar_value=0.00001)
+                                                           gbar_value=0.001)
         activation_data = np.loadtxt(activation_loc_CaT_10_ca, skiprows=1,
                                      delimiter=",")
         cls.power = 2
         cls.activation_data = dict(val.tolist() for val in activation_data)
         cls.test_ca10 = ActivationSteadyStateTest(cls.activation_data,
-                                                  {"v_init": -15, "t_stop": 65,
+                                                  {"v_init": -20, "t_stop": 120,
                                                    "electrode_current": False,
                                                    "chord_conductance":False,
                                                    "normalization": "to_one"},
@@ -49,7 +48,7 @@ class TestCaTChannels_ca(unittest.TestCase):
        
 
     def test_summarize_H(self):
-        self.score = self.test_ca10.judge(self.modelca10_H)
+        self.score = self.test_ca10.judge(self.modelca_10_H)
         self.score.summarize()
 
     def test_run_model_H_keys(self):
@@ -62,11 +61,11 @@ class TestCaTChannels_ca(unittest.TestCase):
         self.assertTrue(is_all_less_1)
 
     def test_gbar_val(self):
-        gbar_val = self.modelca10_H.patch.psection()["density_mechs"]["calHGHK"]["gbar"]
-        print(self.modelca10_H.ca_decay)
-        print(self.modelca10_H.decay_eq)
-        print(self.modelca10_H.patch.psection())
-        self.assertEqual(gbar_val, [0.00002])
+        gbar_val = self.modelca_10_H.patch.psection()["density_mechs"]["caT"]["gbar"]
+        print(self.modelca_10_H.ca_decay)
+        print(self.modelca_10_H.decay_eq)
+        print(self.modelca_10_H.patch.psection())
+        self.assertEqual(gbar_val, [0.0002])
         
 
 

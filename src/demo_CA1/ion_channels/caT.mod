@@ -28,15 +28,6 @@ TITLE Low threshold calcium current
 : Modified qm and qh by Elisabetta Iavarone @ Blue Brain Project
 : See PARAMETER section for references
 
-INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}
-
-NEURON {
-	SUFFIX TC_iT_Des98
-	USEION cat READ cati, cato WRITE icat
-	RANGE pcabar, m_inf, tau_m, h_inf, tau_h, shift, actshift
-	GLOBAL qm, qh, km, kh
-}
-
 UNITS {
 	(molar) = (1/liter)
 	(mV) =	(millivolt)
@@ -47,27 +38,34 @@ UNITS {
 	R = (k-mole) (joule/degC)
 }
 
+
+NEURON {
+        THREADSAFE
+	SUFFIX caT
+	USEION ca READ cai, cao WRITE ica VALENCE 2
+	RANGE gbar, ica
+	GLOBAL qm, qh, km, kh, shift, actshift
+}
+
+
 PARAMETER {
-	v		(mV)
-	:celsius	= 36	(degC)
-	celsius 	(degC)  : EI
-	pcabar	=.2e-3	(cm/s)	: Maximum Permeability
+	gbar	=.2e-3	(cm/s)	: Maximum Permeability
 	shift	= 2 	(mV)	: corresponds to 2mM ext Ca++
 	actshift = 0 	(mV)	: shift of activation curve (towards hyperpol)
-	cati	= 2.4e-4 (mM)	: adjusted for eca2=120 mV
-	cato	= 2	(mM)
 	qm      = 2.5		: Amarillo et al., J Neurophysiol, 2014
 	qh      = 2.5           : Amarillo et al., J Neurophysiol, 2014
         km      = 6.2
-        kh      = 4.0
-}
-
-STATE {
-	m h
+	kh      = 4.0
+        T_denom = 10 (degC)
+        T_thresh = 23.5 (degC)					  
 }
 
 ASSIGNED {
-	icat	(mA/cm2)
+        v (mV)
+	ica	(mA/cm2)
+	celsius (degC)
+        cai (mM)
+        cao (mM)
 	m_inf
 	tau_m	(ms)
 	h_inf
@@ -76,31 +74,41 @@ ASSIGNED {
 	phi_h
 }
 
+
+
+STATE {
+	m h
+}
+
+
+
 BREAKPOINT {
 	SOLVE castate METHOD cnexp
-	icat = pcabar * m*m*h * ghk(v, cati, cato)
+	ica = gbar * m*m*h * ghk(v, cai, cao)
+}
+
+INITIAL {
+	
+	phi_m = qm ^ ((celsius-T_thresh)/T_denom)
+	phi_h = qh ^ ((celsius-T_thresh)/T_denom)
+        evaluate_fct()
+	m = m_inf
+	h = h_inf
 }
 
 DERIVATIVE castate {
-	evaluate_fct(v)
+	evaluate_fct()
 
 	m' = (m_inf - m) / tau_m
 	h' = (h_inf - h) / tau_h
 }
 
 
+
+
 UNITSOFF
-INITIAL {
-	phi_m = qm ^ ((celsius-24)/10)
-	phi_h = qh ^ ((celsius-24)/10)
 
-	evaluate_fct(v)
-
-	m = m_inf
-	h = h_inf
-}
-
-PROCEDURE evaluate_fct(v(mV)) {
+PROCEDURE evaluate_fct() {
 :
 :   The kinetic functions are taken as described in the model of 
 :   Huguenard & McCormick, and corresponds to a temperature of 23-25 deg.
@@ -129,7 +137,8 @@ PROCEDURE evaluate_fct(v(mV)) {
 
 	: EI compare with tau_h on ModelDB, no. 3817
 }
-
+UNITSON
+		     
 FUNCTION ghk(v(mV), ci(mM), co(mM)) (.001 coul/cm3) {
 	LOCAL z, eci, eco
 	z = (1e-3)*2*FARADAY*v/(R*(celsius+273.15))
@@ -147,7 +156,4 @@ FUNCTION efun(z) {
 		efun = z/(exp(z) - 1)
 	}
 }
-FUNCTION nongat(v,cati,cato) {	: non gated current
-	nongat = pcabar * ghk(v, cati, cato)
-}
-UNITSON
+
