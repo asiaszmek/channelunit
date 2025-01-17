@@ -13,7 +13,7 @@ UNITS {
 
 NEURON {
     THREADSAFE
-    SUFFIX TCcal
+    SUFFIX TC_cal
     USEION ca READ cai, cao WRITE ica VALENCE 2
     RANGE gbar, ica
     
@@ -22,6 +22,7 @@ NEURON {
 PARAMETER {
     gbar = 1e-4 (cm/s)
     T_denom = 10 (degC)
+    T_thresh = 23.5 (degC)
 } 
 
 ASSIGNED { 
@@ -44,8 +45,9 @@ BREAKPOINT {
 }
 
 INITIAL {
-    rates()
-    m = minf
+     tcorr = 3^((celsius-T_thresh)/T_denom)
+     rates()
+     m = minf
     
 }
 
@@ -58,7 +60,7 @@ DERIVATIVE states {
 
 UNITSOFF
 PROCEDURE rates() {LOCAL a, b
-    tcorr = 3^((celsius-23.5)/T_denom)			 
+    			 
     a = 1.6 / (1+ exp(-0.072*(v-5)))
     b = 0.02 * vtrap( -(v-1.31), 5.36)
 

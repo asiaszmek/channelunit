@@ -119,7 +119,7 @@ class TestCaLChannelsLowCalciumca(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.modelCa20_H = ModelWholeCellPatchCaSingleChan(channel_loc,
-                                                     "calHGHK",
+                                                     "TC_cal",
                                                      "ca",
                                                      external_conc=1.5,
                                                      temp=22,
