@@ -44,7 +44,7 @@ NEURON {
 	SUFFIX caT
 	USEION ca READ cai, cao WRITE ica VALENCE 2
 	RANGE gbar, ica
-	GLOBAL qm, qh, km, kh, shift, actshift
+
 }
 
 
@@ -88,9 +88,6 @@ BREAKPOINT {
 }
 
 INITIAL {
-	
-	phi_m = qm ^ ((celsius-T_thresh)/T_denom)
-	phi_h = qh ^ ((celsius-T_thresh)/T_denom)
         evaluate_fct()
 	m = m_inf
 	h = h_inf
@@ -98,7 +95,6 @@ INITIAL {
 
 DERIVATIVE castate {
 	evaluate_fct()
-
 	m' = (m_inf - m) / tau_m
 	h' = (h_inf - h) / tau_h
 }
@@ -108,7 +104,7 @@ DERIVATIVE castate {
 
 UNITSOFF
 
-PROCEDURE evaluate_fct() {
+PROCEDURE evaluate_fct() {LOCAL phi_m, phi_h
 :
 :   The kinetic functions are taken as described in the model of 
 :   Huguenard & McCormick, and corresponds to a temperature of 23-25 deg.
@@ -124,15 +120,16 @@ PROCEDURE evaluate_fct() {
 :   using these values reproduce more closely the voltage clamp experiments.
 :   (cfr. Huguenard & McCormick, J Neurophysiol, 1992).
 :
-
+	phi_m = qm ^ ((celsius-T_thresh)/T_denom)
+	phi_h = qh ^ ((celsius-T_thresh)/T_denom)
 	m_inf = 1.0 / ( 1 + exp(-(v+shift+actshift+57)/km) )
 	h_inf = 1.0 / ( 1 + exp((v+shift+81)/kh) )
 
-	tau_m = ( 0.612 + 1.0 / ( exp(-(v+shift+actshift+132)/16.7) + exp((v+shift+actshift+16.8)/18.2) ) ) / phi_m
-	if( (v+shift) < -80) {
-		tau_h = exp((v+shift+467)/66.6) / phi_h
+	tau_m = ( 0.612 + 1.0 / ( exp(-(v+shift+actshift+132 (mV))/16.7 (mV)) + exp((v+shift+actshift+16.8 (mV))/18.2 (mV)) ) ) / phi_m
+	if( (v+shift) < -80 (mV)) {
+		tau_h = exp((v+shift+467 (mV))/66.6 (mV)) / phi_h
 	} else {
-		tau_h = ( 28 + exp(-(v+shift+22)/10.5) ) / phi_h
+		tau_h = ( 28 (mV) + exp(-(v+shift+22 (mV))/10.5 (mV)) ) / phi_h
 	}
 
 	: EI compare with tau_h on ModelDB, no. 3817

@@ -4,68 +4,102 @@ import unittest
 import numpy as np
 
 from channelunit.tests import ActivationSteadyStateTest
+from channelunit.tests import InactivationSteadyStateTest
+
 from channelunit import ModelWholeCellPatchCaSingleChan
 from channelunit import data_path
 
 
 channel_loc = os.path.join(data_path, "ion_channels")
 
-activation_loc_CaT_10_ca = os.path.join(data_path, "data",
-                                           "TC_CaT_Stuart_act.csv")
-inactivation_loc_CaT_10_ca = os.path.join(data_path, "data",
-                                             "TC_CaT_Stuart_inact.csv")
+activation_loc_CaT_2_ca = os.path.join(data_path, "data",
+                                       "McRory_cat_a1g_act.csv")
+inactivation_loc_CaT_2_ca = os.path.join(data_path, "data",
+                                         "McRory_cat_a1g_inact.csv")
 
 class TestCaTChannels_ca(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.modelca_10_H = ModelWholeCellPatchCaSingleChan(channel_loc,
-                                                          "caT",
+        cls.modelca_2_H = ModelWholeCellPatchCaSingleChan(channel_loc,
+                                                          "ca12dZUy",
                                                           "ca",
-                                                           external_conc=10,
-                                                           temp=25,
+                                                           external_conc=2,
+                                                           temp=22,
                                                            ljp=0,
                                                            gbar_value=0.001)
-        activation_data = np.loadtxt(activation_loc_CaT_10_ca, skiprows=1,
+        activation_data = np.loadtxt(activation_loc_CaT_2_ca, skiprows=1,
                                      delimiter=",")
-        cls.power = 2
+        inactivation_data = np.loadtxt(inactivation_loc_CaT_2_ca, skiprows=1,
+                                        delimiter=",")
+        cls.power = 1
         cls.activation_data = dict(val.tolist() for val in activation_data)
-        cls.test_ca10 = ActivationSteadyStateTest(cls.activation_data,
-                                                  {"v_init": -20, "t_stop": 120,
+        cls.inactivation_data = dict(val.tolist() for val in inactivation_data)
+        
+        cls.act_test_ca2 = ActivationSteadyStateTest(cls.activation_data,
+                                                  {"v_init": -80, "t_stop": 15,
                                                    "electrode_current": False,
                                                    "chord_conductance":False,
                                                    "normalization": "to_one"},
                                                   1,
-                                                  "ActvationSSTestCaTca",
+                                                  "ActivationSSTestCaTca",
                                                   save_figures=True)
-        cls.act_results = cls.test_ca10.run_model(cls.modelca_10_H,
-                                                  cls.test_ca10.stimulus_list,
-                                                  cls.test_ca10.v_init,
-                                                  cls.test_ca10.t_stop,
+
+        cls.inact_test_ca2 = InactivationSteadyStateTest(cls.inactivation_data,
+                                                  {"v_test": -30, "t_test": 1000,
+                                                   "electrode_current": False,
+                                                   "chord_conductance":False,
+                                                   "normalization": "to_one"},
+                                                  1,
+                                                  "InactivationSSTestCaTca",
+                                                  save_figures=True)
+        cls.act_results = cls.act_test_ca2.run_model(cls.modelca_2_H,
+                                                  cls.act_test_ca2.stimulus_list,
+                                                  cls.act_test_ca2.v_init,
+                                                  cls.act_test_ca2.t_stop,
                                                   cls.power,
-                                                  cls.test_ca10.chord_conductance,
-                                                  cls.test_ca10.electrode_current,
+                                                  cls.act_test_ca2.chord_conductance,
+                                                  cls.act_test_ca2.electrode_current,
                                                   "to_one")
+        cls.inact_results = cls.inact_test_ca2.run_model(cls.modelca_2_H,
+                                                          cls.inact_test_ca2.stimulus_list,
+                                                          cls.inact_test_ca2.v_test,
+                                                          cls.inact_test_ca2.t_test,
+                                                          cls.power,
+                                                          cls.inact_test_ca2.chord_conductance,
+                                                          cls.inact_test_ca2.electrode_current,
+                                                          "to_one")
        
 
-    def test_summarize_H(self):
-        self.score = self.test_ca10.judge(self.modelca_10_H)
+    def test_act_summarize_H(self):
+        self.score = self.act_test_ca2.judge(self.modelca_2_H)
         self.score.summarize()
 
-    def test_run_model_H_keys(self):
+    def test_act_run_model_H_keys(self):
         self.assertEqual(list(self.act_results.keys()),
-                         self.test_ca10.stimulus_list)
+                         self.act_test_ca2.stimulus_list)
 
-    def test_run_model_H_values(self):
+    def test_act_run_model_H_values(self):
         values = np.array(list(self.act_results.values()))
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)
 
+    def test_inact_summarize_H(self):
+        self.score = self.inact_test_ca2.judge(self.modelca_2_H)
+        self.score.summarize()
+
+    def test_inact_run_model_H_keys(self):
+        self.assertEqual(list(self.inact_results.keys()),
+                         self.inact_test_ca2.stimulus_list)
+
+    def test_inact_run_model_H_values(self):
+        values = np.array(list(self.inact_results.values()))
+        is_all_less_1 = np.all((values<=1))
+        self.assertTrue(is_all_less_1)
+
     def test_gbar_val(self):
-        gbar_val = self.modelca_10_H.patch.psection()["density_mechs"]["caT"]["gbar"]
-        print(self.modelca_10_H.ca_decay)
-        print(self.modelca_10_H.decay_eq)
-        print(self.modelca_10_H.patch.psection())
-        self.assertEqual(gbar_val, [0.0002])
+        gbar_val = self.modelca_2_H.patch.psection()["density_mechs"]["ca12dZUy"]["gbar"]
+
+        self.assertEqual(gbar_val, [8e-3])
         
 
 
