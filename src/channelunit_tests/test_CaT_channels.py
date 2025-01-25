@@ -99,7 +99,7 @@ class TestCaTChannels_ca(unittest.TestCase):
     def test_gbar_val(self):
         gbar_val = self.modelca_2_H.patch.psection()["density_mechs"]["ca12dZUy"]["gbar"]
 
-        self.assertEqual(gbar_val, [8e-3])
+        self.assertEqual(gbar_val, [7e-6])
         
 
 

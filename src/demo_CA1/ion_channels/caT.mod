@@ -88,6 +88,8 @@ BREAKPOINT {
 }
 
 INITIAL {
+     	phi_m = qm ^ ((celsius-T_thresh)/T_denom)
+	phi_h = qh ^ ((celsius-T_thresh)/T_denom)
         evaluate_fct()
 	m = m_inf
 	h = h_inf
@@ -104,7 +106,7 @@ DERIVATIVE castate {
 
 UNITSOFF
 
-PROCEDURE evaluate_fct() {LOCAL phi_m, phi_h
+PROCEDURE evaluate_fct() {
 :
 :   The kinetic functions are taken as described in the model of 
 :   Huguenard & McCormick, and corresponds to a temperature of 23-25 deg.
@@ -120,8 +122,6 @@ PROCEDURE evaluate_fct() {LOCAL phi_m, phi_h
 :   using these values reproduce more closely the voltage clamp experiments.
 :   (cfr. Huguenard & McCormick, J Neurophysiol, 1992).
 :
-	phi_m = qm ^ ((celsius-T_thresh)/T_denom)
-	phi_h = qh ^ ((celsius-T_thresh)/T_denom)
 	m_inf = 1.0 / ( 1 + exp(-(v+shift+actshift+57)/km) )
 	h_inf = 1.0 / ( 1 + exp((v+shift+81)/kh) )
 
