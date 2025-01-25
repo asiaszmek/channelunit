@@ -414,7 +414,7 @@ class ModelPatch(MembranePatch, NModlChannel):
         out_I = []
         if not electrode_current:
             leak_subtraction = False
-            delay = 200
+            delay = 1000
             shift = 0
             a_shift = 0
         if leak_subtraction:
@@ -422,7 +422,7 @@ class ModelPatch(MembranePatch, NModlChannel):
             shift = SHIFT
             a_shift = (self.patch.cm/self.patch.g_pas)*1e-3
         else:
-            delay = 200
+            delay = 1000
             shift = 0
             a_shift = 0
         if save_traces:
@@ -594,13 +594,13 @@ class ModelPatch(MembranePatch, NModlChannel):
         """
         if not electrode_current:
             leak_subtraction = False
-            delay = 200
+            delay = 1000
             shift, a_shift = 0, 0
         if leak_subtraction:
             delay = t_test
             shift, a_shift = SHIFT, SHIFT
         else:
-            delay = 200
+            delay = 1000
             shift, a_shift = 0, 0
         if save_traces:
             fname = self.generate_fname("Inactivation_traces",
