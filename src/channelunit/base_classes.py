@@ -167,7 +167,7 @@ class MembranePatch(sciunit.Model):
 class ModelPatch(MembranePatch, NModlChannel):
     _nai = 10  # mM
     _ki = 140  # mM
-    _cai = 100e-6  # mM
+    _cai = 50e-6  # mM
     def __init__(self, path_to_mods: str, channel_names: list, ion_names: list,
                  external_conc: dict, internal_conc: dict, E_rev: dict,
                  gbar_names: dict, gbar_values: dict,
