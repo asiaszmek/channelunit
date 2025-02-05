@@ -17,9 +17,9 @@ mechanisms_path = os.path.join(loc, 'mechanisms')
 
 
 N = 4
-DT = 0.01
+DT = 0.0001
 
-SHIFT = 0.2
+
 F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
 
@@ -130,11 +130,11 @@ class MembranePatch(sciunit.Model):
                            leak_subtraction):
         beg_stim = int(np.round(dur1/dt))
         end_stim = int(np.round((dur1+dur2)/dt))
-        current = I[beg_stim: end_stim]
+        current = I.copy()
         if leak_subtraction:
             beg = int(np.round((dur1 - dur2)/dt))
-            current -= I[beg: beg_stim]
-        return current.copy()
+            current[beg_stim: end_stim] -= I[beg: beg_stim]
+        return current
 
     @classmethod
     def curr_leak_amp(self, I, dur1, dur2, dt):
@@ -416,19 +416,17 @@ class ModelPatch(MembranePatch, NModlChannel):
           duration of the simulation
         """
         out_I = []
+
         if not electrode_current:
             leak_subtraction = False
-            delay = 1000
+            delay = 100
             shift = 0
-            a_shift = 0
-        if leak_subtraction:
-            delay = t_stop
-            shift = SHIFT
-            a_shift = (self.patch.cm/self.patch.g_pas)*1e-3
+            filtering = False
         else:
-            delay = 1000
-            shift = 0
-            a_shift = 0
+            filtering = True
+            leak_subtraction = True
+            delay = t_stop
+            shift = 0#(self.patch.cm/self.patch.g_pas)*1e-3
         if save_traces:
             fname = self.generate_fname("Activation_traces",
                                         min(stimulation_levels),
@@ -461,8 +459,9 @@ class ModelPatch(MembranePatch, NModlChannel):
         time.record(h._ref_t, self.dt)
 
         stim_start = int(delay/self.dt)
+
         for i, level in enumerate(stimulation_levels):
-            stim_stop = self.set_vclamp(delay+a_shift, v_hold, t_stop, level,
+            stim_stop = self.set_vclamp(delay, v_hold, t_stop, level,
                                         leak_subtraction)
             h.finitialize(v_hold)
             if self.cvode:
@@ -475,26 +474,27 @@ class ModelPatch(MembranePatch, NModlChannel):
             I = current.as_numpy()
             if not i:
                 out_I.append(time.as_numpy())
-            out_I.append(current.as_numpy().copy())  
+            out_I.append(current.as_numpy().copy())
             out = self.extract_current(I, chord_conductance,
                                        leak_subtraction,
-                                       delay+a_shift, t_stop, self.dt)
-            beg = int(np.round((delay+a_shift)/self.dt))
+                                       delay+shift, t_stop, self.dt,
+                                       filtering=filtering)
+            beg = 0#int(np.round((shift+delay)/self.dt))
             end = int(np.round((delay+t_stop)/self.dt))
             if save_ca:
                 if not i:
-                    save_time = time.as_numpy()[beg: end].copy()
-                    calcium_vals.append(save_time)
+                    save_time = time.as_numpy().copy()
+                    calcium_vals.append(save_time[beg: end])
   
-                calcium_vals.append(calcium.as_numpy()[beg: end].copy())
+                calcium_vals.append(calcium.as_numpy().copy()[beg: end])
             if save_traces:
                 if not i:
-                    save_time = time.as_numpy()[beg: end].copy()
-                    output.append(save_time)
-                output.append(out[int(np.round(a_shift/self.dt)):])
+                    save_time = time.as_numpy().copy()
+                    output.append(save_time[beg: end])
+                output.append(out[beg:end])
                 header += ";%4.2f" % level
-            current_vals[level] = out[int(np.round(a_shift/self.dt)):].copy()
-
+            current_vals[level] = out.copy()
+      
         if save_traces:
             path = os.path.join(self.base_directory, "data")
             if not os.path.exists(path):
@@ -598,14 +598,14 @@ class ModelPatch(MembranePatch, NModlChannel):
         """
         if not electrode_current:
             leak_subtraction = False
-            delay = 1000
-            shift, a_shift = 0, 0
-        if leak_subtraction:
-            delay = t_test
-            shift, a_shift = SHIFT, SHIFT
+            delay = 100
+            shift = 0
+            filtering = False
         else:
-            delay = 1000
-            shift, a_shift = 0, 0
+            filtering = True
+            leak_subtraction = True
+            delay = t_stop
+            shift = 0#(self.patch.cm/self.patch.g_pas)*1e-3
         if save_traces:
             fname = self.generate_fname("Inactivation_traces",
                                         min(stimulation_levels),
@@ -638,7 +638,7 @@ class ModelPatch(MembranePatch, NModlChannel):
         time = h.Vector()
         time.record(h._ref_t, self.dt)
         for i, v_hold in enumerate(stimulation_levels):
-            t_stop = self.set_vclamp(delay+a_shift, v_hold, t_test, v_test,
+            t_stop = self.set_vclamp(delay, v_hold, t_test, v_test,
                                      leak_subtraction)
             h.finitialize(v_hold)
             if self.cvode:
@@ -651,23 +651,23 @@ class ModelPatch(MembranePatch, NModlChannel):
             I = current.as_numpy()
             out = self.extract_current(I,
                                        chord_conductance,
-                                       leak_subtraction, delay+a_shift,
+                                       leak_subtraction, delay,
                                        t_test, self.dt)
 
-            beg = int(np.round((delay+a_shift)/self.dt))
+            beg = int(np.round(delay/self.dt))
             end = int(np.round((delay+t_test)/self.dt))
             if save_ca:
                 if not i:
-                    save_time = time.as_numpy()[beg: end].copy()
-                    calcium_vals.append(save_time)
-                calcium_vals.append(calcium.as_numpy()[beg: end].copy())
+                    save_time = time.as_numpy().copy()
+                    calcium_vals.append(save_time[beg: end])
+                calcium_vals.append(calcium.as_numpy().copy()[beg: end])
             if save_traces:
                 if not i:
-                    save_time = time.as_numpy()[beg: end].copy()
-                    output.append(save_time)
-                output.append(out[int(np.round(a_shift/self.dt)):])
+                    save_time = time.as_numpy().copy()
+                    output.append(save_time[beg: end])
+                output.append(out)
                 header += ";%4.2f" % v_hold
-            current_values[v_hold] = out[int(np.round(a_shift/self.dt)):].copy()
+            current_values[v_hold] = out.copy()
         if save_traces:
             path = os.path.join(self.base_directory, "data")
             if not os.path.exists(path):
@@ -748,8 +748,10 @@ class ModelPatch(MembranePatch, NModlChannel):
                                           leak_subtraction)
         #either step injection or the short pulse
         if leak_subtraction:
+            beg = int(dur1/dt)
+            end = int((dur1+dur2)/dt)
             pulse = self.curr_leak_amp(filter_current, dur1, dur2, dt)
-            current = current - pulse
+            current[beg:end] = current[beg:end] - pulse
         
         if chord_conductance:
             current = current/(self.vclamp.amp2 - self.E_rev[self.ion_names[0]])
