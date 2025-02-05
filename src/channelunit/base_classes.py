@@ -2,6 +2,7 @@ import os
 from subprocess import run
 
 import numpy as np
+from scipy.signal import bessel, filtfilt
 
 import sciunit
 from neuron import h
@@ -51,6 +52,9 @@ class MembranePatch(sciunit.Model):
             self.sim_dt = sim_dt
             h.dt = self.sim_dt
             self.cvode = False
+        self.f_b, self.f_a = bessel(2, 100, btype='low',
+                                    analog=False, norm='phase',
+                                    fs=1000/DT/2)
         
     def compile_and_add(self, path, recompile):
         working_dir = os.getcwd()
@@ -735,13 +739,16 @@ class ModelPatch(MembranePatch, NModlChannel):
                 
     def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
                         dur2, dt):
-        #dt = self.dt
-
-        current = self.curr_stim_response(I, dur1, dur2, dt,
+        
+        if dt != DT:
+            self.f_b, self.f_a = bessel(2, 100, btype='low', analog=False,
+                                        norm='phase', fs=1000/DT/2)
+        filter_current = filtfilt(self.f_b, self.f_a, I)
+        current = self.curr_stim_response(filter_current, dur1, dur2, dt,
                                           leak_subtraction)
         #either step injection or the short pulse
         if leak_subtraction:
-            pulse = self.curr_leak_amp(I, dur1, dur2, dt)
+            pulse = self.curr_leak_amp(filter_current, dur1, dur2, dt)
             current = current - pulse
         
         if chord_conductance:
