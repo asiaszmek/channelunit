@@ -166,7 +166,8 @@ class TestModelPatch(unittest.TestCase):
     def test_extract_current_chord_conductance(self):
         dt = 0.01
         I = np.ones((int((10+20)/dt)))
-        out = self.modelJ.extract_current(I, True, False, 10, 20, dt)
+        out = self.modelJ.extract_current(I, True, False, 10, 20, dt,
+                                          filtering=False)
         expected = I[int(10/dt):]/(self.modelJ.vclamp.amp2
                                    - self.modelJ.E_rev["na"])
         comparison = np.allclose(expected, out)
@@ -196,7 +197,7 @@ class TestModelPatch(unittest.TestCase):
             I[int((t_start+dur2)/dt):int((t_start+dur2+delay)/dt)] = -5
             t_start += dur2 + delay
         out = self.modelJ.extract_current(I, True, True, dur1, dur2, 
-                                          dt)
+                                          dt, filtering=False)
         expected = (I[int(dur1/dt):int((dur1+dur2)/dt)]
                     -4*(5+2))/(self.modelJ.vclamp.amp2
                                - self.modelJ.E_rev["na"])
@@ -219,7 +220,8 @@ class TestModelPatch(unittest.TestCase):
             I[int(t_start/dt):int((t_start+dur2)/dt)] = 2
             I[int((t_start+dur2)/dt):int((t_start+dur2+delay)/dt)] = -5
             t_start += dur2 + delay
-        out = self.modelJ.extract_current(I, False, True, dur1, dur2, dt)
+        out = self.modelJ.extract_current(I, False, True, dur1, dur2, dt,
+                                          filtering=False)
         expected = (I[int(dur1/dt):int((dur1+dur2)/dt)]-4*(5+2))
         comparison = np.allclose(expected, out)
         self.assertTrue(comparison)
