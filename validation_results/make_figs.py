@@ -21,11 +21,13 @@ for fname in files:
     fig, ax = plt.subplots(1, 1)
     for i, level in enumerate(header[1:]):
         ax.plot(time, data[i+1, :], colors[i], label="%s mV"%level)
-    if "calcium" not in fname:
+    if "Ca_con" not in fname:
         ax.set_ylabel("Current (nA)")
     else:
         ax.set_ylabel("Ca concentration (mM)")
     ax.set_xlabel("time (ms)")
     ax.set_title(fname)
     ax.legend()
-plt.show()
+    print(fname[:-4]+".png")
+    fig.savefig(fname[:-4]+".png", dpi=100)
+    plt.show()
