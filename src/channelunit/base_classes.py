@@ -251,8 +251,10 @@ class ModelPatch(MembranePatch, NModlChannel):
         
     def add_channel(self, channel_name, gbar_name, gbar_value):
         self.channel_names.append(channel_name)
-        self.channels.append(self.patch.insert(channel_name))
+        self.patch.insert(channel_name)
+
         chan = self.patch.psection()["density_mechs"][channel_name]
+        self.channels.append(chan)
         if gbar_name not in chan.keys():
             raise SystemExit('Unable to proceed, unknown %s conductance (gbar)'
                              % channel_name)
@@ -446,9 +448,10 @@ class ModelPatch(MembranePatch, NModlChannel):
                                                      chord_conductance)
         time = h.Vector()
         time.record(h._ref_t, self.dt)
-
+        voltage = h.Vector()
+        voltage.record(self.patch(0.5)._ref_v, self.dt)
         stim_start = int(delay/self.dt)
-        
+        out_v = []
         beg = int(np.round((shift+delay)/self.dt))
         end = int(np.round((delay+t_stop)/self.dt))
         for i, level in enumerate(stimulation_levels):
@@ -470,7 +473,8 @@ class ModelPatch(MembranePatch, NModlChannel):
             out_I.append(current.as_numpy().copy())
             out = self.extract_current(I, chord_conductance,
                                        leak_subtraction,
-                                       delay+shift, t_stop, self.dt)
+                                       delay+shift, t_stop, self.dt,
+                                       voltage.as_numpy()[-1])
 
             if save_ca:
                 if not i:
@@ -483,6 +487,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                     save_time = time.as_numpy().copy()
                     output.append(save_time[beg: end].copy())
                 output.append(out[beg: end].copy())
+                
                 header += ";%4.2f" % level
             current_vals[level] = out[beg: end].copy()
 
@@ -493,6 +498,7 @@ class ModelPatch(MembranePatch, NModlChannel):
             path_to_save = os.path.join(path, "%s.csv" % fname)
             np.savetxt(path_to_save, np.array(output), delimiter=";",
                        header=header, comments="")
+       
         if save_ca:
             path = os.path.join(self.base_directory, "data")
             if not os.path.exists(path):
@@ -625,6 +631,9 @@ class ModelPatch(MembranePatch, NModlChannel):
                                                      chord_conductance)
         time = h.Vector()
         time.record(h._ref_t, self.dt)
+        voltage = h.Vector()
+        voltage.record(self.patch(0.5)._ref_v, self.dt)
+
         for i, v_hold in enumerate(stimulation_levels):
             t_stop = self.set_vclamp(delay, v_hold, t_test, v_test,
                                      leak_subtraction)
@@ -640,7 +649,8 @@ class ModelPatch(MembranePatch, NModlChannel):
             out = self.extract_current(I,
                                        chord_conductance,
                                        leak_subtraction, delay,
-                                       t_test, self.dt)
+                                       t_test, self.dt,
+                                       voltage.as_numpy()[-1])
 
             beg = int(np.round(delay/self.dt))
             end = int(np.round((delay+t_test)/self.dt))
@@ -724,7 +734,7 @@ class ModelPatch(MembranePatch, NModlChannel):
         return result
                 
     def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
-                        dur2, dt):
+                        dur2, dt, v=None):
 
         filter_current = lfilter(self.f_b, self.f_a, I)
         current = self.curr_stim_response(filter_current, dur1, dur2, dt,
@@ -737,7 +747,7 @@ class ModelPatch(MembranePatch, NModlChannel):
             current[beg:end] = current[beg:end] - pulse
         
         if chord_conductance:
-            current = current/(self.vclamp.amp2 - self.E_rev[self.ion_names[0]])
+            current = current/(v - self.E_rev[self.ion_names[0]])
         return current.copy()
 
     @staticmethod
