@@ -27,7 +27,7 @@ class ModelWholeCellPatch(ModelPatch, WholeCellAttributes):
                                                   cm=cm, v_rest=v_rest,
                                                   E_rev=E_rev,
                                                   gbar_values=gbar_values,
-                                                  sim_dt=0.001,
+                                                  sim_dt=0.0001,
                                                   directory="")
         self._L = L
         self._diam = diam
@@ -97,7 +97,7 @@ class ModelWholeCellPatchCa(ModelPatchCa, WholeCellAttributes):
                  gbar_values={}, t_decay=20, L=10, diam=10, Ra=100,
                  buffer_capacity=18,
                  membrane_shell_width=memb_shell_width,
-                 directory="validation_results", sim_dt=0.001):
+                 directory="validation_results", sim_dt=0.0001):
         """
         Model class for testing calcium channels with 
         cap -- nF, cell capacitance 

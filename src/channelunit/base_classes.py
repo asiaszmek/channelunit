@@ -53,7 +53,7 @@ class MembranePatch(sciunit.Model):
             h.dt = self.sim_dt
             self.cvode = False
         self.f_b, self.f_a = bessel(8, 2000, btype='low',
-                                    analog=True, norm='mag')
+                                    analog=False, norm='mag', fs=1/DT)
         
     def compile_and_add(self, path, recompile):
         working_dir = os.getcwd()
@@ -414,17 +414,13 @@ class ModelPatch(MembranePatch, NModlChannel):
           duration of the simulation
         """
         out_I = []
+        delay = 100
+        shift = (self.patch.cm/self.patch.g_pas)*1e-3
 
         if not electrode_current:
             leak_subtraction = False
-            delay = 100
-            shift = 0
-            filtering = False
         else:
-            filtering = True
             leak_subtraction = True
-            delay = t_stop
-            shift = (self.patch.cm/self.patch.g_pas)*1e-3
         if save_traces:
             fname = self.generate_fname("Activation_traces",
                                         min(stimulation_levels),
@@ -478,8 +474,7 @@ class ModelPatch(MembranePatch, NModlChannel):
             out_I.append(current.as_numpy().copy())
             out = self.extract_current(I, chord_conductance,
                                        leak_subtraction,
-                                       delay+shift, t_stop, self.dt,
-                                       filtering=filtering)
+                                       delay+shift, t_stop, self.dt)
 
             if save_ca:
                 if not i:
@@ -595,16 +590,13 @@ class ModelPatch(MembranePatch, NModlChannel):
           in many experiments current is normalized by membrane voltage
           minus the ion's reversal potential.
         """
+        delay = 100
+        shift = (self.patch.cm/self.patch.g_pas)*1e-3
         if not electrode_current:
             leak_subtraction = False
-            delay = 100
-            shift = 0
-            filtering = False
         else:
-            filtering = True
             leak_subtraction = True
-            delay = t_stop
-            shift = (self.patch.cm/self.patch.g_pas)*1e-3
+        
         if save_traces:
             fname = self.generate_fname("Inactivation_traces",
                                         min(stimulation_levels),
@@ -651,7 +643,7 @@ class ModelPatch(MembranePatch, NModlChannel):
             out = self.extract_current(I,
                                        chord_conductance,
                                        leak_subtraction, delay,
-                                       t_test, self.dt, filtering=filtering)
+                                       t_test, self.dt)
 
             beg = int(np.round(delay/self.dt))
             end = int(np.round((delay+t_test)/self.dt))
@@ -735,11 +727,9 @@ class ModelPatch(MembranePatch, NModlChannel):
         return result
                 
     def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
-                        dur2, dt, filtering=True):
-        if filtering:
-            filter_current = lfilter(self.f_b, self.f_a, I)
-        else:
-            filter_current = I    
+                        dur2, dt):
+
+        filter_current = lfilter(self.f_b, self.f_a, I)
         current = self.curr_stim_response(filter_current, dur1, dur2, dt,
                                           leak_subtraction)
         #either step injection or the short pulse
@@ -760,6 +750,7 @@ class ModelPatch(MembranePatch, NModlChannel):
         """
         values = np.array(list(current.values()))
         factor = max(abs(values))
+        print(factor)
         new_current = {}
         if factor < 1e-2:
             for key in current.keys():
