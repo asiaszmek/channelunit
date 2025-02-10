@@ -2,7 +2,7 @@ import os
 from subprocess import run
 
 import numpy as np
-from scipy.signal import bessel, filtfilt
+from scipy.signal import bessel, lfilter
 
 import sciunit
 from neuron import h
@@ -16,8 +16,8 @@ mechanisms_path = os.path.join(loc, 'mechanisms')
 
 
 
-N = 4
-DT = 0.0001
+N = 8
+DT = 5e-5  #  Magee digitizes at 20kHz
 
 
 F = 96485.33212  # C mol^-1
@@ -52,9 +52,8 @@ class MembranePatch(sciunit.Model):
             self.sim_dt = sim_dt
             h.dt = self.sim_dt
             self.cvode = False
-        self.f_b, self.f_a = bessel(2, 100, btype='low',
-                                    analog=False, norm='phase',
-                                    fs=1000/DT/2)
+        self.f_b, self.f_a = bessel(8, 2000, btype='low',
+                                    analog=True, norm='mag')
         
     def compile_and_add(self, path, recompile):
         working_dir = os.getcwd()
@@ -340,17 +339,17 @@ class ModelPatch(MembranePatch, NModlChannel):
             fname = "%s_%s" % (fname, channel_name)
         for ion_name in self.external_conc.keys():
             if self.external_conc[ion_name]:
-                fname = "%s_%s_ext_%4.2f_mM" % (fname, ion_name,
+                fname = "%s_%s_ext_%6.2f_mM" % (fname, ion_name,
                                                 self.external_conc[ion_name])
         if "ca" in self.ion_names or "Ca" in self.ion_names:
-             fname = "%s_int_Ca_%4.2f_mM" % (fname, self._cai)
+             fname = "%s_int_Ca_%6.2f_mM" % (fname, self._cai)
         if chord_conductance:
             for ion_name in self.E_rev:
                 if self.E_rev[ion_name] is not None:
-                    fname = "%s_E_%s_rev_%4.2f_mV" % (fname, ion_name,
+                    fname = "%s_E_%s_rev_%6.2f_mV" % (fname, ion_name,
                                                       self.E_rev[ion_name])
       
-        fname = "%s_from_%4.2f_mV_to_%4.2f_mV" % (fname, stim_beg, stim_end)
+        fname = "%s_from_%4.2f_mV_to_%6.2f_mV" % (fname, stim_beg, stim_end)
         
         if self.cvode:
             fname = "%s_cvode" % fname
@@ -387,7 +386,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
                               electrode_current=True,
-                              save_traces=True, save_ca=True):
+                              save_traces=True, save_ca=False):
         """
         Function for running step experiments to determine 
         current/chord conductance traces
@@ -518,7 +517,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                           power: int, chord_conductance,
                           electrode_current,
                           normalization="to_one",
-                          save_traces=True, save_ca=True):
+                          save_traces=True, save_ca=False):
         """
         Function for running step experiments to determine steady-state
         activation curves.
