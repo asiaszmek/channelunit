@@ -16,7 +16,7 @@ mechanisms_path = os.path.join(loc, 'mechanisms')
 
 
 
-N = 8
+N = 4
 DT = 5e-5  #  Magee digitizes at 20kHz
 
 
