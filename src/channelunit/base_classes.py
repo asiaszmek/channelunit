@@ -24,9 +24,6 @@ F = 96485.33212  # C mol^-1
 R = 8.314462618  # J mol^-1 K^-1
 
 class MembranePatch(sciunit.Model):
-    # def __init__(self, temp=22, Rm=20000, cm=1,
-    #              v_rest=-65, ljp=0,
-    #              cvode=True, sim_dt=0.001):
     def __init__(self, temp, Rm, cm,
                  v_rest, ljp, cvode, sim_dt):
         h.load_file("stdrun.hoc")
@@ -120,8 +117,7 @@ class MembranePatch(sciunit.Model):
         else:
             h.fcurrent()
         h.frecord_init()
-        h.tstop = t_stop
-        h.run()
+        h.continuerun(t_stop)
         return current.as_numpy()
 
     @classmethod
@@ -464,8 +460,10 @@ class ModelPatch(MembranePatch, NModlChannel):
             else:
                 h.fcurrent()
             h.frecord_init()
+
             h.tstop = stim_stop
-            h.run()
+            h.continuerun(stim_stop)
+
             I = current.as_numpy()
             if not i:
                 out_I.append(time.as_numpy())
@@ -637,7 +635,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                 h.fcurrent()
             h.frecord_init()
             h.tstop = t_stop
-            h.run()
+            h.continuerun(t_stop)
             I = current.as_numpy()
             out = self.extract_current(I,
                                        chord_conductance,
