@@ -6,10 +6,11 @@ class NModlChannel(sciunit.Capability):
     that must be implemented by the patch model class.
     """
     def get_activation_SS(self, stimulation_levels: list,
-                          v_init: float, t_stop:float,
-                          chord_conductance=False,
-                          electrode_current=True,
-                          sim_dt=1e-5, normalization="to_one"):
+                          v_hold: float, t_stop:float,
+                          power: int, t_mes, chord_conductance,
+                          electrode_current,
+                          normalization="to_one",
+                          save_traces=True, save_ca=False):
         """This function must be implemented by the patch model class.
         """
 
@@ -17,9 +18,11 @@ class NModlChannel(sciunit.Capability):
 
     def get_inactivation_SS(self, stimulation_levels: list,
                             v_test: float, t_test:float,
+                            power: int, t_mes,
                             chord_conductance=False,
                             electrode_current=True,
-                            sim_dt=1e-5, normalization="to_one"):
+                            normalization="to_one",
+                            save_traces=True, save_ca=True):
         """This function must be implemented by the patch model class.
         """
 
@@ -29,7 +32,7 @@ class NModlChannel(sciunit.Capability):
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
                               electrode_current=True,
-                              sim_dt=1e-5, interval=200):
+                              save_traces=True, save_ca=False):
         """This function must be implemented by the patch model class.
         """
 
@@ -37,9 +40,10 @@ class NModlChannel(sciunit.Capability):
   
     def get_inactivation_traces(self, stimulation_levels: list,
                                 v_test: float, t_test:float,
-                                chord_conductance=False,
-                                electrode_current=True,
-                                sim_dt=1e-5, interval=200):
+                                chord_conductance,
+                                electrode_current,
+                                save_traces=True, save_ca=True):
+
         
         """This function must be implemented by the patch model class.
         """

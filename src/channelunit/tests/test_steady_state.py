@@ -144,6 +144,10 @@ class ActivationSteadyStateTest(BaseSteadyStateTest):
         except KeyError:
             raise SystemExit("It must be specified, if it's an electrode_current")
         try:
+            self.t_mes = experimental_conditions["t_mes"]
+        except KeyError:
+            self.t_mes = None    
+        try:
             self.normalization = experimental_conditions["normalization"]
         except KeyError:
             raise SystemExit("It must be specified, if currents normalized to_one")    
@@ -152,9 +156,10 @@ class ActivationSteadyStateTest(BaseSteadyStateTest):
         self.stimulus_list = self.extract_stimulation(self.observation)
 
     def run_model(self, model, stim_list, v_init, t_stop,
-                  power, chord_conductance, electrode_current, normalization):
+                  power, t_mes, chord_conductance, electrode_current,
+                  normalization):
         return model.get_activation_SS(stim_list,
-                                       v_init, t_stop, power,
+                                       v_init, t_stop, power, t_mes, 
                                        chord_conductance,
                                        electrode_current,
                                        normalization=normalization)
@@ -163,7 +168,7 @@ class ActivationSteadyStateTest(BaseSteadyStateTest):
     def generate_prediction(self, model, verbose=False):
         
         prediction = self.run_model(model, self.stimulus_list, self.v_init,
-                                    self.t_stop, self.power,
+                                    self.t_stop, self.power, self.t_mes,
                                     self.chord_conductance,
                                     self.electrode_current,
                                     self.normalization)
@@ -192,6 +197,11 @@ class InactivationSteadyStateTest(BaseSteadyStateTest):
         except KeyError:
             raise SystemExit("Please provide stim length (t_test (ms)) in experimental_conditions")
         try:
+            self.t_mes = experimental_conditions["t_mes"]
+        except KeyError:
+            self.t_mes = None
+
+        try:
             self.chord_conductance = experimental_conditions["chord_conductance"]
         except KeyError:
             raise SystemExit("chord_conductance not specified in experimental conditions")
@@ -207,10 +217,10 @@ class InactivationSteadyStateTest(BaseSteadyStateTest):
         self.observation = OrderedDict(sorted(self.observation.items()))
         self.stimulus_list = self.extract_stimulation(self.observation)
 
-    def run_model(self, model, stim_list, v_test, t_test, power,
+    def run_model(self, model, stim_list, v_test, t_test, power, t_mes,
                   chord_conductance, electrode_current, normalization):
         return model.get_inactivation_SS(stim_list,
-                                         v_test, t_test, power,
+                                         v_test, t_test, power, t_mes,
                                          chord_conductance,
                                          electrode_current,
                                          normalization=normalization)
@@ -219,7 +229,7 @@ class InactivationSteadyStateTest(BaseSteadyStateTest):
     def generate_prediction(self, model, verbose=False):
         
         prediction = self.run_model(model, self.stimulus_list, self.v_test,
-                                    self.t_test, self.power,
+                                    self.t_test, self.power, self.t_mes,
                                     self.chord_conductance,
                                     self.electrode_current,
                                     self.normalization)

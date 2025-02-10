@@ -52,7 +52,7 @@ class MembranePatch(sciunit.Model):
             self.sim_dt = sim_dt
             h.dt = self.sim_dt
             self.cvode = False
-        self.f_b, self.f_a = bessel(8, 2000, btype='low',
+        self.f_b, self.f_a = bessel(8, 100, btype='low',
                                     analog=False, norm='mag', fs=1/DT)
         
     def compile_and_add(self, path, recompile):
@@ -415,8 +415,7 @@ class ModelPatch(MembranePatch, NModlChannel):
         """
         out_I = []
         delay = 100
-        shift = (self.patch.cm/self.patch.g_pas)*1e-3
-
+        shift = 0 #(self.patch.cm/self.patch.g_pas)*1e-3
         if not electrode_current:
             leak_subtraction = False
         else:
@@ -456,7 +455,6 @@ class ModelPatch(MembranePatch, NModlChannel):
         
         beg = int(np.round((shift+delay)/self.dt))
         end = int(np.round((delay+t_stop)/self.dt))
-
         for i, level in enumerate(stimulation_levels):
             stim_stop = self.set_vclamp(delay, v_hold, t_stop, level,
                                         leak_subtraction)
@@ -485,11 +483,11 @@ class ModelPatch(MembranePatch, NModlChannel):
             if save_traces:
                 if not i:
                     save_time = time.as_numpy().copy()
-                    output.append(save_time[beg: end])
-                output.append(out[beg:end])
+                    output.append(save_time[beg: end].copy())
+                output.append(out[beg: end].copy())
                 header += ";%4.2f" % level
-            current_vals[level] = out.copy()
-      
+            current_vals[level] = out[beg: end].copy()
+
         if save_traces:
             path = os.path.join(self.base_directory, "data")
             if not os.path.exists(path):
@@ -509,7 +507,7 @@ class ModelPatch(MembranePatch, NModlChannel):
 
     def get_activation_SS(self, stimulation_levels: list,
                           v_hold: float, t_stop:float,
-                          power: int, chord_conductance,
+                          power: int, t_mes, chord_conductance,
                           electrode_current,
                           normalization="to_one",
                           save_traces=True, save_ca=False):
@@ -554,7 +552,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                                               save_traces=save_traces,
                                               save_ca=save_ca)
         
-        max_current = self.get_max_of_dict(currents)
+        max_current = self.get_max_of_dict(currents, t_mes, self.dt)
         result = self.normalize_to_one(max_current, normalization)
         if power != 1:
             for key in result.keys():
@@ -591,7 +589,8 @@ class ModelPatch(MembranePatch, NModlChannel):
           minus the ion's reversal potential.
         """
         delay = 100
-        shift = (self.patch.cm/self.patch.g_pas)*1e-3
+        shift = 0 # (self.patch.cm/self.patch.g_pas)*1e-3
+
         if not electrode_current:
             leak_subtraction = False
         else:
@@ -656,7 +655,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                 if not i:
                     save_time = time.as_numpy().copy()
                     output.append(save_time[beg: end])
-                output.append(out)
+                output.append(out[beg: end].copy())
                 header += ";%4.2f" % v_hold
             current_values[v_hold] = out.copy()
         if save_traces:
@@ -677,7 +676,7 @@ class ModelPatch(MembranePatch, NModlChannel):
         
     def get_inactivation_SS(self, stimulation_levels: list,
                             v_test: float, t_test:float,
-                            power: int,
+                            power: int, t_mes,
                             chord_conductance=False,
                             electrode_current=True,
                             normalization="to_one",
@@ -719,7 +718,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                                                 chord_conductance,
                                                 save_traces=save_traces,
                                                 save_ca=save_ca)
-        max_current = self.get_max_of_dict(currents)
+        max_current = self.get_max_of_dict(currents, t_mes, self.dt)
         result = self.normalize_to_one(max_current, normalization)
         if power != 1:
             for key in result.keys():
@@ -750,7 +749,6 @@ class ModelPatch(MembranePatch, NModlChannel):
         """
         values = np.array(list(current.values()))
         factor = max(abs(values))
-        print(factor)
         new_current = {}
         if factor < 1e-2:
             for key in current.keys():
@@ -764,14 +762,17 @@ class ModelPatch(MembranePatch, NModlChannel):
         return new_current
 
     @staticmethod
-    def get_max_of_dict(current):
+    def get_max_of_dict(current, t_mes, dt):
         new_current = {}
         for key in current.keys():
-            #inward currents are negative
-            if max(current[key]) < max(abs(current[key])):
-                new_current[key] = min(current[key])                
+            if t_mes is None:
+                #inward currents are negative
+                if max(current[key]) < max(abs(current[key])):
+                    new_current[key] = min(current[key])                
+                else:
+                    new_current[key] = max(current[key])
             else:
-                new_current[key] = max(current[key])
+                 new_current[key] = current[key][int(t_mes/dt)]
         return new_current
 
     
@@ -815,12 +816,13 @@ class ModelPatch(MembranePatch, NModlChannel):
                                           self.external_conc[ion])
         if ion == "k":
             self.patch.ek = self.E_rev[ion]
+            
         elif ion == "na":
             self.patch.ena = self.E_rev[ion]
         elif ion == "ca":
             self.patch.eca = self.E_rev[ion]
         elif ion == "Ca":
-            self.patch.eCa = self.E_rev[ion]  
+            self.patch.eCa = self.E_rev[ion]
 
     @property
     def ki(self):
