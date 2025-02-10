@@ -387,8 +387,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                               v_hold: float, t_stop:float,
                               chord_conductance=False,
                               electrode_current=True,
-                              save_traces=True, save_ca=True,
-                              leak_subtraction=True):
+                              save_traces=True, save_ca=True):
         """
         Function for running step experiments to determine 
         current/chord conductance traces
@@ -426,7 +425,7 @@ class ModelPatch(MembranePatch, NModlChannel):
             filtering = True
             leak_subtraction = True
             delay = t_stop
-            shift = 0#(self.patch.cm/self.patch.g_pas)*1e-3
+            shift = (self.patch.cm/self.patch.g_pas)*1e-3
         if save_traces:
             fname = self.generate_fname("Activation_traces",
                                         min(stimulation_levels),
@@ -459,6 +458,9 @@ class ModelPatch(MembranePatch, NModlChannel):
         time.record(h._ref_t, self.dt)
 
         stim_start = int(delay/self.dt)
+        
+        beg = int(np.round((shift+delay)/self.dt))
+        end = int(np.round((delay+t_stop)/self.dt))
 
         for i, level in enumerate(stimulation_levels):
             stim_stop = self.set_vclamp(delay, v_hold, t_stop, level,
@@ -479,8 +481,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                                        leak_subtraction,
                                        delay+shift, t_stop, self.dt,
                                        filtering=filtering)
-            beg = 0#int(np.round((shift+delay)/self.dt))
-            end = int(np.round((delay+t_stop)/self.dt))
+
             if save_ca:
                 if not i:
                     save_time = time.as_numpy().copy()
@@ -570,8 +571,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                                 v_test: float, t_test:float,
                                 chord_conductance,
                                 electrode_current,
-                                save_traces=True, save_ca=True,
-                                leak_subtraction=True):
+                                save_traces=True, save_ca=True):
         """
         Function for running step experiments to determine steady-state
         inactivation currents.
@@ -605,7 +605,7 @@ class ModelPatch(MembranePatch, NModlChannel):
             filtering = True
             leak_subtraction = True
             delay = t_stop
-            shift = 0#(self.patch.cm/self.patch.g_pas)*1e-3
+            shift = (self.patch.cm/self.patch.g_pas)*1e-3
         if save_traces:
             fname = self.generate_fname("Inactivation_traces",
                                         min(stimulation_levels),
@@ -652,7 +652,7 @@ class ModelPatch(MembranePatch, NModlChannel):
             out = self.extract_current(I,
                                        chord_conductance,
                                        leak_subtraction, delay,
-                                       t_test, self.dt)
+                                       t_test, self.dt, filtering=filtering)
 
             beg = int(np.round(delay/self.dt))
             end = int(np.round((delay+t_test)/self.dt))
@@ -688,7 +688,6 @@ class ModelPatch(MembranePatch, NModlChannel):
                             v_test: float, t_test:float,
                             power: int,
                             chord_conductance=False,
-                            leak_subtraction=True,
                             electrode_current=True,
                             normalization="to_one",
                             save_traces=True, save_ca=True):
@@ -727,7 +726,6 @@ class ModelPatch(MembranePatch, NModlChannel):
         currents = self.get_inactivation_traces(stimulation_levels,
                                                 v_test, t_test,
                                                 chord_conductance,
-                                                leak_subtraction,
                                                 save_traces=save_traces,
                                                 save_ca=save_ca)
         max_current = self.get_max_of_dict(currents)
@@ -738,12 +736,11 @@ class ModelPatch(MembranePatch, NModlChannel):
         return result
                 
     def extract_current(self, I, chord_conductance, leak_subtraction, dur1,
-                        dur2, dt):
-        
-        if dt != DT:
-            self.f_b, self.f_a = bessel(2, 100, btype='low', analog=False,
-                                        norm='phase', fs=1000/DT/2)
-        filter_current = filtfilt(self.f_b, self.f_a, I)
+                        dur2, dt, filtering=True):
+        if filtering:
+            filter_current = lfilter(self.f_b, self.f_a, I)
+        else:
+            filter_current = I    
         current = self.curr_stim_response(filter_current, dur1, dur2, dt,
                                           leak_subtraction)
         #either step injection or the short pulse

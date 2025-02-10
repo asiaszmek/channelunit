@@ -86,7 +86,7 @@ class TestCaLChannelsLowCalciumca(unittest.TestCase):
             cls.activation_data[val[0]] = val[1:].tolist()
         cls.test_Ca20 = ActivationSteadyStateTest(cls.activation_data,
                                                   {"v_init": -90, "t_stop": 70,
-                                                   "electrode_current": True,
+                                                   "electrode_current": False,
                                                    "chord_conductance":False,
                                                    "normalization":
                                                    "save_sign"}, 1,
