@@ -58,6 +58,7 @@ class TestProximalKA(unittest.TestCase):
                                                       cls.test_K_A_type.v_init,
                                                       cls.test_K_A_type.t_stop,
                                                       cls.power,
+                                                      cls.test_K_A_type.t_mes,
                                                       cls.test_K_A_type.chord_conductance,
                                                       cls.test_K_A_type.electrode_current,
                                                       "save_sign")
@@ -85,7 +86,7 @@ class TestDistalKA(unittest.TestCase):
                                                      "kap",
                                                      "k",
                                                      external_conc=2.5,
-                                                     temp=22,
+                                                     temp=22, v_rest=-65,
                                                      ljp=0)
 
         activation_data = np.loadtxt(activation_loc_K_A_p, skiprows=1,
@@ -105,13 +106,14 @@ class TestDistalKA(unittest.TestCase):
                                                 "ActvationSSTest",
                                                 save_figures=True)
         cls.act_results = cls.test_K_A_type.run_model(cls.modelKap,
-                                                  cls.test_K_A_type.stimulus_list,
-                                                  cls.test_K_A_type.v_init,
-                                                  cls.test_K_A_type.t_stop,
-                                                  cls.power,
-                                                  cls.test_K_A_type.chord_conductance,
-                                                  cls.test_K_A_type.electrode_current,
-                                                  "save_sign")
+                                                      cls.test_K_A_type.stimulus_list,
+                                                      cls.test_K_A_type.v_init,
+                                                      cls.test_K_A_type.t_stop,
+                                                      cls.power,
+                                                      cls.test_K_A_type.t_mes,
+                                                      cls.test_K_A_type.chord_conductance,
+                                                      cls.test_K_A_type.electrode_current,
+                                                      "save_sign")
 
 
     def test_summarize(self):

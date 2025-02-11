@@ -49,6 +49,7 @@ class TestProximalKM(unittest.TestCase):
                                                       cls.test_K_M_type.v_init,
                                                       cls.test_K_M_type.t_stop,
                                                       cls.power,
+                                                      cls.test_K_M_type.t_mes,
                                                       cls.test_K_M_type.chord_conductance,
                                                       cls.test_K_M_type.electrode_current,
                                                       "save_sign")

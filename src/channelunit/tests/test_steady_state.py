@@ -219,10 +219,10 @@ class InactivationSteadyStateTest(BaseSteadyStateTest):
 
     def run_model(self, model, stim_list, v_test, t_test, power, t_mes,
                   chord_conductance, electrode_current, normalization):
-        return model.get_inactivation_SS(stim_list,
-                                         v_test, t_test, power, t_mes,
-                                         chord_conductance,
-                                         electrode_current,
+        return model.get_inactivation_SS(stimulation_levels=stim_list, v_test=v_test,
+                                         t_test=t_test, power=power, t_mes=t_mes,
+                                         chord_conductance=chord_conductance,
+                                         electrode_current=electrode_current,
                                          normalization=normalization)
     
 

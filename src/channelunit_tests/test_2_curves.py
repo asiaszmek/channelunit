@@ -19,7 +19,7 @@ class TestSteadyState(unittest.TestCase):
     def setUpClass(cls):
         cls.model = ModelWholeCellPatchSingleChan(channel_loc, "na3", "na",
                                                   external_conc=110,
-                                                  temp=22,
+                                                  temp=22, v_rest=-70,
                                                   ljp=0)
         
         activation_data = np.loadtxt(activation_loc, skiprows=1,
@@ -35,7 +35,7 @@ class TestSteadyState(unittest.TestCase):
         cls.experimental_conditions = {"Activation": {"v_init": -90,
                                                       "t_stop": 200,
                                                       "chord_conductance":
-                                                      True},
+                                                      False},
                                        "Inactivation": {"v_test": -5,
                                                         "t_test": 10,
                                                         "chord_conductance":

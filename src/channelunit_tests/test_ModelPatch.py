@@ -150,34 +150,36 @@ class TestModelPatch(unittest.TestCase):
  
     def test_max_of_dict(self):
         dict1 = {1: np.array([1,3,4,1]), 2: np.array([2,2,2,1])}
-        self.assertEqual(ModelPatch.get_max_of_dict(dict1),
+        self.assertEqual(ModelPatch.get_max_of_dict(dict1, None, 1),
                          {1: 4, 2:2})
 
     def test_max_of_dict_1(self):
         dict1 = {1: np.array([-1, -3, -4, -1]), 2: np.array([-2,-2,-2,-1])}
-        self.assertEqual(ModelPatch.get_max_of_dict(dict1),
+        self.assertEqual(ModelPatch.get_max_of_dict(dict1, None, 1),
                          {1: -4, 2:-2})
     
     def test_max_of_dict_3(self):
         dict1 = {1: np.array([1,3,4,1]), 2: np.array([-2,-2,-2,1])}
-        self.assertEqual(ModelPatch.get_max_of_dict(dict1),
+        self.assertEqual(ModelPatch.get_max_of_dict(dict1, None, 1),
                          {1: 4, 2:-2})
   
     def test_extract_current_chord_conductance(self):
         dt = 0.01
         I = np.ones((int((10+20)/dt)))
         out = self.modelJ.extract_current(I, True, False, 10, 20, dt,
+                                          v=self.modelJ.vclamp.amp2,
                                           filtering=False)
         expected = I[int(10/dt):]/(self.modelJ.vclamp.amp2
                                    - self.modelJ.E_rev["na"])
-        comparison = np.allclose(expected, out)
+        comparison = np.allclose(expected, out[int(10/dt):])
         self.assertTrue(comparison)
 
     def test_extract_current_nothing(self):
         dt = 0.01
         I = np.ones((int((10+20)/dt)))
-        out = self.modelJ.extract_current(I, False, False, 10, 20, dt)
-        expected = I[int(10/dt):]
+        out = self.modelJ.extract_current(I, False, False, 10, 20, dt,
+                                          filtering=False)
+        expected = I
         comparison = np.allclose(expected, out)
         self.assertTrue(comparison)
 
@@ -197,11 +199,15 @@ class TestModelPatch(unittest.TestCase):
             I[int((t_start+dur2)/dt):int((t_start+dur2+delay)/dt)] = -5
             t_start += dur2 + delay
         out = self.modelJ.extract_current(I, True, True, dur1, dur2, 
-                                          dt, filtering=False)
+                                          dt, v=self.modelJ.vclamp.amp2,
+                                          filtering=False)
+
         expected = (I[int(dur1/dt):int((dur1+dur2)/dt)]
                     -4*(5+2))/(self.modelJ.vclamp.amp2
                                - self.modelJ.E_rev["na"])
-        comparison = np.allclose(expected, out)
+
+        comparison = np.allclose(expected,
+                                 out[int(dur1/dt):int((dur1+dur2)/dt)])
 
         self.assertTrue(comparison)
 
@@ -223,7 +229,8 @@ class TestModelPatch(unittest.TestCase):
         out = self.modelJ.extract_current(I, False, True, dur1, dur2, dt,
                                           filtering=False)
         expected = (I[int(dur1/dt):int((dur1+dur2)/dt)]-4*(5+2))
-        comparison = np.allclose(expected, out)
+        comparison = np.allclose(expected,
+                                 out[int(dur1/dt):int((dur1+dur2)/dt)])
         self.assertTrue(comparison)
         
     def test_normalize_to_one(self):
@@ -377,16 +384,16 @@ class TestCapabilites(unittest.TestCase):
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
         cls.activationY_cc = cls.modelY.get_activation_SS(
-            cls.stim_levels_act, -90, 200, 1, chord_conductance=True,
+            cls.stim_levels_act, -90, 200, 1, None, chord_conductance=True,
             electrode_current=True)
         cls.activationY = cls.modelY.get_activation_SS(
-            cls.stim_levels_act, -90, 200, 1, chord_conductance=False,
+            cls.stim_levels_act, -90, 200, 1, None, chord_conductance=False,
             electrode_current=True)
         cls.inactivationY_cc = cls.modelY.get_inactivation_SS(
-            cls.stim_levels_inact, -5, 20, 1, chord_conductance=True,
+            cls.stim_levels_inact, -5, 20, 1, None, chord_conductance=True,
             electrode_current=True)
         cls.inactivationY = cls.modelY.get_inactivation_SS(
-            cls.stim_levels_inact, -5, 20, 1, chord_conductance=False,
+            cls.stim_levels_inact, -5, 20, 1, None, chord_conductance=False,
             electrode_current=True)
 
         cls.modelN = ModelPatch(channel_loc, ["na3"], ["na"],
@@ -398,16 +405,16 @@ class TestCapabilites(unittest.TestCase):
         cls.stim_levels_act = [-50, -40, -30, -20, -10, 0]
         cls.stim_levels_inact = [-105, -95, -85, -75, -65, -55, -45]
         cls.activationN_cc = cls.modelN.get_activation_SS(
-            cls.stim_levels_act, -90, 200, 1, chord_conductance=True,
+            cls.stim_levels_act, -90, 200, 1, None, chord_conductance=True,
             electrode_current=True)
         cls.activationN = cls.modelN.get_activation_SS(
-            cls.stim_levels_act, -90, 200, 1, chord_conductance=False,
+            cls.stim_levels_act, -90, 200, 1, None, chord_conductance=False,
             electrode_current=True)
         cls.inactivationN_cc = cls.modelN.get_inactivation_SS(
-            cls.stim_levels_inact, -5, 20, 1, chord_conductance=True,
+            cls.stim_levels_inact, -5, 20, 1, None, chord_conductance=True,
             electrode_current=True)
         cls.inactivationN = cls.modelN.get_inactivation_SS(
-            cls.stim_levels_inact, -5, 20, 1, chord_conductance=False,
+            cls.stim_levels_inact, -5, 20, 1, None, chord_conductance=False,
             electrode_current=True)
 
     def test_keys_activationY(self):

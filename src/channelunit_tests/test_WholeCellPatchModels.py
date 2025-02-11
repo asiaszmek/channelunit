@@ -19,16 +19,16 @@ R = 8.314462618  # J mol^-1 K^-1
 class TestModelWholeCell(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.model = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+        cls.model = ModelWholeCellPatch(channel_loc, ["nap"], ["na"], -90,
                                         {"na": 110},
-                                        gbar_names={"nap": "gnabar"}, cap=1, cm=2)
-        cls.model_init = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+                                        gbar_names={"nap": "gnabar"},
+                                        cap=1, cm=2)
+        cls.model_init = ModelWholeCellPatch(channel_loc, ["nap"], ["na"], -90,
                                              external_conc={"na": 110},
                                              gbar_names={"nap": "gnabar"},
                                              temp=35, recompile=False,
                                              ljp=4,
                                              cvode=False,
-                                             v_rest=-90,
                                              E_rev={"na": 15}, Rin=2e9, cm=2)
 
     def test_cap_init(self):
@@ -40,14 +40,13 @@ class TestModelWholeCell(unittest.TestCase):
         self.assertEqual(2, self.model_init.patch.cm)
         
     def test_setup_gbar_custom_value(self):
-        out = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+        out = ModelWholeCellPatch(channel_loc, ["nap"], ["na"], -90,
                                   gbar_names={"nap": "gnabar"},
                                   gbar_values={"nap": 1},
                                   external_conc={"na": 110},
                                   temp=35, recompile=False,
                                   ljp=4,
                                   cvode=False,
-                                  v_rest=-90,
                                   E_rev={"na": 15}, Rin=2e9)
         self.assertEqual(1,
                          out.patch.psection()["density_mechs"]["nap"]["gnabar"][0])
@@ -85,10 +84,11 @@ class TestModelWholeCell(unittest.TestCase):
         area = 0
         for seg in self.model_init.patch:
             area += seg.area()*1e-8
-        self.assertTrue(np.isclose(self.model_init.patch.g_pas, 1/(area)/2*1e-9))
+        self.assertTrue(np.isclose(self.model_init.patch.g_pas,
+                                   1/(area)/2*1e-9))
 
     def test_setup_cap(self):
-        out = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+        out = ModelWholeCellPatch(channel_loc, ["nap"], ["na"], -90,
                                   {"na": 110},
                                   gbar_names={"nap": "gnabar"})
         out.cap = 2
@@ -99,9 +99,10 @@ class TestModelWholeCell(unittest.TestCase):
 class TestChangeL(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.model = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+        cls.model = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],-90,
                                         {"na": 110},
-                                        gbar_names={"nap": "gnabar"}, cap=1, cm=2)
+                                        gbar_names={"nap": "gnabar"}, cap=1,
+                                        cm=2)
         cls.old_gpas = cls.model.patch.g_pas
         cls.model.L = 100
 
@@ -119,9 +120,10 @@ class TestChangeL(unittest.TestCase):
 class TestChangeDiam(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.model = ModelWholeCellPatch(channel_loc, ["nap"], ["na"],
+        cls.model = ModelWholeCellPatch(channel_loc, ["nap"], ["na"], -65,
                                         {"na": 110},
-                                        gbar_names={"nap": "gnabar"}, cap=1, cm=2)
+                                        gbar_names={"nap": "gnabar"},
+                                        cap=1, cm=2)
         cls.old_gpas = cls.model.patch.g_pas
         cls.model.diam = 100
 
@@ -139,32 +141,26 @@ class TestPatchWithCa(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.modelcaghk = ModelWholeCellPatchCaSingleChan(channel_loc,
-                                                              "calHGHK", "ca",
-                                                              1.5)
-        cls.modelCaghk = ModelWholeCellPatchCaSingleChan(channel_loc,
-                                                              "CalHGHK","Ca",
-                                                              1.5)
+                                                         "calHGHK", "ca",
+                                                         1.5, -65)
         cls.modelca_eca = ModelWholeCellPatchCaSingleChan(channel_loc,
-                                                               "calH_eca",
-                                                               "ca",
-                                                               1.5,
-                                                               gbar_name="gcal")
-        cls.modelCa_eCa = ModelWholeCellPatchCaSingleChan(channel_loc,
-                                                               "CalH_eCa",
-                                                               "Ca", 1.5,
-                                                               gbar_name="gCal")
+                                                          "calH_eca",
+                                                          "ca",
+                                                          1.5, -65,
+                                                          gbar_name="gcal")
 
     def test_raises(self):
         self.assertRaises(SystemExit, ModelWholeCellPatchCaSingleChan,
                           channel_loc,
-                          "callHGHK", "cal", 1.5)
+                          "callHGHK", "cal", 1.5, -65)
 
 
 class TestModelWholeCellPatchSingleChan(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.model = ModelWholeCellPatchSingleChan(channel_loc,
-                                                  "nap", "na", external_conc=110,
+                                                  "nap", "na", -65,
+                                                  external_conc=110,
                                                   gbar_name="gnabar")
 
     def test_channel_names(self):

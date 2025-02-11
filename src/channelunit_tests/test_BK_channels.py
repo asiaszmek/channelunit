@@ -26,6 +26,7 @@ class TestBK_1_uM_Ca(unittest.TestCase):
                                      external_conc={"k": 5},
                                      internal_conc={"ca": 1e-3,
                                                     "k": 120},
+                                     v_rest=-100,
                                      temp=23,
                                      ljp=0)
         activation_data = np.loadtxt(activation_loc_BK_1_uM_Ca, skiprows=1,
@@ -47,6 +48,7 @@ class TestBK_1_uM_Ca(unittest.TestCase):
                                              cls.test.v_init,
                                              cls.test.t_stop,
                                              cls.power,
+                                             cls.test.t_mes,
                                              cls.test.chord_conductance,
                                              cls.test.electrode_current,
                                              "to_one")
@@ -76,6 +78,7 @@ class TestBK_10_uM_Ca(unittest.TestCase):
                                      internal_conc={"ca": 10e-3,
                                                     "k": 120},
                                      temp=23,
+                                     v_rest=-100,
                                      ljp=0)
         activation_data = np.loadtxt(activation_loc_BK_10_uM_Ca, skiprows=1,
                                      delimiter=",")
@@ -96,6 +99,7 @@ class TestBK_10_uM_Ca(unittest.TestCase):
                                              cls.test.v_init,
                                              cls.test.t_stop,
                                              cls.power,
+                                             cls.test.t_mes,
                                              cls.test.chord_conductance,
                                              cls.test.electrode_current,
                                              "to_one")
@@ -125,7 +129,7 @@ class TestBK_100_uM_Ca(unittest.TestCase):
                                      external_conc={"k": 5},
                                      internal_conc={"ca": 100e-3,
                                                     "k": 120},
-                                     temp=23,
+                                     temp=23, v_rest=-100,
                                      ljp=0)
         activation_data = np.loadtxt(activation_loc_BK_100_uM_Ca, skiprows=1,
                                      delimiter=",")
@@ -146,6 +150,7 @@ class TestBK_100_uM_Ca(unittest.TestCase):
                                              cls.test.v_init,
                                              cls.test.t_stop,
                                              cls.power,
+                                             cls.test.t_mes,
                                              cls.test.chord_conductance,
                                              cls.test.electrode_current,
                                              "to_one")

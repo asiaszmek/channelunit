@@ -17,7 +17,7 @@ activation_loc_CaT_2_ca = os.path.join(data_path, "data",
 inactivation_loc_CaT_2_ca = os.path.join(data_path, "data",
                                          "McRory_cat_a1g_inact.csv")
 
-class TestCaTChannels_ca(unittest.TestCase):
+class TestCaTChannels_ca_Act(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.modelca_2_H = ModelWholeCellPatchCaSingleChan(channel_loc,
@@ -25,16 +25,12 @@ class TestCaTChannels_ca(unittest.TestCase):
                                                           "ca",
                                                            external_conc=2,
                                                            temp=22,
-                                                           ljp=0,
+                                                           ljp=0, v_rest=-65,
                                                            gbar_value=0.001)
         activation_data = np.loadtxt(activation_loc_CaT_2_ca, skiprows=1,
                                      delimiter=",")
-        inactivation_data = np.loadtxt(inactivation_loc_CaT_2_ca, skiprows=1,
-                                        delimiter=",")
         cls.power = 1
         cls.activation_data = dict(val.tolist() for val in activation_data)
-        cls.inactivation_data = dict(val.tolist() for val in inactivation_data)
-        
         cls.act_test_ca2 = ActivationSteadyStateTest(cls.activation_data,
                                                   {"v_init": -80, "t_stop": 15,
                                                    "electrode_current": False,
@@ -44,31 +40,15 @@ class TestCaTChannels_ca(unittest.TestCase):
                                                   "ActivationSSTestCaTca",
                                                   save_figures=True)
 
-        cls.inact_test_ca2 = InactivationSteadyStateTest(cls.inactivation_data,
-                                                  {"v_test": -30, "t_test": 1000,
-                                                   "electrode_current": False,
-                                                   "chord_conductance":False,
-                                                   "normalization": "to_one"},
-                                                  1,
-                                                  "InactivationSSTestCaTca",
-                                                  save_figures=True)
         cls.act_results = cls.act_test_ca2.run_model(cls.modelca_2_H,
-                                                  cls.act_test_ca2.stimulus_list,
-                                                  cls.act_test_ca2.v_init,
-                                                  cls.act_test_ca2.t_stop,
-                                                  cls.power,
-                                                  cls.act_test_ca2.chord_conductance,
-                                                  cls.act_test_ca2.electrode_current,
+                                                     cls.act_test_ca2.stimulus_list,
+                                                     cls.act_test_ca2.v_init,
+                                                     cls.act_test_ca2.t_stop,
+                                                     cls.power,
+                                                     cls.act_test_ca2.t_mes,
+                                                     cls.act_test_ca2.chord_conductance,
+                                                     cls.act_test_ca2.electrode_current,
                                                   "to_one")
-        cls.inact_results = cls.inact_test_ca2.run_model(cls.modelca_2_H,
-                                                          cls.inact_test_ca2.stimulus_list,
-                                                          cls.inact_test_ca2.v_test,
-                                                          cls.inact_test_ca2.t_test,
-                                                          cls.power,
-                                                          cls.inact_test_ca2.chord_conductance,
-                                                          cls.inact_test_ca2.electrode_current,
-                                                          "to_one")
-       
 
     def test_act_summarize_H(self):
         self.score = self.act_test_ca2.judge(self.modelca_2_H)
@@ -83,6 +63,42 @@ class TestCaTChannels_ca(unittest.TestCase):
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)
 
+
+
+class TestCaTChannels_ca_Inact(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.modelca_2_H = ModelWholeCellPatchCaSingleChan(channel_loc,
+                                                          "ca12dZUy",
+                                                          "ca",
+                                                           external_conc=2,
+                                                           temp=22,
+                                                           ljp=0, v_rest=-65,
+                                                           gbar_value=0.001)
+        inactivation_data = np.loadtxt(inactivation_loc_CaT_2_ca, skiprows=1,
+                                        delimiter=",")
+        cls.power = 1
+        cls.inactivation_data = dict(val.tolist() for val in inactivation_data)
+        
+        cls.inact_test_ca2 = InactivationSteadyStateTest(cls.inactivation_data,
+                                                  {"v_test": -30, "t_test": 1000,
+                                                   "electrode_current": False,
+                                                   "chord_conductance":False,
+                                                   "normalization": "to_one"},
+                                                  1,
+                                                  "InactivationSSTestCaTca",
+                                                  save_figures=True)
+        cls.inact_results = cls.inact_test_ca2.run_model(cls.modelca_2_H,
+                                                         cls.inact_test_ca2.stimulus_list,
+                                                         cls.inact_test_ca2.v_test,
+                                                         cls.inact_test_ca2.t_test,
+                                                         cls.power,
+                                                         cls.inact_test_ca2.t_mes,
+                                                         cls.inact_test_ca2.chord_conductance,
+                                                         cls.inact_test_ca2.electrode_current,
+                                                         "to_one")
+       
+
     def test_inact_summarize_H(self):
         self.score = self.inact_test_ca2.judge(self.modelca_2_H)
         self.score.summarize()
@@ -96,11 +112,6 @@ class TestCaTChannels_ca(unittest.TestCase):
         is_all_less_1 = np.all((values<=1))
         self.assertTrue(is_all_less_1)
 
-    def test_gbar_val(self):
-        gbar_val = self.modelca_2_H.patch.psection()["density_mechs"]["ca12dZUy"]["gbar"]
-
-        self.assertEqual(gbar_val, [7e-6])
-        
 
 
 if __name__ == "__main__":

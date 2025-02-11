@@ -25,8 +25,9 @@ class TestCaLChannelsLowBariumba(unittest.TestCase):
                                                           "calHGHK",
                                                           "ba",
                                                           external_conc=20,
-                                                          temp=22,
-                                                          ljp=0, gbar_value=0.00001)
+                                                          temp=22, v_rest=-65,
+                                                          ljp=0,
+                                                          gbar_value=0.00001)
         activation_data = np.loadtxt(activation_loc_Cal_20_Ba, skiprows=1,
                                      delimiter=",")
         cls.power = 1
@@ -35,14 +36,15 @@ class TestCaLChannelsLowBariumba(unittest.TestCase):
                                                   {"v_init": -90, "t_stop": 70,
                                                    "electrode_current": False,
                                                    "chord_conductance":False,
-                                                   "normalization": "to_one"}, 1,
-                                                  "ActvationSSTestLowba",
+                                                   "normalization": "to_one"},
+                                                  1, "ActvationSSTestLowba",
                                                   save_figures=True)
         cls.act_results = cls.test_Ba20.run_model(cls.modelBa20_H,
                                                   cls.test_Ba20.stimulus_list,
                                                   cls.test_Ba20.v_init,
                                                   cls.test_Ba20.t_stop,
                                                   cls.power,
+                                                  cls.test_Ba20.t_mes,
                                                   cls.test_Ba20.chord_conductance,
                                                   cls.test_Ba20.electrode_current,
                                                   "to_one")
@@ -73,11 +75,11 @@ class TestCaLChannelsLowCalciumca(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.modelCa20_H = ModelWholeCellPatchCaSingleChan(channel_loc,
-                                                     "TC_cal",
-                                                     "ca",
-                                                     external_conc=1.5,
-                                                     temp=22,
-                                                     ljp=0)
+                                                          "TC_cal",
+                                                          "ca",
+                                                          external_conc=1.5,
+                                                          temp=22, v_rest=-65,
+                                                          ljp=0)
         activation_data = np.loadtxt(activation_loc_Cal12, skiprows=1,
                                      delimiter=",")
         cls.power = 1
@@ -97,6 +99,7 @@ class TestCaLChannelsLowCalciumca(unittest.TestCase):
                                                   cls.test_Ca20.v_init,
                                                   cls.test_Ca20.t_stop,
                                                   cls.power,
+                                                  cls.test_Ca20.t_mes,
                                                   cls.test_Ca20.chord_conductance,
                                                   cls.test_Ca20.electrode_current,
                                                   "save_sign")
