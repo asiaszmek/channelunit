@@ -466,7 +466,7 @@ class ModelPatch(MembranePatch, NModlChannel):
             out = self.extract_current(I, chord_conductance,
                                        leak_subtraction,
                                        delay+shift,t_stop, self.dt,
-                                       voltage.as_numpy()[-1])
+                                       level)
 
             if save_ca:
                 if not i:
@@ -641,7 +641,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                                        chord_conductance,
                                        leak_subtraction, delay,
                                        t_test, self.dt,
-                                       voltage.as_numpy()[-1])
+                                       level)
 
             beg = int(np.round(delay/self.dt))
             end = int(np.round((delay+t_test)/self.dt))
