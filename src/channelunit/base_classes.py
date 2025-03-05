@@ -641,7 +641,7 @@ class ModelPatch(MembranePatch, NModlChannel):
                                        chord_conductance,
                                        leak_subtraction, delay,
                                        t_test, self.dt,
-                                       level)
+                                       v_hold)
 
             beg = int(np.round(delay/self.dt))
             end = int(np.round((delay+t_test)/self.dt))
